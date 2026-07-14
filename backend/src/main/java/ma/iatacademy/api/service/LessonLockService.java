@@ -77,7 +77,6 @@ public class LessonLockService {
     }
 
     public void release(UUID lessonId, UUID userId) {
-        ensureLessonExists(lessonId);
         String key = key(lessonId);
         String existing = redisTemplate.opsForValue().get(key);
         if (existing == null) {
@@ -87,6 +86,10 @@ public class LessonLockService {
         if (payload.userId().equals(userId)) {
             redisTemplate.delete(key);
         }
+    }
+
+    public void forceRelease(UUID lessonId) {
+        redisTemplate.delete(key(lessonId));
     }
 
     public void assertOwnedBy(UUID lessonId, UUID userId) {

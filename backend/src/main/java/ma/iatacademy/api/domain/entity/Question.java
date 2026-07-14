@@ -38,6 +38,10 @@ public class Question extends AuditableEntity {
     @Column(columnDefinition = "TEXT")
     private String explanation;
 
+    /** Optional illustration for the question prompt (uploaded asset). */
+    @Column(name = "image_asset_id")
+    private UUID imageAssetId;
+
     @OneToMany(mappedBy = "question", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("orderIndex ASC")
     @Builder.Default

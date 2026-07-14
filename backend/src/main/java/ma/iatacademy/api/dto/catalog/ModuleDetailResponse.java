@@ -13,6 +13,7 @@ public record ModuleDetailResponse(
         int orderIndex,
         boolean published,
         ModuleLearnerStatus learnerStatus,
-        List<LessonSummaryResponse> lessons
+        List<LessonSummaryResponse> lessons,
+        List<ModuleQuizItemResponse> quizzes
 ) {
 }

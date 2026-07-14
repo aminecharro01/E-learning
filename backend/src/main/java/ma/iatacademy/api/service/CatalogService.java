@@ -2,18 +2,21 @@ package ma.iatacademy.api.service;
 
 import lombok.RequiredArgsConstructor;
 import ma.iatacademy.api.domain.entity.Formation;
-import ma.iatacademy.api.domain.entity.Lesson;
 import ma.iatacademy.api.domain.entity.ModuleEntity;
+import ma.iatacademy.api.domain.entity.Quiz;
 import ma.iatacademy.api.domain.enums.ModuleLearnerStatus;
+import ma.iatacademy.api.domain.enums.Role;
 import ma.iatacademy.api.dto.catalog.FormationResponse;
 import ma.iatacademy.api.dto.catalog.LessonSummaryResponse;
 import ma.iatacademy.api.dto.catalog.ModuleDetailResponse;
+import ma.iatacademy.api.dto.catalog.ModuleQuizItemResponse;
 import ma.iatacademy.api.dto.catalog.ModuleSummaryResponse;
 import ma.iatacademy.api.dto.catalog.UpdateModuleRequest;
 import ma.iatacademy.api.exception.NotFoundException;
 import ma.iatacademy.api.repository.FormationRepository;
 import ma.iatacademy.api.repository.LessonRepository;
 import ma.iatacademy.api.repository.ModuleRepository;
+import ma.iatacademy.api.repository.QuizRepository;
 import ma.iatacademy.api.security.UserPrincipal;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,6 +31,7 @@ public class CatalogService {
     private final FormationRepository formationRepository;
     private final ModuleRepository moduleRepository;
     private final LessonRepository lessonRepository;
+    private final QuizRepository quizRepository;
     private final ProgressionService progressionService;
 
     @Transactional(readOnly = true)
@@ -55,9 +59,12 @@ public class CatalogService {
         progressionService.assertModuleAccessible(principal, module);
 
         ModuleLearnerStatus status = progressionService.resolveModuleStatus(principal.getId(), module);
+        boolean staff = principal.getRole() == Role.ADMIN || principal.getRole() == Role.FORMATEUR;
+
         List<LessonSummaryResponse> lessons = lessonRepository
                 .findByModuleIdOrderByOrderIndexAsc(moduleId)
                 .stream()
+                .filter(lesson -> staff || lesson.isPublished())
                 .map(lesson -> new LessonSummaryResponse(
                         lesson.getId(),
                         lesson.getTitle(),
@@ -67,6 +74,24 @@ public class CatalogService {
                 ))
                 .toList();
 
+        List<ModuleQuizItemResponse> quizzes = quizRepository.findByModuleIdOrderByCreatedAtDesc(moduleId)
+                .stream()
+                .filter(quiz -> staff || quiz.isPublished())
+                .map(this::toQuizItem)
+                .toList();
+
+        List<UUID> lessonIds = lessons.stream().map(LessonSummaryResponse::id).toList();
+        List<ModuleQuizItemResponse> sectionQuizzes = lessonIds.isEmpty()
+                ? List.of()
+                : quizRepository.findByLessonIdIn(lessonIds).stream()
+                .filter(q -> staff || q.isPublished())
+                .filter(q -> quizzes.stream().noneMatch(existing -> existing.id().equals(q.getId())))
+                .map(this::toQuizItem)
+                .toList();
+
+        List<ModuleQuizItemResponse> allQuizzes = new java.util.ArrayList<>(quizzes);
+        allQuizzes.addAll(sectionQuizzes);
+
         return new ModuleDetailResponse(
                 module.getId(),
                 module.getFormation().getId(),
@@ -75,7 +100,19 @@ public class CatalogService {
                 module.getOrderIndex(),
                 module.isPublished(),
                 status,
-                lessons
+                lessons,
+                allQuizzes
+        );
+    }
+
+    private ModuleQuizItemResponse toQuizItem(Quiz quiz) {
+        return new ModuleQuizItemResponse(
+                quiz.getId(),
+                quiz.getTitle(),
+                quiz.getQuizType(),
+                quiz.getLesson() != null ? quiz.getLesson().getId() : null,
+                quiz.getModule() != null ? quiz.getModule().getId() : null,
+                quiz.isPublished()
         );
     }
 

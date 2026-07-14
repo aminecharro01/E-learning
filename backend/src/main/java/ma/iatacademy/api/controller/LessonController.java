@@ -42,6 +42,16 @@ public class LessonController {
         return ResponseEntity.ok(lessonService.updateLesson(id, request, principal.getId()));
     }
 
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN','FORMATEUR')")
+    public ResponseEntity<MessageResponse> deleteLesson(
+            @PathVariable UUID id,
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        lessonService.deleteLesson(id, principal.getId());
+        return ResponseEntity.ok(new MessageResponse("Section supprimée."));
+    }
+
     @GetMapping("/{id}/blocks")
     public ResponseEntity<List<BlockResponse>> listBlocks(
             @PathVariable UUID id,

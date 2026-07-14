@@ -8,6 +8,7 @@ public record QuizQuestionPublic(
         String prompt,
         String questionType,
         int orderIndex,
+        UUID imageAssetId,
         List<QuizOptionPublic> options
 ) {
 }

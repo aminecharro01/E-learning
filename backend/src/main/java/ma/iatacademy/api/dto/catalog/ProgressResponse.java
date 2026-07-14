@@ -8,6 +8,8 @@ public record ProgressResponse(
         String formationTitle,
         double completionPercent,
         UUID currentModuleId,
+        UUID resumeLessonId,
+        String resumeModuleTitle,
         List<ModuleSummaryResponse> modules
 ) {
 }

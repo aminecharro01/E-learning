@@ -14,5 +14,6 @@ public interface QuizRepository extends JpaRepository<Quiz, UUID> {
     Optional<Quiz> findByModuleIdAndQuizType(UUID moduleId, ma.iatacademy.api.domain.enums.QuizType quizType);
     List<Quiz> findByModuleIdOrderByCreatedAtDesc(UUID moduleId);
     List<Quiz> findAllByOrderByCreatedAtDesc();
+    List<Quiz> findByLessonIdIn(List<UUID> lessonIds);
     Page<Quiz> findByModuleId(UUID moduleId, Pageable pageable);
 }

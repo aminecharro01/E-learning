@@ -11,6 +11,7 @@ import ma.iatacademy.api.dto.progress.LessonProgressResponse;
 import ma.iatacademy.api.dto.progress.UpdateLessonProgressRequest;
 import ma.iatacademy.api.exception.NotFoundException;
 import ma.iatacademy.api.repository.FormationRepository;
+import ma.iatacademy.api.repository.LessonRepository;
 import ma.iatacademy.api.repository.ModuleRepository;
 import ma.iatacademy.api.security.UserPrincipal;
 import ma.iatacademy.api.service.ProgressionService;
@@ -32,6 +33,7 @@ public class ProgressController {
 
     private final FormationRepository formationRepository;
     private final ModuleRepository moduleRepository;
+    private final LessonRepository lessonRepository;
     private final ProgressionService progressionService;
 
     @GetMapping("/me")
@@ -65,11 +67,39 @@ public class ProgressController {
                 .findFirst()
                 .orElse(null);
 
+        UUID resumeLessonId = null;
+        String resumeModuleTitle = null;
+        if (currentModuleId != null) {
+            ModuleEntity current = modules.stream()
+                    .filter(m -> m.getId().equals(currentModuleId))
+                    .findFirst()
+                    .orElse(null);
+            if (current != null) {
+                resumeModuleTitle = current.getTitle();
+                resumeLessonId = lessonRepository
+                        .findByModuleIdOrderByOrderIndexAsc(currentModuleId)
+                        .stream()
+                        .filter(l -> l.isPublished())
+                        .filter(l -> !progressionService.isLessonCompleted(principal.getId(), l.getId()))
+                        .map(ma.iatacademy.api.domain.entity.Lesson::getId)
+                        .findFirst()
+                        .orElseGet(() -> lessonRepository
+                                .findByModuleIdOrderByOrderIndexAsc(currentModuleId)
+                                .stream()
+                                .filter(l -> l.isPublished())
+                                .map(ma.iatacademy.api.domain.entity.Lesson::getId)
+                                .findFirst()
+                                .orElse(null));
+            }
+        }
+
         return ResponseEntity.ok(new ProgressResponse(
                 formation.getId(),
                 formation.getTitle(),
                 Math.round(percent * 100.0) / 100.0,
                 currentModuleId,
+                resumeLessonId,
+                resumeModuleTitle,
                 summaries
         ));
     }
@@ -83,5 +113,13 @@ public class ProgressController {
         return ResponseEntity.ok(
                 progressionService.updateLessonProgress(
                         principal.getId(), lessonId, request.videoWatchedPercent()));
+    }
+
+    @PostMapping("/lessons/{lessonId}/complete")
+    public ResponseEntity<LessonProgressResponse> markLessonComplete(
+            @PathVariable UUID lessonId,
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        return ResponseEntity.ok(progressionService.markLessonCompleted(principal.getId(), lessonId));
     }
 }

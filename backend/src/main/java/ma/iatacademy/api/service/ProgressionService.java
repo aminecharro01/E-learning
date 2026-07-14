@@ -130,6 +130,11 @@ public class ProgressionService {
                 .orElse(true);
     }
 
+    @Transactional
+    public LessonProgressResponse markLessonCompleted(UUID userId, UUID lessonId) {
+        return updateLessonProgress(userId, lessonId, 100);
+    }
+
     @Transactional(readOnly = true)
     public boolean isLessonCompleted(UUID userId, UUID lessonId) {
         return lessonProgressRepository.findByUserIdAndLessonId(userId, lessonId)

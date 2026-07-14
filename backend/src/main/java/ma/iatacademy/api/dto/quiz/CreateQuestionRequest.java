@@ -12,6 +12,7 @@ public record CreateQuestionRequest(
         @NotNull QuestionType questionType,
         @NotNull Integer orderIndex,
         String explanation,
+        java.util.UUID imageAssetId,
         @NotEmpty List<CreateOptionRequest> options
 ) {
 }

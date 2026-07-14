@@ -13,11 +13,21 @@ public record LearnerProgressDetailResponse(
         double completionPercent,
         List<ModuleStatusItem> modules
 ) {
+    public record LessonStatusItem(
+            UUID lessonId,
+            String title,
+            int orderIndex,
+            boolean published,
+            boolean completed
+    ) {
+    }
+
     public record ModuleStatusItem(
             UUID moduleId,
             String title,
             int orderIndex,
-            ModuleLearnerStatus status
+            ModuleLearnerStatus status,
+            List<LessonStatusItem> lessons
     ) {
     }
 }

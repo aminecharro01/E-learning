@@ -31,5 +31,17 @@ public class DataInitializer implements ApplicationRunner {
             userRepository.save(admin);
             log.warn("Default admin created: admin@iat-academy.local / Admin@123 — CHANGE THIS PASSWORD IN PRODUCTION");
         }
+
+        if (!userRepository.existsByEmailIgnoreCase("apprenant@iat-academy.local")) {
+            User learner = User.builder()
+                    .email("apprenant@iat-academy.local")
+                    .passwordHash(passwordEncoder.encode("Apprenant@123"))
+                    .fullName("Apprenant Demo")
+                    .role(Role.ETUDIANT)
+                    .enabled(true)
+                    .build();
+            userRepository.save(learner);
+            log.warn("Default learner created: apprenant@iat-academy.local / Apprenant@123");
+        }
     }
 }

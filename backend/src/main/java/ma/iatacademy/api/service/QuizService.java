@@ -126,6 +126,7 @@ public class QuizService {
                     q.getPrompt(),
                     q.getQuestionType().name(),
                     idx++,
+                    q.getImageAssetId(),
                     optionDtos
             ));
         }
@@ -313,6 +314,7 @@ public class QuizService {
             }
             lesson = lessonRepository.findById(request.lessonId())
                     .orElseThrow(() -> new NotFoundException("Leçon introuvable."));
+            module = lesson.getModule();
         } else {
             if (request.moduleId() == null) {
                 throw new ApiException("moduleId requis pour une évaluation de module.");
@@ -363,6 +365,7 @@ public class QuizService {
                 .questionType(request.questionType())
                 .orderIndex(request.orderIndex())
                 .explanation(request.explanation())
+                .imageAssetId(request.imageAssetId())
                 .build();
 
         for (CreateOptionRequest opt : request.options()) {
@@ -391,6 +394,7 @@ public class QuizService {
         question.setQuestionType(request.questionType());
         question.setOrderIndex(request.orderIndex());
         question.setExplanation(request.explanation());
+        question.setImageAssetId(request.imageAssetId());
         question.getOptions().clear();
         for (CreateOptionRequest opt : request.options()) {
             question.getOptions().add(AnswerOption.builder()
@@ -461,6 +465,7 @@ public class QuizService {
                 q.getQuestionType(),
                 q.getOrderIndex(),
                 q.getExplanation(),
+                q.getImageAssetId(),
                 q.getOptions().stream()
                         .map(o -> new QuestionAdminResponse.OptionAdminResponse(
                                 o.getId(), o.getLabel(), o.isCorrect(), o.getOrderIndex()))

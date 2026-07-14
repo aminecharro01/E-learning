@@ -67,6 +67,14 @@ public class LessonService {
         return toDetail(lesson);
     }
 
+    @Transactional
+    public void deleteLesson(UUID lessonId, UUID editorId) {
+        Lesson lesson = findLesson(lessonId);
+        lessonLockService.assertOwnedBy(lessonId, editorId);
+        lessonRepository.delete(lesson);
+        lessonLockService.forceRelease(lessonId);
+    }
+
     @Transactional(readOnly = true)
     public List<BlockResponse> listBlocks(UUID lessonId, UserPrincipal principal) {
         Lesson lesson = findLesson(lessonId);

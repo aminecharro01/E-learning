@@ -12,6 +12,7 @@ public record QuestionAdminResponse(
         QuestionType questionType,
         int orderIndex,
         String explanation,
+        UUID imageAssetId,
         List<OptionAdminResponse> options
 ) {
     public record OptionAdminResponse(

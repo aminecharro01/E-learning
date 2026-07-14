@@ -130,12 +130,25 @@ public class AdminService {
                 .orElseThrow(() -> new NotFoundException("Formation introuvable."));
         List<ModuleEntity> modules = moduleRepository.findByFormationIdOrderByOrderIndexAsc(formation.getId());
         List<LearnerProgressDetailResponse.ModuleStatusItem> items = modules.stream()
-                .map(m -> new LearnerProgressDetailResponse.ModuleStatusItem(
-                        m.getId(),
-                        m.getTitle(),
-                        m.getOrderIndex(),
-                        progressionService.resolveModuleStatus(userId, m)
-                ))
+                .map(m -> {
+                    var lessons = lessonRepository.findByModuleIdOrderByOrderIndexAsc(m.getId())
+                            .stream()
+                            .map(lesson -> new LearnerProgressDetailResponse.LessonStatusItem(
+                                    lesson.getId(),
+                                    lesson.getTitle(),
+                                    lesson.getOrderIndex(),
+                                    lesson.isPublished(),
+                                    progressionService.isLessonCompleted(userId, lesson.getId())
+                            ))
+                            .toList();
+                    return new LearnerProgressDetailResponse.ModuleStatusItem(
+                            m.getId(),
+                            m.getTitle(),
+                            m.getOrderIndex(),
+                            progressionService.resolveModuleStatus(userId, m),
+                            lessons
+                    );
+                })
                 .toList();
         long completed = items.stream()
                 .filter(i -> i.status() == ma.iatacademy.api.domain.enums.ModuleLearnerStatus.COMPLETED)
