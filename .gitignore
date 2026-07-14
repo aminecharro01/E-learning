@@ -1,0 +1,40 @@
+# Dependencies
+node_modules/
+.venv/
+target/
+.next/
+out/
+dist/
+build/
+
+# Env / secrets
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Media / data (keep folders via .gitkeep)
+data/media/**/*
+!data/media/**/.gitkeep
+
+# Logs
+*.log
+npm-debug.log*
+
+# Java
+*.class
+*.jar
+!maven-wrapper.jar
+
+# Frontend
+frontend/node_modules/
+frontend/.next/

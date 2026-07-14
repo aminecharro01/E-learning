@@ -1,0 +1,49 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: iat-postgres
+    environment:
+      POSTGRES_DB: iat_academy
+      POSTGRES_USER: iat
+      POSTGRES_PASSWORD: iat_secret
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U iat -d iat_academy"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: iat-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    command: ["redis-server", "--appendonly", "yes"]
+
+  # API & frontend services will be enabled in a later step (Dockerfiles ready in deploy/)
+  # api:
+  #   build: ./backend
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #     redis:
+  #       condition: service_healthy
+  #   env_file: .env
+  #   ports:
+  #     - "8080:8080"
+  #   volumes:
+  #     - ./data/media:/data/media
+
+volumes:
+  postgres_data:
+  redis_data:

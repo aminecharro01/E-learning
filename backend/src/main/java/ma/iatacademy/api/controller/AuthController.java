@@ -1,0 +1,58 @@
+package ma.iatacademy.api.controller;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import ma.iatacademy.api.dto.LoginRequest;
+import ma.iatacademy.api.dto.MessageResponse;
+import ma.iatacademy.api.dto.RegisterRequest;
+import ma.iatacademy.api.dto.UserResponse;
+import ma.iatacademy.api.security.UserPrincipal;
+import ma.iatacademy.api.service.AuthService;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/api/auth")
+@RequiredArgsConstructor
+public class AuthController {
+
+    private final AuthService authService;
+
+    @PostMapping("/register")
+    public ResponseEntity<UserResponse> register(@Valid @RequestBody RegisterRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(authService.register(request));
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<UserResponse> login(
+            @Valid @RequestBody LoginRequest request,
+            HttpServletRequest httpRequest,
+            HttpServletResponse httpResponse
+    ) {
+        String ip = resolveClientIp(httpRequest);
+        return ResponseEntity.ok(authService.login(request, ip, httpResponse));
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<MessageResponse> logout(HttpServletResponse response) {
+        authService.logout(response);
+        return ResponseEntity.ok(new MessageResponse("Déconnexion réussie."));
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<UserResponse> me(@AuthenticationPrincipal UserPrincipal principal) {
+        return ResponseEntity.ok(authService.me(principal));
+    }
+
+    private String resolveClientIp(HttpServletRequest request) {
+        String forwarded = request.getHeader("X-Forwarded-For");
+        if (forwarded != null && !forwarded.isBlank()) {
+            return forwarded.split(",")[0].trim();
+        }
+        return request.getRemoteAddr();
+    }
+}
