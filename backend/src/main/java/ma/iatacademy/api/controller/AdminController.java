@@ -6,10 +6,13 @@ import ma.iatacademy.api.dto.MessageResponse;
 import ma.iatacademy.api.dto.UserResponse;
 import ma.iatacademy.api.dto.admin.*;
 import ma.iatacademy.api.dto.common.PageResponse;
+import ma.iatacademy.api.security.UserPrincipal;
 import ma.iatacademy.api.service.AdminService;
+import ma.iatacademy.api.service.AppSettingsService;
 import ma.iatacademy.api.service.QuizSettingsService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -22,6 +25,7 @@ public class AdminController {
 
     private final AdminService adminService;
     private final QuizSettingsService quizSettingsService;
+    private final AppSettingsService appSettingsService;
 
     @GetMapping("/stats")
     @PreAuthorize("hasAnyRole('ADMIN','FORMATEUR')")
@@ -75,6 +79,20 @@ public class AdminController {
         return ResponseEntity.ok(quizSettingsService.update(request));
     }
 
+    @GetMapping("/settings/app")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<AppSettingsResponse> getAppSettings() {
+        return ResponseEntity.ok(appSettingsService.get());
+    }
+
+    @PutMapping("/settings/app")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<AppSettingsResponse> updateAppSettings(
+            @Valid @RequestBody AppSettingsRequest request
+    ) {
+        return ResponseEntity.ok(appSettingsService.update(request));
+    }
+
     @PatchMapping("/users/{id}/role")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<UserResponse> updateRole(
@@ -88,9 +106,16 @@ public class AdminController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<UserResponse> setEnabled(
             @PathVariable UUID id,
-            @Valid @RequestBody UpdateEnabledRequest request
+            @Valid @RequestBody UpdateEnabledRequest request,
+            @AuthenticationPrincipal UserPrincipal principal
     ) {
-        return ResponseEntity.ok(adminService.setEnabled(id, request.enabled()));
+        return ResponseEntity.ok(adminService.setEnabled(id, request.enabled(), principal.getId()));
+    }
+
+    @PostMapping("/users/{id}/reset-password")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ResetPasswordResponse> resetPassword(@PathVariable UUID id) {
+        return ResponseEntity.ok(adminService.resetPassword(id));
     }
 
     @PostMapping("/users/{userId}/unlock-module/{moduleId}")

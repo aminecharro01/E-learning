@@ -4,6 +4,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import ma.iatacademy.api.dto.ChangePasswordRequest;
 import ma.iatacademy.api.dto.LoginRequest;
 import ma.iatacademy.api.dto.MessageResponse;
 import ma.iatacademy.api.dto.RegisterRequest;
@@ -41,6 +42,14 @@ public class AuthController {
     public ResponseEntity<MessageResponse> logout(HttpServletResponse response) {
         authService.logout(response);
         return ResponseEntity.ok(new MessageResponse("Déconnexion réussie."));
+    }
+
+    @PostMapping("/change-password")
+    public ResponseEntity<MessageResponse> changePassword(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @Valid @RequestBody ChangePasswordRequest request
+    ) {
+        return ResponseEntity.ok(authService.changePassword(principal, request));
     }
 
     @GetMapping("/me")

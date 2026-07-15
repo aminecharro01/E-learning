@@ -41,6 +41,11 @@ app:
     root-path: ${MEDIA_ROOT:../data/media}
     signed-url-ttl-seconds: ${MEDIA_SIGNED_TTL:3600}
     signing-secret: ${MEDIA_SIGNING_SECRET:}
+  platform:
+    name: ${APP_PLATFORM_NAME:IAT Academy}
+    support-email: ${APP_SUPPORT_EMAIL:support@iat-academy.local}
+    registration-enabled: ${APP_REGISTRATION_ENABLED:true}
+    default-reset-password: ${APP_DEFAULT_RESET_PASSWORD:IatReset@123}
   cors:
     allowed-origins:
       - ${CORS_ORIGINS:http://localhost:3000}

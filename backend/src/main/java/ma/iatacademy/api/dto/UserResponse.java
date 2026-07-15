@@ -8,6 +8,7 @@ public record UserResponse(
         UUID id,
         String email,
         String fullName,
-        Role role
+        Role role,
+        boolean enabled
 ) {
 }

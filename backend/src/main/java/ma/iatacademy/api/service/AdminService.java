@@ -12,6 +12,7 @@ import ma.iatacademy.api.dto.UserResponse;
 import ma.iatacademy.api.dto.admin.AdminStatsResponse;
 import ma.iatacademy.api.dto.admin.LearnerProgressDetailResponse;
 import ma.iatacademy.api.dto.admin.LearnerSummaryResponse;
+import ma.iatacademy.api.dto.admin.ResetPasswordResponse;
 import ma.iatacademy.api.dto.common.PageResponse;
 import ma.iatacademy.api.exception.ApiException;
 import ma.iatacademy.api.exception.NotFoundException;
@@ -20,6 +21,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -43,6 +45,8 @@ public class AdminService {
     private final LessonProgressRepository lessonProgressRepository;
     private final FormationRepository formationRepository;
     private final ProgressionService progressionService;
+    private final AppSettingsService appSettingsService;
+    private final PasswordEncoder passwordEncoder;
 
     @Transactional(readOnly = true)
     public AdminStatsResponse stats() {
@@ -178,11 +182,27 @@ public class AdminService {
     }
 
     @Transactional
-    public UserResponse setEnabled(UUID userId, boolean enabled) {
+    public UserResponse setEnabled(UUID userId, boolean enabled, UUID actorId) {
+        if (userId.equals(actorId) && !enabled) {
+            throw new ApiException("Vous ne pouvez pas suspendre votre propre compte.");
+        }
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException("Utilisateur introuvable."));
         user.setEnabled(enabled);
         return toUserResponse(user);
+    }
+
+    @Transactional
+    public ResetPasswordResponse resetPassword(UUID userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("Utilisateur introuvable."));
+        String temporary = appSettingsService.getDefaultResetPassword();
+        user.setPasswordHash(passwordEncoder.encode(temporary));
+        userRepository.save(user);
+        return new ResetPasswordResponse(
+                "Mot de passe réinitialisé pour " + user.getEmail() + ".",
+                temporary
+        );
     }
 
     @Transactional
@@ -227,7 +247,7 @@ public class AdminService {
     }
 
     private UserResponse toUserResponse(User u) {
-        return new UserResponse(u.getId(), u.getEmail(), u.getFullName(), u.getRole());
+        return new UserResponse(u.getId(), u.getEmail(), u.getFullName(), u.getRole(), u.isEnabled());
     }
 
     private boolean matchesQuery(User u, String q) {
