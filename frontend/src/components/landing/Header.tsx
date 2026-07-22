@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { iat } from "./content";
-import { AirplaneIcon } from "./icons/Airplane";
+import { BrandLogo } from "@/components/brand/BrandLogo";
 
 export function LandingHeader() {
   const [sticky, setSticky] = useState(false);
@@ -32,11 +32,7 @@ export function LandingHeader() {
       className={`landing-header fixed top-0 z-40 w-full transition-[background-color,box-shadow,padding] duration-300 ${sticky ? "is-sticky" : "is-hero"}`}
     >
       <div className="landing-container flex items-center justify-between gap-4">
-        <a href="#home" className="landing-brand shrink-0">
-          <AirplaneIcon className="landing-brand-plane" />
-          <span className="landing-brand-mark">IAT</span>
-          <span className="landing-brand-name">Academy</span>
-        </a>
+        <BrandLogo href="#home" size="md" showWordmark className="landing-brand shrink-0" />
 
         <nav className="landing-nav-pill hidden items-center gap-1 lg:flex" aria-label="Navigation principale">
           {iat.nav.map((item) => (
@@ -85,11 +81,7 @@ export function LandingHeader() {
             aria-label="Navigation principale"
           >
             <div className="mb-6 flex items-center justify-between">
-              <span className="landing-brand">
-                <AirplaneIcon className="landing-brand-plane" />
-                <span className="landing-brand-mark">IAT</span>
-                <span className="landing-brand-name">Academy</span>
-              </span>
+              <BrandLogo href="#home" size="sm" showWordmark />
               <button
                 type="button"
                 onClick={() => setOpen(false)}

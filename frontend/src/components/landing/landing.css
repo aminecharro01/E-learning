@@ -4,24 +4,24 @@
 
 .landing-root,
 .landing {
-  --landing-midnight: #050b18;
-  --landing-deep: #0a1628;
-  --landing-panel: #101c30;
-  --landing-panel-2: #15233a;
-  --landing-primary: #3d8ef5;
-  --landing-primary-glow: #5ba3ff;
-  --landing-secondary: #0c4a8a;
-  --landing-gold: #c9a962;
-  --landing-ink: #e8f4ff;
-  --landing-muted: #9bb4cc;
-  --landing-bg: #050b18;
-  --landing-surface: #0f1b2e;
-  --landing-cloud: #122038;
+  --landing-midnight: #0d1522;
+  --landing-deep: #142b4b;
+  --landing-panel: #142033;
+  --landing-panel-2: #1a2a42;
+  --landing-primary: #f5a623;
+  --landing-primary-glow: #ffc65c;
+  --landing-secondary: #24446f;
+  --landing-gold: #e08d1b;
+  --landing-ink: #e8eef6;
+  --landing-muted: #9bb0cc;
+  --landing-bg: #0d1522;
+  --landing-surface: #142033;
+  --landing-cloud: #1a2a42;
   --landing-on-dark: #ffffff;
-  --landing-on-dark-muted: #b8d4eb;
+  --landing-on-dark-muted: #9bb0cc;
   --landing-glass: rgba(255, 255, 255, 0.06);
   --landing-glass-border: rgba(255, 255, 255, 0.12);
-  --font-landing: var(--font-landing-sans), "Segoe UI", sans-serif;
+  --font-landing: var(--font-body);
 
   color-scheme: dark;
   background: var(--landing-bg);

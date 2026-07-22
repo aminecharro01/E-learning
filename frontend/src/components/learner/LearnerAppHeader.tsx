@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { getMe, getMyProgress, logout } from "@/lib/api";
 import type { User } from "@/types/domain";
 import { ThemeToggleButton } from "@/components/ThemeToggleButton";
+import { BrandLogo } from "@/components/brand/BrandLogo";
 import { btn } from "@/lib/ui";
 
 function greetingForNow(fullName: string | null | undefined): string {
@@ -89,7 +90,10 @@ export function LearnerAppHeader({
     <header className="app-header sticky top-0 z-20 shrink-0">
       <div className={containerClassName}>
         <div className="min-w-0">
-          <p className="eyebrow">IAT Academy</p>
+          <div className="mb-1 flex items-center gap-3">
+            <BrandLogo href="/app" size="sm" />
+            <p className="eyebrow !mb-0">IAT Academy</p>
+          </div>
           <h1 className="truncate text-xl font-bold tracking-tight text-heading">
             {user ? greetingForNow(user.fullName) : "Espace apprenant"}
           </h1>

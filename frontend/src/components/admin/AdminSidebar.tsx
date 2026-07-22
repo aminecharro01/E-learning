@@ -9,6 +9,7 @@ import type { ReactNode } from "react";
 import { useSidebar } from "@/context/SidebarContext";
 import { useAuth } from "@/hooks/useAuth";
 import { btn } from "@/lib/ui";
+import { BrandLogo } from "@/components/brand/BrandLogo";
 import {
   BookIcon,
   ChartIcon,
@@ -87,9 +88,7 @@ export function AdminSidebar() {
       onMouseLeave={() => setIsHovered(false)}
     >
       <Link href="/admin" className={`mb-8 flex items-center ${wide ? "gap-3 px-2" : "justify-center"}`}>
-        <span className="app-sidebar-brand flex h-10 w-10 items-center justify-center rounded-xl text-sm font-bold text-white">
-          IAT
-        </span>
+        <BrandLogo href={undefined} size="sm" />
         {wide && (
           <span>
             <span className="block text-sm font-semibold text-heading">IAT Academy</span>

@@ -5,102 +5,126 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 /* =============================================================================
-   Global light / dark design tokens — single source of truth
+   Global light / dark design tokens — IAT Academy charte graphique
    ============================================================================= */
 :root {
-  --background: #f1f5f9;
-  --foreground: #0f172a;
-  --heading: #020617;
-  --muted: #64748b;
-  --surface: #ffffff;
-  --surface-2: #f8fafc;
-  --border: #e2e8f0;
-  --ring: #3b82f6;
+  /* Marque */
+  --gold-300: #ffd98a;
+  --gold-400: #ffc65c;
+  --gold-500: #f5a623;
+  --gold-600: #e08d1b;
+  --gold-700: #c97612;
+  --gold-800: #a65e0d;
+  --navy: #142b4b;
+  --navy-soft: #24446f;
+  --navy-muted: #3a5a84;
+  --sky-mist: #e8eef6;
+  --wing: linear-gradient(100deg, var(--gold-300) 0%, var(--gold-500) 45%, var(--gold-700) 100%);
 
-  --primary: #1d4ed8;
-  --primary-hover: #1e40af;
+  --background: #f7f9fc;
+  --foreground: #142b4b;
+  --heading: #142b4b;
+  --muted: #3a5a84;
+  --surface: #ffffff;
+  --surface-2: #eef2f8;
+  --border: #d4deeb;
+  --ring: #f5a623;
+
+  --primary: #e08d1b;
+  --primary-hover: #c97612;
   --primary-fg: #ffffff;
 
-  --secondary: #334155;
-  --secondary-hover: #1e293b;
+  --secondary: #142b4b;
+  --secondary-hover: #24446f;
   --secondary-fg: #ffffff;
 
-  --danger: #dc2626;
-  --danger-hover: #b91c1c;
+  --danger: #b83232;
+  --danger-hover: #9a2828;
   --danger-fg: #ffffff;
 
-  --warning: #d97706;
-  --warning-hover: #b45309;
+  --warning: #c45c1a;
+  --warning-hover: #a34c15;
   --warning-fg: #ffffff;
 
-  --success: #059669;
-  --success-hover: #047857;
+  --success: #1a8a6a;
+  --success-hover: #157456;
   --success-fg: #ffffff;
 
-  --neutral: #e2e8f0;
-  --neutral-hover: #cbd5e1;
-  --neutral-fg: #0f172a;
+  --neutral: #e8eef6;
+  --neutral-hover: #d4deeb;
+  --neutral-fg: #142b4b;
 
   --input-bg: #ffffff;
-  --input-border: #cbd5e1;
-  --input-placeholder: #94a3b8;
+  --input-border: #d4deeb;
+  --input-placeholder: #3a5a84;
 
-  --alert-error-bg: #fef2f2;
-  --alert-error-fg: #b91c1c;
-  --alert-success-bg: #ecfdf5;
-  --alert-success-fg: #047857;
-  --alert-warning-bg: #fffbeb;
-  --alert-warning-fg: #b45309;
-  --alert-info-bg: #eff6ff;
-  --alert-info-fg: #1d4ed8;
+  --alert-error-bg: #fceaea;
+  --alert-error-fg: #b83232;
+  --alert-success-bg: #e6f5f0;
+  --alert-success-fg: #1a8a6a;
+  --alert-warning-bg: #fdf0e6;
+  --alert-warning-fg: #c45c1a;
+  --alert-info-bg: rgba(245, 166, 35, 0.1);
+  --alert-info-fg: #142b4b;
+
+  --font-display: var(--font-poppins), "Poppins", system-ui, sans-serif;
+  --font-body: var(--font-inter), "Inter", system-ui, sans-serif;
+  --font-mono-brand: var(--font-jetbrains), "JetBrains Mono", ui-monospace, monospace;
+  --shadow-brand: 0 12px 32px -14px rgba(20, 43, 75, 0.28);
+  --radius-brand: 12px;
 }
 
 .dark {
-  --background: #0b1220;
-  --foreground: #e2e8f0;
-  --heading: #f8fafc;
-  --muted: #94a3b8;
-  --surface: #111827;
-  --surface-2: #1e293b;
-  --border: #334155;
-  --ring: #60a5fa;
+  --wing: linear-gradient(100deg, var(--gold-400) 0%, var(--gold-600) 50%, var(--gold-800) 100%);
+  --sky-mist: #1a2a42;
 
-  --primary: #3b82f6;
-  --primary-hover: #2563eb;
-  --primary-fg: #ffffff;
+  --background: #0d1522;
+  --foreground: #e8eef6;
+  --heading: #e8eef6;
+  --muted: #9bb0cc;
+  --surface: #142033;
+  --surface-2: #0a101a;
+  --border: #243552;
+  --ring: #ffc65c;
 
-  --secondary: #475569;
-  --secondary-hover: #64748b;
-  --secondary-fg: #ffffff;
+  --primary: #f5a623;
+  --primary-hover: #ffc65c;
+  --primary-fg: #0d1522;
 
-  --danger: #ef4444;
-  --danger-hover: #dc2626;
-  --danger-fg: #ffffff;
+  --secondary: #24446f;
+  --secondary-hover: #3a5a84;
+  --secondary-fg: #e8eef6;
 
-  --warning: #f59e0b;
-  --warning-hover: #d97706;
-  --warning-fg: #0f172a;
+  --danger: #ef6666;
+  --danger-hover: #dc4a4a;
+  --danger-fg: #0d1522;
 
-  --success: #10b981;
-  --success-hover: #059669;
-  --success-fg: #0f172a;
+  --warning: #f5a623;
+  --warning-hover: #ffc65c;
+  --warning-fg: #0d1522;
 
-  --neutral: #334155;
-  --neutral-hover: #475569;
-  --neutral-fg: #f1f5f9;
+  --success: #34d399;
+  --success-hover: #1a8a6a;
+  --success-fg: #0d1522;
 
-  --input-bg: #0f172a;
-  --input-border: #475569;
-  --input-placeholder: #64748b;
+  --neutral: #1a2a42;
+  --neutral-hover: #243552;
+  --neutral-fg: #e8eef6;
 
-  --alert-error-bg: rgba(127, 29, 29, 0.35);
-  --alert-error-fg: #fca5a5;
-  --alert-success-bg: rgba(6, 78, 59, 0.4);
+  --input-bg: #0a101a;
+  --input-border: #243552;
+  --input-placeholder: #9bb0cc;
+
+  --alert-error-bg: rgba(184, 50, 50, 0.18);
+  --alert-error-fg: #f5a5a5;
+  --alert-success-bg: rgba(26, 138, 106, 0.18);
   --alert-success-fg: #6ee7b7;
-  --alert-warning-bg: rgba(120, 53, 15, 0.4);
-  --alert-warning-fg: #fcd34d;
-  --alert-info-bg: rgba(30, 58, 138, 0.4);
-  --alert-info-fg: #93c5fd;
+  --alert-warning-bg: rgba(196, 92, 26, 0.18);
+  --alert-warning-fg: #ffc65c;
+  --alert-info-bg: rgba(245, 166, 35, 0.14);
+  --alert-info-fg: #ffd98a;
+
+  --shadow-brand: 0 12px 32px -10px rgba(0, 0, 0, 0.55);
 }
 
 @theme inline {
@@ -117,8 +141,8 @@
   --color-danger: var(--danger);
   --color-warning: var(--warning);
   --color-success: var(--success);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-body);
+  --font-mono: var(--font-mono-brand);
 }
 
 html {
@@ -132,7 +156,7 @@ html.dark {
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  font-family: var(--font-body);
   min-height: 100vh;
   overflow-x: hidden;
   text-rendering: optimizeLegibility;
@@ -311,21 +335,33 @@ body {
 }
 
 .btn-primary {
-  background: var(--primary);
+  background: var(--wing);
   color: var(--primary-fg);
+  box-shadow: var(--shadow-brand);
 }
 
 .btn-primary:hover:not(:disabled):not([aria-disabled="true"]) {
-  background: var(--primary-hover);
+  filter: brightness(1.05);
 }
 
 .btn-secondary {
-  background: var(--secondary);
-  color: var(--secondary-fg);
+  background: transparent;
+  color: var(--navy);
+  border: 1.8px solid var(--navy);
+  box-shadow: none;
+}
+
+html.dark .btn-secondary {
+  color: var(--foreground);
+  border-color: var(--border);
 }
 
 .btn-secondary:hover:not(:disabled):not([aria-disabled="true"]) {
-  background: var(--secondary-hover);
+  background: color-mix(in srgb, var(--navy) 8%, transparent);
+}
+
+html.dark .btn-secondary:hover:not(:disabled):not([aria-disabled="true"]) {
+  background: color-mix(in srgb, var(--foreground) 8%, transparent);
 }
 
 .btn-danger {

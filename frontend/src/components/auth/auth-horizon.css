@@ -4,18 +4,18 @@
    ============================================================================= */
 
 .auth-horizon {
-  --auth-midnight: #050b18;
-  --auth-deep: #0a1628;
-  --auth-panel: #101c30;
-  --auth-primary: #3d8ef5;
-  --auth-primary-glow: #5ba3ff;
-  --auth-secondary: #0c4a8a;
-  --auth-gold: #c9a962;
-  --auth-on-dark: #ffffff;
-  --auth-muted: #b8d4eb;
+  --auth-midnight: #0d1522;
+  --auth-deep: #142b4b;
+  --auth-panel: #142033;
+  --auth-primary: #f5a623;
+  --auth-primary-glow: #ffc65c;
+  --auth-secondary: #24446f;
+  --auth-gold: #e08d1b;
+  --auth-on-dark: #e8eef6;
+  --auth-muted: #9bb0cc;
   --auth-glass: rgba(255, 255, 255, 0.06);
   --auth-glass-border: rgba(255, 255, 255, 0.12);
-  --font-auth: var(--font-landing-sans), "Segoe UI", sans-serif;
+  --font-auth: var(--font-body);
 
   color-scheme: dark;
   min-height: 100dvh;

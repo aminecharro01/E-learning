@@ -1,10 +1,10 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { AirplaneIcon, FlightPathDecor } from "@/components/landing/icons/Airplane";
+import { FlightPathDecor } from "@/components/landing/icons/Airplane";
 import { AirplaneCursor } from "@/components/landing/AirplaneCursor";
+import { BrandLogo } from "@/components/brand/BrandLogo";
 import { iat } from "@/components/landing/content";
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
@@ -23,11 +23,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         <aside className="auth-panel-side" aria-label="Informations IAT Academy">
           {isRegister ? (
             <div className="auth-panel-card auth-panel-card-register">
-              <Link href="/" className="auth-panel-brand">
-                <AirplaneIcon className="auth-panel-brand-plane" />
-                <span className="auth-panel-brand-mark">IAT</span>
-                <span className="auth-panel-brand-name">Academy</span>
-              </Link>
+              <BrandLogo href="/" size="md" showWordmark className="auth-panel-brand" />
               <p className="auth-panel-eyebrow">Réserver votre place</p>
               <p className="auth-panel-text">
                 Rejoignez les apprenants en aviation, maritime et tourisme. Formation sur 2 ans —
@@ -57,11 +53,9 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
                 />
                 <div className="auth-panel-photo-overlay" />
               </div>
-              <Link href="/" className="auth-panel-brand auth-panel-brand-over-photo">
-                <AirplaneIcon className="auth-panel-brand-plane" />
-                <span className="auth-panel-brand-mark">IAT</span>
-                <span className="auth-panel-brand-name">Academy</span>
-              </Link>
+              <div className="auth-panel-brand auth-panel-brand-over-photo">
+                <BrandLogo href="/" size="md" showWordmark />
+              </div>
               <p className="auth-panel-eyebrow">Embarquement</p>
               <p className="auth-panel-text">Reprenez votre parcours là où vous vous êtes arrêté.</p>
               <ul className="auth-panel-chips">
