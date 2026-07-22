@@ -95,9 +95,13 @@ public class CatalogService {
         return new ModuleDetailResponse(
                 module.getId(),
                 module.getFormation().getId(),
+                module.getCode(),
                 module.getTitle(),
                 module.getDescription(),
                 module.getOrderIndex(),
+                module.getYearNumber(),
+                module.getUfCode(),
+                module.getUfTitle(),
                 module.isPublished(),
                 status,
                 lessons,
@@ -126,25 +130,35 @@ public class CatalogService {
         if (request.published() != null) {
             module.setPublished(request.published());
         }
-        return new ModuleSummaryResponse(
-                module.getId(),
-                module.getTitle(),
-                module.getDescription(),
-                module.getOrderIndex(),
-                module.isPublished(),
-                ModuleLearnerStatus.AVAILABLE
-        );
+        return toModuleSummary(module, ModuleLearnerStatus.AVAILABLE);
     }
 
     private ModuleSummaryResponse toModuleSummary(ModuleEntity module, UserPrincipal principal) {
         ModuleLearnerStatus status = progressionService.resolveModuleStatus(principal.getId(), module);
+        return toModuleSummary(module, status);
+    }
+
+    public static ModuleSummaryResponse toModuleSummary(ModuleEntity module, ModuleLearnerStatus status) {
+        return toModuleSummary(module, status, 0);
+    }
+
+    public static ModuleSummaryResponse toModuleSummary(
+            ModuleEntity module,
+            ModuleLearnerStatus status,
+            int progressPercent
+    ) {
         return new ModuleSummaryResponse(
                 module.getId(),
+                module.getCode(),
                 module.getTitle(),
                 module.getDescription(),
                 module.getOrderIndex(),
+                module.getYearNumber(),
+                module.getUfCode(),
+                module.getUfTitle(),
                 module.isPublished(),
-                status
+                status,
+                Math.max(0, Math.min(100, progressPercent))
         );
     }
 }

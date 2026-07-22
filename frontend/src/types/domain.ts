@@ -23,21 +23,37 @@ export type ModuleLearnerStatus =
   | "IN_PROGRESS"
   | "COMPLETED";
 
+export type PaymentStatus = "PENDING" | "PAID" | "EXEMPTED";
+
 export type User = {
   id: string;
   email: string;
   fullName: string | null;
   role: Role;
   enabled?: boolean;
+  phone?: string | null;
+  cin?: string | null;
+  birthDate?: string | null;
+  address?: string | null;
+  enrollmentYear?: number | null;
+  paymentStatus?: PaymentStatus | null;
+  activatedAt?: string | null;
+  year2AccessEnabled?: boolean;
+  avatarAssetId?: string | null;
 };
 
 export type Module = {
   id: string;
+  code?: string | null;
   title: string;
   description: string | null;
   orderIndex: number;
+  yearNumber?: number | null;
+  ufCode?: string | null;
+  ufTitle?: string | null;
   published: boolean;
   learnerStatus?: ModuleLearnerStatus;
+  progressPercent?: number;
   formationId?: string;
 };
 
@@ -109,6 +125,8 @@ export type Certificate = {
   issuedAt: string;
   formationTitle: string;
   learnerName: string;
+  physicallyDelivered?: boolean;
+  deliveredAt?: string | null;
 };
 
 export type AdminStats = {

@@ -112,6 +112,24 @@ public class AdminController {
         return ResponseEntity.ok(adminService.setEnabled(id, request.enabled(), principal.getId()));
     }
 
+    @PatchMapping("/users/{id}/year2-access")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<UserResponse> setYear2Access(
+            @PathVariable UUID id,
+            @Valid @RequestBody UpdateYear2AccessRequest request
+    ) {
+        return ResponseEntity.ok(adminService.setYear2Access(id, request.year2AccessEnabled()));
+    }
+
+    @PatchMapping("/users/{id}/profile")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<UserResponse> updateUserProfile(
+            @PathVariable UUID id,
+            @Valid @RequestBody ma.iatacademy.api.dto.UpdateProfileRequest request
+    ) {
+        return ResponseEntity.ok(adminService.updateUserProfile(id, request));
+    }
+
     @PostMapping("/users/{id}/reset-password")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ResetPasswordResponse> resetPassword(@PathVariable UUID id) {
@@ -125,5 +143,26 @@ public class AdminController {
             @PathVariable UUID moduleId
     ) {
         return ResponseEntity.ok(adminService.unlockModule(userId, moduleId));
+    }
+
+    @PostMapping("/year2/open-all")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<MessageResponse> openYear2ForAll() {
+        return ResponseEntity.ok(adminService.openYear2ForAllEnabledLearners());
+    }
+
+    @GetMapping("/diplomas")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<DiplomaReadyResponse>> diplomas() {
+        return ResponseEntity.ok(adminService.listDiplomas());
+    }
+
+    @PatchMapping("/diplomas/{id}/delivered")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<DiplomaReadyResponse> markDiplomaDelivered(
+            @PathVariable UUID id,
+            @Valid @RequestBody MarkDiplomaDeliveredRequest request
+    ) {
+        return ResponseEntity.ok(adminService.markDiplomaDelivered(id, request.delivered(), request.note()));
     }
 }

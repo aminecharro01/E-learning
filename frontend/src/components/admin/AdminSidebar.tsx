@@ -40,12 +40,14 @@ const GROUPS: NavGroup[] = [
       { name: "Cours & modules", path: "/admin/modules", icon: <BookIcon /> },
       { name: "Quiz", path: "/admin/quiz-bank", icon: <QuizIcon /> },
       { name: "Médias", path: "/admin/media", icon: <MediaIcon /> },
+      { name: "Stage & soutenance", path: "/admin/stage", icon: <BookIcon /> },
     ],
   },
   {
     label: "Suivi",
     items: [
       { name: "Apprenants", path: "/admin/learners", icon: <UsersIcon /> },
+      { name: "Diplômes", path: "/admin/diplomas", icon: <ChartIcon />, adminOnly: true },
       { name: "Statistiques", path: "/admin/stats", icon: <ChartIcon /> },
     ],
   },

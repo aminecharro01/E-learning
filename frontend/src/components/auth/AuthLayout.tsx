@@ -30,8 +30,8 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
               </Link>
               <p className="auth-panel-eyebrow">Réserver votre place</p>
               <p className="auth-panel-text">
-                Rejoignez les apprenants en aviation, maritime et tourisme. 20 modules vous
-                attendent.
+                Rejoignez les apprenants en aviation, maritime et tourisme. Formation sur 2 ans —
+                le directeur active votre accès après paiement.
               </p>
               <ul className="auth-panel-tracks">
                 {iat.expertise.map((item) => (

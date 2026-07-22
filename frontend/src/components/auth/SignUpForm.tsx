@@ -53,9 +53,10 @@ export default function SignUpForm() {
           <AirplaneIcon className="auth-kicker-plane" />
           Carte d&apos;embarquement
         </p>
-        <h1 className="auth-title">Compte créé</h1>
+        <h1 className="auth-title">Inscription reçue</h1>
         <p className="auth-subtitle">
-          Votre accès apprenant IAT Academy est prêt. Vous pouvez maintenant vous connecter.
+          Votre compte est créé et <strong>en attente d&apos;activation</strong> par le directeur de
+          l&apos;académie, après validation du paiement des frais de formation.
         </p>
         <div className="auth-boarding-pass">
           <p className="auth-boarding-label">Passager</p>
@@ -65,10 +66,10 @@ export default function SignUpForm() {
           <p className="auth-boarding-label">Email</p>
           <p className="auth-boarding-value">{email}</p>
           <p className="auth-boarding-label">Statut</p>
-          <p className="auth-boarding-value auth-boarding-status">Confirmé ✓</p>
+          <p className="auth-boarding-value auth-boarding-status">En attente d&apos;activation</p>
         </div>
         <Link href="/login" className="auth-submit auth-success-cta">
-          Se connecter
+          Retour à la connexion
         </Link>
       </div>
     );

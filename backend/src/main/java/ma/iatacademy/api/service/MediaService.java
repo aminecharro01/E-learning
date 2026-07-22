@@ -35,6 +35,7 @@ public class MediaService {
     private static final Set<String> VIDEO_EXT = Set.of("mp4", "webm", "m3u8", "ts");
     private static final Set<String> PDF_EXT = Set.of("pdf");
     private static final Set<String> IMAGE_EXT = Set.of("png", "jpg", "jpeg", "gif", "webp");
+    private static final Set<String> DOCUMENT_EXT = Set.of("pdf", "doc", "docx", "ppt", "pptx", "odt", "ods");
 
     private final AssetRepository assetRepository;
     private final MediaProperties mediaProperties;
@@ -52,6 +53,7 @@ public class MediaService {
             case "VIDEO" -> "videos";
             case "SLIDE" -> "slides";
             case "PDF" -> "pdfs";
+            case "DOCUMENT" -> "documents";
             default -> "images";
         };
 
@@ -156,10 +158,13 @@ public class MediaService {
         if (PDF_EXT.contains(ext) || "application/pdf".equalsIgnoreCase(mime)) {
             return "PDF";
         }
+        if (DOCUMENT_EXT.contains(ext)) {
+            return "DOCUMENT";
+        }
         if (IMAGE_EXT.contains(ext) || (mime != null && mime.startsWith("image/"))) {
             return "IMAGE";
         }
-        return "IMAGE";
+        return "DOCUMENT";
     }
 
     private String extension(String filename) {

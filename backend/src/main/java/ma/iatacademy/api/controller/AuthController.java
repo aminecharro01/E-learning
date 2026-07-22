@@ -8,13 +8,16 @@ import ma.iatacademy.api.dto.ChangePasswordRequest;
 import ma.iatacademy.api.dto.LoginRequest;
 import ma.iatacademy.api.dto.MessageResponse;
 import ma.iatacademy.api.dto.RegisterRequest;
+import ma.iatacademy.api.dto.UpdateProfileRequest;
 import ma.iatacademy.api.dto.UserResponse;
 import ma.iatacademy.api.security.UserPrincipal;
 import ma.iatacademy.api.service.AuthService;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -55,6 +58,22 @@ public class AuthController {
     @GetMapping("/me")
     public ResponseEntity<UserResponse> me(@AuthenticationPrincipal UserPrincipal principal) {
         return ResponseEntity.ok(authService.me(principal));
+    }
+
+    @PatchMapping("/profile")
+    public ResponseEntity<UserResponse> updateProfile(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @Valid @RequestBody UpdateProfileRequest request
+    ) {
+        return ResponseEntity.ok(authService.updateProfile(principal, request));
+    }
+
+    @PostMapping(value = "/profile/avatar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<UserResponse> updateAvatar(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @RequestParam("file") MultipartFile file
+    ) {
+        return ResponseEntity.ok(authService.updateAvatar(principal, file));
     }
 
     private String resolveClientIp(HttpServletRequest request) {

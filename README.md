@@ -1,6 +1,6 @@
 # IAT Academy — Plateforme e-learning
 
-Monorepo de la plateforme IAT Academy (20 modules, quiz, attestation PDF).
+Monorepo de la plateforme IAT Academy (formation 2 ans, 36 modules, quiz, attestation PDF).
 
 ## Stack
 

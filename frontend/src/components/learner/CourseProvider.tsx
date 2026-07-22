@@ -1,10 +1,10 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { getModule } from "@/lib/api";
-import type { ModuleDetail } from "@/types/domain";
-import { CourseSidebar } from "@/components/learner/CourseSidebar";
-import { ThemeToggleButton } from "@/components/ThemeToggleButton";
+import { getModule, getMyProgress } from "@/lib/api";
+import type { ModuleDetail, ModuleLearnerStatus } from "@/types/domain";
+import { CourseSidebar, type UfSidebarModule } from "@/components/learner/CourseSidebar";
+import { LearnerAppHeader } from "@/components/learner/LearnerAppHeader";
 import { ApiClientError } from "@/lib/api-client";
 
 type CourseContextValue = {
@@ -28,6 +28,14 @@ type ProviderProps = {
   children: React.ReactNode;
 };
 
+function normalizeDetail(data: ModuleDetail): ModuleDetail {
+  return {
+    ...data,
+    lessons: data.lessons || [],
+    quizzes: data.quizzes || [],
+  };
+}
+
 export function CourseProvider({
   moduleId,
   activeLessonId,
@@ -35,19 +43,77 @@ export function CourseProvider({
   children,
 }: ProviderProps) {
   const [module, setModule] = useState<ModuleDetail | null>(null);
+  const [ufTitle, setUfTitle] = useState("Unité de formation");
+  const [ufModules, setUfModules] = useState<UfSidebarModule[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [collapsed, setCollapsed] = useState(false);
 
   const reload = useCallback(async () => {
-    const data = await getModule(moduleId);
-    setModule({
-      ...data,
-      lessons: data.lessons || [],
-      quizzes: data.quizzes || [],
-    });
+    const [progress, currentDetail] = await Promise.all([getMyProgress(), getModule(moduleId)]);
+    const current = normalizeDetail(currentDetail);
+    setModule(current);
+
+    const summary = progress.modules.find((m) => m.id === moduleId);
+    const ufCode = summary?.ufCode ?? current.ufCode ?? null;
+    const title = summary?.ufTitle ?? current.ufTitle ?? "Unité de formation";
+    setUfTitle(title);
+
+    const siblings = progress.modules
+      .filter((m) => (ufCode ? m.ufCode === ufCode : m.id === moduleId))
+      .toSorted((a, b) => a.orderIndex - b.orderIndex);
+
+    const details = await Promise.all(
+      siblings.map(async (s) => {
+        const status = (s.learnerStatus ?? "LOCKED") as ModuleLearnerStatus;
+        const locked = status === "LOCKED";
+        if (locked) {
+          return {
+            id: s.id,
+            title: s.title,
+            learnerStatus: status,
+            orderIndex: s.orderIndex,
+            locked: true,
+            detail: null,
+          } satisfies UfSidebarModule;
+        }
+        if (s.id === moduleId) {
+          return {
+            id: s.id,
+            title: s.title,
+            learnerStatus: status,
+            orderIndex: s.orderIndex,
+            locked: false,
+            detail: current,
+          } satisfies UfSidebarModule;
+        }
+        try {
+          const detail = normalizeDetail(await getModule(s.id));
+          return {
+            id: s.id,
+            title: s.title,
+            learnerStatus: status,
+            orderIndex: s.orderIndex,
+            locked: false,
+            detail,
+          } satisfies UfSidebarModule;
+        } catch {
+          return {
+            id: s.id,
+            title: s.title,
+            learnerStatus: status,
+            orderIndex: s.orderIndex,
+            locked: true,
+            detail: null,
+          } satisfies UfSidebarModule;
+        }
+      })
+    );
+
+    setUfModules(details);
   }, [moduleId]);
 
   useEffect(() => {
+    setError(null);
     reload().catch((err) => {
       if (err instanceof ApiClientError && err.status === 403) {
         setError("Module verrouillé. Validez le module précédent.");
@@ -58,13 +124,18 @@ export function CourseProvider({
   }, [reload]);
 
   const setLessonCompleted = useCallback((lessonId: string, completed: boolean) => {
-    setModule((prev) => {
-      if (!prev) return prev;
+    const patch = (detail: ModuleDetail | null) => {
+      if (!detail) return detail;
       return {
-        ...prev,
-        lessons: prev.lessons.map((l) => (l.id === lessonId ? { ...l, completed } : l)),
+        ...detail,
+        lessons: detail.lessons.map((l) => (l.id === lessonId ? { ...l, completed } : l)),
       };
-    });
+    };
+
+    setModule((prev) => patch(prev));
+    setUfModules((prev) =>
+      prev.map((m) => (m.detail ? { ...m, detail: patch(m.detail) } : m))
+    );
   }, []);
 
   const value = useMemo(
@@ -75,23 +146,14 @@ export function CourseProvider({
   return (
     <CourseContext.Provider value={value}>
       <div className="flex h-screen flex-col">
-        <header className="app-header flex h-12 shrink-0 items-center justify-between px-4">
-          <div className="min-w-0">
-            <p className="truncate text-sm font-medium text-heading">
-              {module?.title ?? "Chargement…"}
-            </p>
-            <p className="eyebrow mt-0.5">IAT Academy · Mode lecture</p>
-          </div>
-          <ThemeToggleButton className="h-8 w-8" />
-        </header>
+        <LearnerAppHeader containerClassName="flex w-full items-center justify-between gap-4 px-4 py-3 sm:px-6" />
 
         <div className="flex min-h-0 flex-1">
-          {module && (
+          {ufModules.length > 0 && (
             <CourseSidebar
-              moduleId={moduleId}
-              moduleTitle={module.title}
-              lessons={module.lessons}
-              quizzes={module.quizzes}
+              ufTitle={ufTitle}
+              modules={ufModules}
+              activeModuleId={moduleId}
               activeLessonId={activeLessonId}
               activeQuizId={activeQuizId}
               collapsed={collapsed}

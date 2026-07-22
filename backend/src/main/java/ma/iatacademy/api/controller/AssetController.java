@@ -23,7 +23,7 @@ public class AssetController {
     private final MediaService mediaService;
 
     @PostMapping("/upload")
-    @PreAuthorize("hasAnyRole('ADMIN','FORMATEUR')")
+    @PreAuthorize("hasAnyRole('ADMIN','FORMATEUR','ETUDIANT')")
     public ResponseEntity<AssetResponse> upload(
             @RequestParam("file") MultipartFile file,
             @RequestParam(value = "kind", required = false) String kind

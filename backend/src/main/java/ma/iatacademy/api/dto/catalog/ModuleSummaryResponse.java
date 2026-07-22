@@ -6,10 +6,15 @@ import java.util.UUID;
 
 public record ModuleSummaryResponse(
         UUID id,
+        String code,
         String title,
         String description,
         int orderIndex,
+        Integer yearNumber,
+        String ufCode,
+        String ufTitle,
         boolean published,
-        ModuleLearnerStatus learnerStatus
+        ModuleLearnerStatus learnerStatus,
+        int progressPercent
 ) {
 }

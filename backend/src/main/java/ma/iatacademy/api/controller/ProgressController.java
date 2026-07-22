@@ -14,6 +14,7 @@ import ma.iatacademy.api.repository.FormationRepository;
 import ma.iatacademy.api.repository.LessonRepository;
 import ma.iatacademy.api.repository.ModuleRepository;
 import ma.iatacademy.api.security.UserPrincipal;
+import ma.iatacademy.api.service.CatalogService;
 import ma.iatacademy.api.service.ProgressionService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -45,14 +46,11 @@ public class ProgressController {
                 .findByFormationIdOrderByOrderIndexAsc(formation.getId());
 
         List<ModuleSummaryResponse> summaries = modules.stream()
-                .map(module -> new ModuleSummaryResponse(
-                        module.getId(),
-                        module.getTitle(),
-                        module.getDescription(),
-                        module.getOrderIndex(),
-                        module.isPublished(),
-                        progressionService.resolveModuleStatus(principal.getId(), module)
-                ))
+                .map(module -> {
+                    ModuleLearnerStatus status = progressionService.resolveModuleStatus(principal.getId(), module);
+                    int progressPercent = moduleProgressPercent(principal.getId(), module.getId(), status);
+                    return CatalogService.toModuleSummary(module, status, progressPercent);
+                })
                 .toList();
 
         long completed = summaries.stream()
@@ -120,6 +118,33 @@ public class ProgressController {
             @PathVariable UUID lessonId,
             @AuthenticationPrincipal UserPrincipal principal
     ) {
-        return ResponseEntity.ok(progressionService.markLessonCompleted(principal.getId(), lessonId));
+        return ResponseEntity.ok(
+                progressionService.markLessonCompleted(principal.getId(), lessonId));
+    }
+
+    private int moduleProgressPercent(UUID userId, UUID moduleId, ModuleLearnerStatus status) {
+        if (status == ModuleLearnerStatus.COMPLETED) {
+            return 100;
+        }
+        if (status == ModuleLearnerStatus.LOCKED) {
+            return 0;
+        }
+        var lessons = lessonRepository.findByModuleIdOrderByOrderIndexAsc(moduleId).stream()
+                .filter(l -> l.isPublished())
+                .toList();
+        if (lessons.isEmpty()) {
+            return status == ModuleLearnerStatus.IN_PROGRESS ? 5 : 0;
+        }
+        long done = lessons.stream()
+                .filter(l -> progressionService.isLessonCompleted(userId, l.getId()))
+                .count();
+        int percent = (int) Math.round(done * 100.0 / lessons.size());
+        if (status == ModuleLearnerStatus.IN_PROGRESS && percent == 0) {
+            return 5;
+        }
+        if (status != ModuleLearnerStatus.COMPLETED && percent >= 100) {
+            return 99;
+        }
+        return percent;
     }
 }

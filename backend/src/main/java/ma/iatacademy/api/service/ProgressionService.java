@@ -5,6 +5,7 @@ import ma.iatacademy.api.config.QuizProperties;
 import ma.iatacademy.api.domain.entity.Lesson;
 import ma.iatacademy.api.domain.entity.LessonProgress;
 import ma.iatacademy.api.domain.entity.ModuleEntity;
+import ma.iatacademy.api.domain.entity.User;
 import ma.iatacademy.api.domain.enums.AttemptStatus;
 import ma.iatacademy.api.domain.enums.ModuleLearnerStatus;
 import ma.iatacademy.api.domain.enums.QuizType;
@@ -23,12 +24,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
 /**
- * Progression rules (server-side).
- * TODO: à valider avec le client — defaults from Annexe A.
+ * Progression linéaire par UF.
+ * UF 5 / UF 11 : validation directeur requise pour débloquer la suite.
+ * Année 2 : ouverture auto à la date de rentrée (paramètres) si année 1 terminée.
  */
 @Service
 @RequiredArgsConstructor
@@ -41,6 +44,8 @@ public class ProgressionService {
     private final QuizAttemptRepository quizAttemptRepository;
     private final UserRepository userRepository;
     private final QuizProperties quizProperties;
+    private final AppSettingsService appSettingsService;
+    private final UfValidationService ufValidationService;
 
     @Transactional
     public LessonProgressResponse updateLessonProgress(UUID userId, UUID lessonId, int videoWatchedPercent) {
@@ -54,7 +59,6 @@ public class ProgressionService {
                         .build());
 
         progress.setVideoWatchedPercent(Math.max(progress.getVideoWatchedPercent(), videoWatchedPercent));
-        // TODO: à valider avec le client — default completion threshold 90%
         if (!progress.isCompleted()
                 && progress.getVideoWatchedPercent() >= quizProperties.getSectionCompletionVideoPercent()) {
             progress.setCompleted(true);
@@ -92,25 +96,49 @@ public class ProgressionService {
         }
         if (!isModuleAccessible(principal.getId(), module)) {
             throw new ForbiddenException(
-                    "Ce module est verrouillé. Validez le module précédent pour y accéder.");
+                    "Ce module est verrouillé. Terminez l'unité précédente "
+                            + "(et attendez la validation directeur pour Stage / Soutenance), "
+                            + "ou l'ouverture de l'année 2.");
         }
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public boolean isModuleAccessible(UUID userId, ModuleEntity module) {
-        if (module.getOrderIndex() <= 0) {
+        int year = yearOf(module);
+        if (year >= 2) {
+            ensureYear2AccessIfEligible(userId);
+            User user = userRepository.findById(userId)
+                    .orElseThrow(() -> new NotFoundException("Utilisateur introuvable."));
+            if (!user.isYear2AccessEnabled()) {
+                return false;
+            }
+        }
+
+        List<ModuleEntity> all = moduleRepository
+                .findByFormationIdOrderByOrderIndexAsc(module.getFormation().getId());
+        List<ModuleEntity> yearModules = all.stream()
+                .filter(m -> yearOf(m) == year)
+                .toList();
+
+        List<String> ufOrder = distinctUfOrder(yearModules);
+        String currentUf = ufKey(module);
+        int idx = ufOrder.indexOf(currentUf);
+        if (idx <= 0) {
             return true;
         }
-        return moduleRepository.findByFormationIdOrderByOrderIndexAsc(module.getFormation().getId())
-                .stream()
-                .filter(m -> m.getOrderIndex() == module.getOrderIndex() - 1)
-                .findFirst()
-                .map(prev -> isModuleCompleted(userId, prev.getId()))
-                .orElse(false);
+
+        String previousUf = ufOrder.get(idx - 1);
+        return isUfFullyDone(userId, previousUf, yearModules);
+    }
+
+    /** Contenu pédagogique terminé (leçons + quiz fin de module). */
+    @Transactional(readOnly = true)
+    public boolean isModuleCompleted(UUID userId, UUID moduleId) {
+        return isModuleContentCompleted(userId, moduleId);
     }
 
     @Transactional(readOnly = true)
-    public boolean isModuleCompleted(UUID userId, UUID moduleId) {
+    public boolean isModuleContentCompleted(UUID userId, UUID moduleId) {
         List<Lesson> lessons = lessonRepository.findByModuleIdOrderByOrderIndexAsc(moduleId);
         if (lessons.isEmpty()) {
             return false;
@@ -140,5 +168,68 @@ public class ProgressionService {
         return lessonProgressRepository.findByUserIdAndLessonId(userId, lessonId)
                 .map(LessonProgress::isCompleted)
                 .orElse(false);
+    }
+
+    @Transactional
+    public boolean isYear1FullyDone(UUID userId, UUID formationId) {
+        List<ModuleEntity> year1 = moduleRepository.findByFormationIdOrderByOrderIndexAsc(formationId)
+                .stream()
+                .filter(m -> yearOf(m) == 1)
+                .toList();
+        for (String uf : distinctUfOrder(year1)) {
+            if (!isUfFullyDone(userId, uf, year1)) {
+                return false;
+            }
+        }
+        return !year1.isEmpty();
+    }
+
+    private boolean isUfFullyDone(UUID userId, String ufCode, List<ModuleEntity> yearModules) {
+        boolean contentDone = yearModules.stream()
+                .filter(m -> ufCode.equals(ufKey(m)))
+                .allMatch(m -> isModuleContentCompleted(userId, m.getId()));
+        if (!contentDone) {
+            return false;
+        }
+        return ufValidationService.isValidated(userId, ufCode);
+    }
+
+    private void ensureYear2AccessIfEligible(UUID userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("Utilisateur introuvable."));
+        if (user.isYear2AccessEnabled()) {
+            return;
+        }
+        if (!appSettingsService.isYear2OpeningDateReached()) {
+            return;
+        }
+        UUID formationId = UUID.fromString("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
+        if (!isYear1FullyDone(userId, formationId)) {
+            return;
+        }
+        user.setYear2AccessEnabled(true);
+        userRepository.save(user);
+    }
+
+    private static int yearOf(ModuleEntity module) {
+        return module.getYearNumber() != null ? module.getYearNumber() : 1;
+    }
+
+    private static String ufKey(ModuleEntity module) {
+        if (module.getUfCode() != null && !module.getUfCode().isBlank()) {
+            return module.getUfCode();
+        }
+        return "UF-ORD-" + module.getOrderIndex();
+    }
+
+    private static List<String> distinctUfOrder(List<ModuleEntity> modules) {
+        List<String> order = new ArrayList<>();
+        for (ModuleEntity module : modules) {
+            String key = ufKey(module);
+            if (!order.contains(key)) {
+                order.add(key);
+            }
+        }
+        return order;
     }
 }

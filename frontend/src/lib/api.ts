@@ -88,6 +88,40 @@ export async function getMe() {
   return data;
 }
 
+export async function updateMyProfile(payload: {
+  fullName?: string;
+  phone?: string;
+  cin?: string;
+  birthDate?: string | null;
+  address?: string;
+}) {
+  const { data } = await apiClient.patch<User>("/api/auth/profile", payload);
+  return data;
+}
+
+export async function uploadMyAvatar(file: File) {
+  const form = new FormData();
+  form.append("file", file);
+  const { data } = await apiClient.post<User>("/api/auth/profile/avatar", form, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return data;
+}
+
+export async function adminUpdateUserProfile(
+  userId: string,
+  payload: {
+    fullName?: string;
+    phone?: string;
+    cin?: string;
+    birthDate?: string | null;
+    address?: string;
+  }
+) {
+  const { data } = await apiClient.patch<User>(`/api/admin/users/${userId}/profile`, payload);
+  return data;
+}
+
 export async function getMyProgress() {
   const { data } = await apiClient.get<ProgressResponse>("/api/progress/me");
   return data;
@@ -244,6 +278,7 @@ export type AppSettings = {
   supportEmail: string;
   registrationEnabled: boolean;
   defaultResetPassword: string;
+  year2OpeningDate?: string | null;
 };
 
 export async function getAppSettings() {
@@ -283,8 +318,154 @@ export async function setUserEnabled(userId: string, enabled: boolean) {
   return data;
 }
 
+export async function setUserYear2Access(userId: string, year2AccessEnabled: boolean) {
+  const { data } = await apiClient.patch<User>(`/api/admin/users/${userId}/year2-access`, {
+    year2AccessEnabled,
+  });
+  return data;
+}
+
 export async function unlockModuleForUser(userId: string, moduleId: string) {
   const { data } = await apiClient.post(`/api/admin/users/${userId}/unlock-module/${moduleId}`);
+  return data;
+}
+
+export async function openYear2ForAll() {
+  const { data } = await apiClient.post<{ message: string }>("/api/admin/year2/open-all");
+  return data;
+}
+
+export type LearnerDocType =
+  | "CONVENTION_ECOLE"
+  | "ASSURANCE"
+  | "CONVENTION_ENTREPRISE"
+  | "RAPPORT_STAGE"
+  | "PRESENTATION_SOUTENANCE";
+
+export type LearnerDossier = {
+  learnerId: string;
+  learnerName: string;
+  learnerEmail: string;
+  stageComplete: boolean;
+  soutenanceComplete: boolean;
+  slots: Array<{
+    docType: LearnerDocType;
+    label: string;
+    owner: "DIRECTOR" | "LEARNER";
+    section: "STAGE" | "SOUTENANCE";
+    required: boolean;
+    filled: boolean;
+    latestDocumentId: string | null;
+  }>;
+  documents: Array<{
+    id: string;
+    learnerId: string;
+    docType: LearnerDocType;
+    status: string;
+    assetId: string;
+    filename: string;
+    mimeType: string;
+    downloadUrl: string;
+    notes: string | null;
+    uploadedById: string;
+    uploadedByName: string;
+    createdAt: string;
+  }>;
+};
+
+export type DiplomaReady = {
+  certificateId: string;
+  userId: string;
+  learnerName: string;
+  email: string;
+  verificationCode: string;
+  issuedAt: string;
+  physicallyDelivered: boolean;
+  deliveredAt: string | null;
+  deliveredNote: string | null;
+};
+
+export async function getMyStageDossier() {
+  const { data } = await apiClient.get<LearnerDossier>("/api/stage/me");
+  return data;
+}
+
+export async function listStageDossiers() {
+  const { data } = await apiClient.get<LearnerDossier[]>("/api/stage/learners");
+  return data;
+}
+
+export async function getStageDossier(learnerId: string) {
+  const { data } = await apiClient.get<LearnerDossier>(`/api/stage/learners/${learnerId}`);
+  return data;
+}
+
+export async function uploadStageDocument(
+  learnerId: string | "me",
+  payload: { docType: LearnerDocType; assetId: string; notes?: string }
+) {
+  const path =
+    learnerId === "me"
+      ? "/api/stage/me/documents"
+      : `/api/stage/learners/${learnerId}/documents`;
+  const { data } = await apiClient.post(path, payload);
+  return data;
+}
+
+export async function deleteStageDocument(documentId: string) {
+  const { data } = await apiClient.delete<{ message: string }>(`/api/stage/documents/${documentId}`);
+  return data;
+}
+
+export async function listDiplomas() {
+  const { data } = await apiClient.get<DiplomaReady[]>("/api/admin/diplomas");
+  return data;
+}
+
+export async function markDiplomaDelivered(
+  certificateId: string,
+  delivered: boolean,
+  note?: string
+) {
+  const { data } = await apiClient.patch<DiplomaReady>(
+    `/api/admin/diplomas/${certificateId}/delivered`,
+    { delivered, note }
+  );
+  return data;
+}
+
+export async function downloadDiplomaPdf(certificateId: string) {
+  const { data } = await apiClient.get<Blob>(`/api/certificates/${certificateId}/download`, {
+    responseType: "blob",
+  });
+  return data;
+}
+
+export type UfValidation = {
+  ufCode: string;
+  validated: boolean;
+  validatedAt: string | null;
+  validatedByName: string | null;
+  note: string | null;
+};
+
+export async function getUfValidations(learnerId: string | "me") {
+  const path =
+    learnerId === "me"
+      ? "/api/stage/me/uf-validations"
+      : `/api/stage/learners/${learnerId}/uf-validations`;
+  const { data } = await apiClient.get<UfValidation[]>(path);
+  return data;
+}
+
+export async function validateLearnerUf(
+  learnerId: string,
+  payload: { ufCode: string; validated: boolean; note?: string }
+) {
+  const { data } = await apiClient.post<UfValidation>(
+    `/api/stage/learners/${learnerId}/uf-validations`,
+    payload
+  );
   return data;
 }
 

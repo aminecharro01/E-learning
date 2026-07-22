@@ -83,7 +83,7 @@ export default function AdminDashboardPage() {
         />
         <StatCard
           label="Modules publiés"
-          value={`${published}/${modules.length || 20}`}
+          value={`${published}/${modules.length || 36}`}
           hint={`${draft} brouillon(s)`}
           icon={<BookIcon className="size-6 text-heading" />}
         />
@@ -157,7 +157,7 @@ export default function AdminDashboardPage() {
         <div className="space-y-4 xl:col-span-4 md:space-y-6">
           <ComponentCard
             title="Attestations"
-            desc="Délivrées après validation des 20 modules"
+            desc="Délivrées après validation des 36 modules (cycle 2 ans)"
           >
             <div className="flex items-center gap-4">
               <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--neutral)]">

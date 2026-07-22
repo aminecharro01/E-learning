@@ -100,7 +100,7 @@ export default function AdminModulesPage() {
           <p className="eyebrow">Contenu</p>
           <h1 className="mt-1 text-2xl font-semibold text-heading">Cours & modules</h1>
           <p className="mt-1 text-sm text-muted">
-            {publishedCount}/{modules.length || 20} publiés — ouvrez le studio pour éditer sections
+            {publishedCount}/{modules.length || 36} publiés — ouvrez le studio pour éditer sections
             et médias
           </p>
         </div>

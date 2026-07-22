@@ -24,6 +24,9 @@ public class ModuleEntity extends AuditableEntity {
     @JoinColumn(name = "formation_id", nullable = false)
     private Formation formation;
 
+    @Column(length = 20)
+    private String code;
+
     @Column(nullable = false, length = 255)
     private String title;
 
@@ -32,6 +35,15 @@ public class ModuleEntity extends AuditableEntity {
 
     @Column(name = "order_index", nullable = false)
     private int orderIndex;
+
+    @Column(name = "year_number")
+    private Integer yearNumber;
+
+    @Column(name = "uf_code", length = 20)
+    private String ufCode;
+
+    @Column(name = "uf_title", length = 255)
+    private String ufTitle;
 
     @Column(nullable = false)
     @Builder.Default

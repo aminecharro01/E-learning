@@ -3,6 +3,7 @@ package ma.iatacademy.api.controller;
 import lombok.RequiredArgsConstructor;
 import ma.iatacademy.api.domain.entity.Certificate;
 import ma.iatacademy.api.dto.certificate.CertificateResponse;
+import ma.iatacademy.api.exception.ForbiddenException;
 import ma.iatacademy.api.security.UserPrincipal;
 import ma.iatacademy.api.service.CertificateService;
 import org.springframework.core.io.FileSystemResource;
@@ -17,6 +18,8 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.UUID;
+
 @RestController
 @RequestMapping("/api/certificates")
 @RequiredArgsConstructor
@@ -24,6 +27,7 @@ public class CertificateController {
 
     private final CertificateService certificateService;
 
+    /** Métadonnées uniquement — le PDF est réservé à l'école. */
     @GetMapping("/me")
     @PreAuthorize("hasRole('ETUDIANT')")
     public ResponseEntity<CertificateResponse> mine(@AuthenticationPrincipal UserPrincipal principal) {
@@ -33,8 +37,15 @@ public class CertificateController {
 
     @GetMapping("/me/download")
     @PreAuthorize("hasRole('ETUDIANT')")
-    public ResponseEntity<Resource> download(@AuthenticationPrincipal UserPrincipal principal) {
-        Certificate cert = certificateService.getMine(principal.getId());
+    public ResponseEntity<Resource> downloadMine() {
+        throw new ForbiddenException(
+                "Le diplôme PDF est remis physiquement à l'école et n'est pas téléchargeable par l'apprenant.");
+    }
+
+    @GetMapping("/{id}/download")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Resource> downloadForSchool(@PathVariable UUID id) {
+        Certificate cert = certificateService.getById(id);
         Resource resource = new FileSystemResource(cert.getPdfPath());
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"attestation-iat.pdf\"")
@@ -53,7 +64,9 @@ public class CertificateController {
                 cert.getVerificationCode(),
                 cert.getIssuedAt(),
                 cert.getFormation().getTitle(),
-                cert.getUser().getFullName() != null ? cert.getUser().getFullName() : cert.getUser().getEmail()
+                cert.getUser().getFullName() != null ? cert.getUser().getFullName() : cert.getUser().getEmail(),
+                cert.isPhysicallyDelivered(),
+                cert.getDeliveredAt()
         );
     }
 }

@@ -8,6 +8,8 @@ public record CertificateResponse(
         String verificationCode,
         Instant issuedAt,
         String formationTitle,
-        String learnerName
+        String learnerName,
+        boolean physicallyDelivered,
+        Instant deliveredAt
 ) {
 }

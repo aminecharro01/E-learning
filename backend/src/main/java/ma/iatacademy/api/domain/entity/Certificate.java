@@ -35,4 +35,14 @@ public class Certificate extends AuditableEntity {
 
     @Column(name = "pdf_path", length = 500)
     private String pdfPath;
+
+    @Column(name = "physically_delivered", nullable = false)
+    @Builder.Default
+    private boolean physicallyDelivered = false;
+
+    @Column(name = "delivered_at")
+    private Instant deliveredAt;
+
+    @Column(name = "delivered_note", columnDefinition = "TEXT")
+    private String deliveredNote;
 }

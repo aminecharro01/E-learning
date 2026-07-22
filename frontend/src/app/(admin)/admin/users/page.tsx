@@ -4,6 +4,8 @@ import { useCallback, useEffect, useState } from "react";
 import {
   listUsersPaged,
   setUserEnabled,
+  setUserYear2Access,
+  openYear2ForAll,
   updateUserRole,
   unlockModuleForUser,
   getMyProgress,
@@ -100,9 +102,16 @@ export default function AdminUsersPage() {
       key: "status",
       header: "Compte",
       render: (u) => (
-        <Badge color={u.enabled !== false ? "success" : "error"} size="sm">
-          {u.enabled !== false ? "Actif" : "Suspendu"}
-        </Badge>
+        <div className="flex flex-col gap-1">
+          <Badge color={u.enabled !== false ? "success" : "error"} size="sm">
+            {u.enabled !== false ? "Actif" : "En attente / suspendu"}
+          </Badge>
+          {u.role === "ETUDIANT" && (
+            <Badge color={u.year2AccessEnabled ? "success" : "light"} size="sm">
+              {u.year2AccessEnabled ? "Année 2 ouverte" : "Année 1"}
+            </Badge>
+          )}
+        </div>
       ),
     },
     {
@@ -117,6 +126,31 @@ export default function AdminUsersPage() {
           >
             {u.enabled === false ? "Activer" : "Suspendre"}
           </button>
+          {u.role === "ETUDIANT" && (
+            <button
+              type="button"
+              className={btn.secondaryXs}
+              disabled={busy}
+              onClick={() => {
+                setBusy(true);
+                void setUserYear2Access(u.id, !u.year2AccessEnabled)
+                  .then(() => reload(page, query))
+                  .then(() =>
+                    setMsg(
+                      u.year2AccessEnabled
+                        ? `Année 2 fermée pour ${u.email}`
+                        : `Année 2 ouverte pour ${u.email}`
+                    )
+                  )
+                  .catch((err) =>
+                    setError(err instanceof ApiClientError ? err.message : "Erreur année 2.")
+                  )
+                  .finally(() => setBusy(false));
+              }}
+            >
+              {u.year2AccessEnabled ? "Fermer A2" : "Ouvrir A2"}
+            </button>
+          )}
           <button
             type="button"
             className={btn.warningXs}
@@ -159,11 +193,32 @@ export default function AdminUsersPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold text-heading">Utilisateurs</h1>
-        <p className="mt-1 text-sm text-muted">
-          Rôles, suspension / activation, reset mot de passe (ADMIN)
-        </p>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-semibold text-heading">Utilisateurs</h1>
+          <p className="mt-1 text-sm text-muted">
+            Activation compte, ouverture année 2, rôles, reset mot de passe (ADMIN)
+          </p>
+        </div>
+        <button
+          type="button"
+          className={btn.primarySm}
+          disabled={busy}
+          onClick={() => {
+            setBusy(true);
+            void openYear2ForAll()
+              .then((res) => {
+                setMsg(res.message);
+                return reload(page, query);
+              })
+              .catch((err) =>
+                setError(err instanceof ApiClientError ? err.message : "Erreur ouverture A2.")
+              )
+              .finally(() => setBusy(false));
+          }}
+        >
+          Ouvrir année 2 (tous actifs)
+        </button>
       </div>
       {error && <p className="alert alert-error">{error}</p>}
       {msg && <p className="alert alert-success">{msg}</p>}

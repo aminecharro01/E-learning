@@ -62,13 +62,12 @@ function SectionContent() {
   return (
     <div className="mx-auto max-w-3xl px-6 py-8">
       <p className="text-xs text-muted">
-        <Link href="/app" className="hover:text-heading hover:underline">
-          Formation
-        </Link>
+        <span className="font-medium text-heading">{module?.title}</span>
         {" · "}
-        <span>{module?.title}</span>
-        {" · "}
-        <span className="text-body">Section {idx >= 0 ? idx + 1 : "—"}</span>
+        <span>Section {idx >= 0 ? idx + 1 : "—"}</span>
+        {lessons.length > 0 ? (
+          <span className="text-muted"> / {lessons.length}</span>
+        ) : null}
       </p>
 
       {error && <p className="alert alert-error mt-4">{error}</p>}

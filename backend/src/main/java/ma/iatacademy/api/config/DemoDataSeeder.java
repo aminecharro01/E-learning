@@ -19,8 +19,9 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * Seeds realistic demo content (modules titles, lessons, TipTap HTML, quizzes, progress).
+ * Seeds demo lessons/quizzes on the official 2-year programme modules.
  * Idempotent via marker lesson "Bienvenue à IAT Academy".
+ * Does not rename official module titles from Flyway V3.
  */
 @Slf4j
 @Component
@@ -31,29 +32,6 @@ public class DemoDataSeeder implements ApplicationRunner {
     private static final UUID FORMATION_ID =
             UUID.fromString("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
     private static final String DEMO_MARKER = "Bienvenue à IAT Academy";
-
-    private static final String[][] MODULES = {
-            {"Introduction à l'aviation civile", "Panorama du transport aérien, acteurs et vocabulaire de base."},
-            {"Sûreté aéroportuaire", "Contrôles d'accès, screening et procédures de sûreté."},
-            {"Réglementation ICAO & IATA", "Cadre normatif international et obligations opérationnelles."},
-            {"Accueil et parcours passager", "Parcours client : check-in, embouteillage, embarquement."},
-            {"Gestion des bagages", "Traçabilité, livraison, bagages spéciaux et litiges."},
-            {"Opérations au sol (Ground Ops)", "Coordination piste, handling et turnaround."},
-            {"Sécurité incendie & évacuation", "Risques incendie, équipements et exercices."},
-            {"Premiers secours aéroportuaires", "Gestes d'urgence et chaîne d'alerte."},
-            {"Communication radio et phraseologie", "Échanges sol–air et discipline radio."},
-            {"Fret et cargo aérien", "Documents, dangereuses goods et flux cargo."},
-            {"Documents de voyage", "Passeports, visas, contrôles frontière."},
-            {"Contrôle d'accès zones réservées", "Badges, escortes et zones sterile."},
-            {"Gestion des situations d'urgence", "Plans d'urgence et rôles du personnel."},
-            {"Qualité de service aéroportuaire", "Standards de service et mesure de la satisfaction."},
-            {"Soft skills & orientation client", "Communication, stress et relation passager."},
-            {"Anglais professionnel aéroport", "Phrases clés check-in, boarding et handling."},
-            {"Systèmes d'information aéroportuaire", "DCS, FIDS et outils collaboratifs."},
-            {"RSE et responsabilité professionnelle", "Éthique, conformité et environnement."},
-            {"Mise en situation pratique", "Cas pratiques transverses de la formation."},
-            {"Préparation à la certification", "Révisions, quiz final et attestation IAT Academy."}
-    };
 
     private final ModuleRepository moduleRepository;
     private final LessonRepository lessonRepository;
@@ -76,8 +54,6 @@ public class DemoDataSeeder implements ApplicationRunner {
             return;
         }
 
-        renameModules(modules);
-
         boolean demoReady = lessonRepository.findAll().stream()
                 .anyMatch(l -> DEMO_MARKER.equals(l.getTitle()));
         if (demoReady) {
@@ -94,11 +70,11 @@ public class DemoDataSeeder implements ApplicationRunner {
         seedModuleRich(modules.get(0), MODULE_1_LESSONS);
         seedModuleRich(modules.get(1), MODULE_2_LESSONS);
         seedModuleRich(modules.get(2), MODULE_3_LESSONS);
-        seedModuleLight(modules.get(3), List.of("Parcours passager type", "Points de contact", "Gestion des files d'attente"));
-        seedModuleLight(modules.get(4), List.of("Chaîne bagages", "Tags et tracking", "Réclamations"));
+        seedModuleLight(modules.get(3), List.of("Attitude professionnelle", "Présentation", "Savoir-être"));
+        seedModuleLight(modules.get(4), List.of("Techniques d'animation", "Jeux de rôle", "Gestion de groupe"));
 
-        seedFinModuleQuiz(modules.get(0), "Quiz — Introduction aviation", QUIZ_1);
-        seedFinModuleQuiz(modules.get(1), "Quiz — Sûreté aéroportuaire", QUIZ_2);
+        seedFinModuleQuiz(modules.get(0), "Quiz — Techniques de communication", QUIZ_1);
+        seedFinModuleQuiz(modules.get(1), "Quiz — Français", QUIZ_2);
 
         seedDemoProgress(modules);
         log.warn("Demo content ready. Login: apprenant@iat-academy.local / Apprenant@123");
@@ -134,18 +110,10 @@ public class DemoDataSeeder implements ApplicationRunner {
                 .fullName(fullName)
                 .role(role)
                 .enabled(true)
+                .paymentStatus(role == Role.ETUDIANT ? PaymentStatus.PAID : PaymentStatus.EXEMPTED)
+                .activatedAt(Instant.now())
                 .build());
         log.warn("Demo user created: {} / {} ({})", email, password, role);
-    }
-
-    private void renameModules(List<ModuleEntity> modules) {
-        for (int i = 0; i < modules.size() && i < MODULES.length; i++) {
-            ModuleEntity m = modules.get(i);
-            m.setTitle(MODULES[i][0]);
-            m.setDescription(MODULES[i][1]);
-            m.setPublished(true);
-        }
-        moduleRepository.saveAll(modules);
     }
 
     private void seedModuleRich(ModuleEntity module, List<LessonSpec> specs) {
@@ -277,7 +245,7 @@ public class DemoDataSeeder implements ApplicationRunner {
                     <ul>
                       <li>Comprendre l'écosystème aviation civile</li>
                       <li>Maîtriser la sûreté et la réglementation</li>
-                      <li>Valider 20 modules + attestation PDF</li>
+                      <li>Valider 36 modules (cycle 2 ans) + attestation PDF</li>
                     </ul>
                     <blockquote>Conseil : utilisez la barre latérale pour naviguer entre les sections, comme sur Coursera.</blockquote>
                     """),

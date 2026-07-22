@@ -40,6 +40,12 @@ const appSchema = z.object({
   supportEmail: z.string().trim().email("Email invalide").or(z.literal("")),
   registrationEnabled: z.boolean(),
   defaultResetPassword: z.string().min(8).max(100),
+  year2OpeningDate: z
+    .string()
+    .optional()
+    .nullable()
+    .transform((v) => (v && v.trim() ? v.trim() : null))
+    .refine((v) => v === null || /^\d{4}-\d{2}-\d{2}$/.test(v), "Date invalide (AAAA-MM-JJ)"),
 });
 
 type AppValues = z.infer<typeof appSchema>;
@@ -213,7 +219,7 @@ export default function AdminSettingsPage() {
       {tab === "app" && isAdmin && (
         <ComponentCard
           title="Paramètres application"
-          desc="Nom, support, inscriptions, mot de passe temporaire de réinitialisation"
+          desc="Nom, support, inscriptions, rentrée année 2, mot de passe temporaire"
         >
           {loading ? (
             <p className="text-sm text-muted">Chargement…</p>
@@ -227,6 +233,17 @@ export default function AdminSettingsPage() {
                   type="email"
                   className={inputClass}
                   {...appForm.register("supportEmail")}
+                />
+              </FormField>
+              <FormField
+                label="Date de rentrée année 2"
+                error={appForm.formState.errors.year2OpeningDate}
+                hint="Ouverture automatique de l'année 2 à cette date pour les apprenants ayant terminé l'année 1 (UF 5 validée). Laisser vide pour désactiver."
+              >
+                <input
+                  type="date"
+                  className={inputClass}
+                  {...appForm.register("year2OpeningDate")}
                 />
               </FormField>
               <FormField

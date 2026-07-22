@@ -62,12 +62,18 @@ public class CertificateService {
     }
 
     @Transactional(readOnly = true)
+    public Certificate getById(UUID id) {
+        return certificateRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Attestation introuvable."));
+    }
+
+    @Transactional(readOnly = true)
     public Certificate getMine(UUID userId) {
         // Default seeded formation
         UUID formationId = UUID.fromString("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
         return certificateRepository.findByUserIdAndFormationId(userId, formationId)
                 .orElseThrow(() -> new NotFoundException(
-                        "Aucune attestation disponible. Validez les 20 modules d'abord."));
+                        "Aucune attestation disponible. Validez les 36 modules du cycle (2 ans) d'abord."));
     }
 
     @Transactional(readOnly = true)

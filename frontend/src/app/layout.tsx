@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "IAT Academy",
-  description: "Plateforme e-learning IAT Academy — 20 modules, quiz, attestation",
+  description: "Plateforme e-learning IAT Academy — formation 2 ans, 36 modules, quiz, attestation",
 };
 
 const themeInitScript = `

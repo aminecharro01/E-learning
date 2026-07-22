@@ -1,6 +1,8 @@
 package ma.iatacademy.api.service;
 
 import lombok.RequiredArgsConstructor;
+import ma.iatacademy.api.domain.entity.Certificate;
+import ma.iatacademy.api.domain.entity.Certificate;
 import ma.iatacademy.api.domain.entity.Formation;
 import ma.iatacademy.api.domain.entity.LessonProgress;
 import ma.iatacademy.api.domain.entity.ModuleEntity;
@@ -10,6 +12,7 @@ import ma.iatacademy.api.domain.enums.Role;
 import ma.iatacademy.api.dto.MessageResponse;
 import ma.iatacademy.api.dto.UserResponse;
 import ma.iatacademy.api.dto.admin.AdminStatsResponse;
+import ma.iatacademy.api.dto.admin.DiplomaReadyResponse;
 import ma.iatacademy.api.dto.admin.LearnerProgressDetailResponse;
 import ma.iatacademy.api.dto.admin.LearnerSummaryResponse;
 import ma.iatacademy.api.dto.admin.ResetPasswordResponse;
@@ -189,7 +192,97 @@ public class AdminService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException("Utilisateur introuvable."));
         user.setEnabled(enabled);
+        if (enabled && user.getActivatedAt() == null) {
+            user.setActivatedAt(java.time.Instant.now());
+            if (user.getPaymentStatus() == ma.iatacademy.api.domain.enums.PaymentStatus.PENDING) {
+                user.setPaymentStatus(ma.iatacademy.api.domain.enums.PaymentStatus.PAID);
+            }
+        }
         return toUserResponse(user);
+    }
+
+    @Transactional
+    public UserResponse setYear2Access(UUID userId, boolean year2AccessEnabled) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("Utilisateur introuvable."));
+        if (user.getRole() != Role.ETUDIANT) {
+            throw new ApiException("L'accès année 2 ne s'applique qu'aux apprenants.");
+        }
+        user.setYear2AccessEnabled(year2AccessEnabled);
+        return toUserResponse(user);
+    }
+
+    @Transactional
+    public UserResponse updateUserProfile(UUID userId, ma.iatacademy.api.dto.UpdateProfileRequest request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("Utilisateur introuvable."));
+        if (request.fullName() != null && !request.fullName().isBlank()) {
+            user.setFullName(request.fullName().trim());
+        }
+        if (request.phone() != null) {
+            String phone = request.phone().trim();
+            user.setPhone(phone.isEmpty() ? null : phone);
+        }
+        if (request.cin() != null) {
+            String cin = request.cin().trim();
+            user.setCin(cin.isEmpty() ? null : cin);
+        }
+        if (request.birthDate() != null) {
+            user.setBirthDate(request.birthDate());
+        }
+        if (request.address() != null) {
+            String address = request.address().trim();
+            user.setAddress(address.isEmpty() ? null : address);
+        }
+        return toUserResponse(user);
+    }
+
+    @Transactional
+    public MessageResponse openYear2ForAllEnabledLearners() {
+        List<User> learners = userRepository.findAll().stream()
+                .filter(u -> u.getRole() == Role.ETUDIANT && u.isEnabled())
+                .toList();
+        for (User learner : learners) {
+            learner.setYear2AccessEnabled(true);
+        }
+        return new MessageResponse(learners.size() + " apprenant(s) actif(s) : année 2 ouverte.");
+    }
+
+    @Transactional(readOnly = true)
+    public List<DiplomaReadyResponse> listDiplomas() {
+        return certificateRepository.findAll(Sort.by(Sort.Direction.DESC, "issuedAt")).stream()
+                .map(c -> new DiplomaReadyResponse(
+                        c.getId(),
+                        c.getUser().getId(),
+                        c.getUser().getFullName() != null ? c.getUser().getFullName() : c.getUser().getEmail(),
+                        c.getUser().getEmail(),
+                        c.getVerificationCode(),
+                        c.getIssuedAt(),
+                        c.isPhysicallyDelivered(),
+                        c.getDeliveredAt(),
+                        c.getDeliveredNote()
+                ))
+                .toList();
+    }
+
+    @Transactional
+    public DiplomaReadyResponse markDiplomaDelivered(UUID certificateId, boolean delivered, String note) {
+        Certificate cert = certificateRepository.findById(certificateId)
+                .orElseThrow(() -> new NotFoundException("Diplôme introuvable."));
+        cert.setPhysicallyDelivered(delivered);
+        cert.setDeliveredAt(delivered ? java.time.Instant.now() : null);
+        cert.setDeliveredNote(note != null && !note.isBlank() ? note.trim() : null);
+        return new DiplomaReadyResponse(
+                cert.getId(),
+                cert.getUser().getId(),
+                cert.getUser().getFullName() != null ? cert.getUser().getFullName() : cert.getUser().getEmail(),
+                cert.getUser().getEmail(),
+                cert.getVerificationCode(),
+                cert.getIssuedAt(),
+                cert.isPhysicallyDelivered(),
+                cert.getDeliveredAt(),
+                cert.getDeliveredNote()
+        );
     }
 
     @Transactional
@@ -247,7 +340,7 @@ public class AdminService {
     }
 
     private UserResponse toUserResponse(User u) {
-        return new UserResponse(u.getId(), u.getEmail(), u.getFullName(), u.getRole(), u.isEnabled());
+        return AuthService.toResponse(u);
     }
 
     private boolean matchesQuery(User u, String q) {

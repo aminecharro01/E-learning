@@ -7,6 +7,8 @@ public record AppSettingsRequest(
         @NotBlank @Size(max = 120) String platformName,
         @Size(max = 180) String supportEmail,
         boolean registrationEnabled,
-        @NotBlank @Size(min = 8, max = 100) String defaultResetPassword
+        @NotBlank @Size(min = 8, max = 100) String defaultResetPassword,
+        /** Date ISO yyyy-MM-dd ou vide pour désactiver l'ouverture auto. */
+        String year2OpeningDate
 ) {
 }

@@ -44,7 +44,14 @@ export default function SignInForm() {
       if (err instanceof ApiClientError) {
         if (err.status === 401) setError("Identifiants incorrects.");
         else if (err.status === 429) setError("Trop de tentatives. Réessayez dans 15 minutes.");
-        else setError(err.message);
+        else if (
+          err.message.toLowerCase().includes("activation") ||
+          err.message.toLowerCase().includes("attente")
+        ) {
+          setError(
+            "Votre compte est en attente d'activation par le directeur de l'académie (après paiement)."
+          );
+        } else setError(err.message);
       } else {
         setError("Serveur indisponible.");
       }

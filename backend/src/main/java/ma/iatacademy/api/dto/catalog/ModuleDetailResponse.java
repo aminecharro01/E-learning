@@ -8,9 +8,13 @@ import java.util.UUID;
 public record ModuleDetailResponse(
         UUID id,
         UUID formationId,
+        String code,
         String title,
         String description,
         int orderIndex,
+        Integer yearNumber,
+        String ufCode,
+        String ufTitle,
         boolean published,
         ModuleLearnerStatus learnerStatus,
         List<LessonSummaryResponse> lessons,

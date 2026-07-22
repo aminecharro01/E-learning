@@ -4,6 +4,7 @@ public record AppSettingsResponse(
         String platformName,
         String supportEmail,
         boolean registrationEnabled,
-        String defaultResetPassword
+        String defaultResetPassword,
+        String year2OpeningDate
 ) {
 }
