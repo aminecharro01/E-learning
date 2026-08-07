@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { iat } from "./content";
 import { BrandLogo } from "@/components/brand/BrandLogo";
+import { ThemeToggleButton } from "@/components/ThemeToggleButton";
 
 export function LandingHeader() {
   const [sticky, setSticky] = useState(false);
@@ -32,7 +33,7 @@ export function LandingHeader() {
       className={`landing-header fixed top-0 z-40 w-full transition-[background-color,box-shadow,padding] duration-300 ${sticky ? "is-sticky" : "is-hero"}`}
     >
       <div className="landing-container flex items-center justify-between gap-4">
-        <BrandLogo href="#home" size="md" showWordmark className="landing-brand shrink-0" />
+        <BrandLogo href="#home" size="lg" className="landing-brand shrink-0" />
 
         <nav className="landing-nav-pill hidden items-center gap-1 lg:flex" aria-label="Navigation principale">
           {iat.nav.map((item) => (
@@ -43,6 +44,7 @@ export function LandingHeader() {
         </nav>
 
         <div className="hidden items-center gap-3 lg:flex">
+          <ThemeToggleButton className="landing-theme-toggle" />
           <Link href="/login" className="landing-btn-ghost-nav">
             Connexion
           </Link>
@@ -51,18 +53,21 @@ export function LandingHeader() {
           </Link>
         </div>
 
-        <button
-          type="button"
-          className="landing-menu-btn lg:hidden"
-          aria-label={open ? "Fermer le menu" : "Ouvrir le menu"}
-          aria-expanded={open}
-          aria-controls="landing-mobile-menu"
-          onClick={() => setOpen((current) => !current)}
-        >
-          <span />
-          <span />
-          <span />
-        </button>
+        <div className="flex items-center gap-1 lg:hidden">
+          <ThemeToggleButton className="landing-theme-toggle" />
+          <button
+            type="button"
+            className="landing-menu-btn"
+            aria-label={open ? "Fermer le menu" : "Ouvrir le menu"}
+            aria-expanded={open}
+            aria-controls="landing-mobile-menu"
+            onClick={() => setOpen((current) => !current)}
+          >
+            <span />
+            <span />
+            <span />
+          </button>
+        </div>
       </div>
 
       {open && (
@@ -81,7 +86,7 @@ export function LandingHeader() {
             aria-label="Navigation principale"
           >
             <div className="mb-6 flex items-center justify-between">
-              <BrandLogo href="#home" size="sm" showWordmark />
+              <BrandLogo href="#home" size="md" />
               <button
                 type="button"
                 onClick={() => setOpen(false)}

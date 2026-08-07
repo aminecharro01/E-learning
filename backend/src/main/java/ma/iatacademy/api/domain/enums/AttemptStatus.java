@@ -5,5 +5,7 @@ public enum AttemptStatus {
     SUBMITTED,
     EXPIRED,
     PASSED,
-    FAILED
+    FAILED,
+    /** Contient au moins une question ESSAY non encore corrigée manuellement. */
+    PENDING_REVIEW
 }

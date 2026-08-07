@@ -1,14 +1,27 @@
 import apiClient from "@/lib/api-client";
 import type {
   AdminStats,
+  AgendaItem,
+  AuditLogEntryItem,
+  Badge,
   Certificate,
+  EnrollmentMode,
   Lesson,
   LessonBlock,
+  LessonComment,
+  GroupAssignment,
+  GroupImportResult,
+  GroupMember,
+  LearnerGroup,
   Module,
   ModuleDetail,
+  NotificationListResponse,
+  ProctoringEvent,
   ProgressResponse,
   Question,
   Quiz,
+  SearchResultItem,
+  SignoffInviteView,
   User,
 } from "@/types/domain";
 
@@ -70,12 +83,38 @@ export async function login(email: string, password: string) {
   return data;
 }
 
-export async function register(email: string, password: string, fullName: string) {
-  const { data } = await apiClient.post<User>("/api/auth/register", {
-    email,
-    password,
-    fullName,
-  });
+export async function verifyTotpLogin(pendingToken: string, code: string) {
+  const { data } = await apiClient.post<User>("/api/auth/verify-2fa", { pendingToken, code });
+  return data;
+}
+
+export async function enableTotp() {
+  const { data } = await apiClient.post<{ secret: string; otpauthUri: string }>("/api/auth/2fa/enable");
+  return data;
+}
+
+export async function confirmTotp(code: string) {
+  const { data } = await apiClient.post<{ message: string }>("/api/auth/2fa/confirm", { code });
+  return data;
+}
+
+export async function disableTotp(code: string) {
+  const { data } = await apiClient.post<{ message: string }>("/api/auth/2fa/disable", { code });
+  return data;
+}
+
+export async function register(payload: {
+  civility: "MR" | "MME";
+  fullName: string;
+  city: string;
+  phone: string;
+  email: string;
+  educationLevel: string;
+  lastSchoolType: string;
+  password: string;
+  termsAccepted: boolean;
+}) {
+  const { data } = await apiClient.post<User>("/api/auth/register", payload);
   return data;
 }
 
@@ -147,6 +186,53 @@ export async function getLesson(lessonId: string) {
   return data;
 }
 
+export async function getLessonComments(lessonId: string) {
+  const { data } = await apiClient.get<LessonComment[]>(`/api/lessons/${lessonId}/comments`);
+  return data;
+}
+
+export async function createLessonComment(lessonId: string, body: string, parentId?: string) {
+  const { data } = await apiClient.post<LessonComment>(`/api/lessons/${lessonId}/comments`, { body, parentId });
+  return data;
+}
+
+export async function getModuleComments(moduleId: string) {
+  const { data } = await apiClient.get<LessonComment[]>(`/api/modules/${moduleId}/comments`);
+  return data;
+}
+
+export async function createModuleComment(moduleId: string, body: string, parentId?: string) {
+  const { data } = await apiClient.post<LessonComment>(`/api/modules/${moduleId}/comments`, { body, parentId });
+  return data;
+}
+
+export async function hideLessonComment(commentId: string) {
+  const { data } = await apiClient.post<{ message: string }>(`/api/lessons/comments/${commentId}/hide`);
+  return data;
+}
+
+export async function unhideLessonComment(commentId: string) {
+  const { data } = await apiClient.post<{ message: string }>(`/api/lessons/comments/${commentId}/unhide`);
+  return data;
+}
+
+export async function pinLessonComment(commentId: string) {
+  const { data } = await apiClient.post<{ message: string }>(`/api/lessons/comments/${commentId}/pin`);
+  return data;
+}
+
+export async function unpinLessonComment(commentId: string) {
+  const { data } = await apiClient.post<{ message: string }>(`/api/lessons/comments/${commentId}/unpin`);
+  return data;
+}
+
+export async function getCommentModerationQueue(page = 0, size = 20) {
+  const { data } = await apiClient.get<PageResponse<LessonComment>>("/api/admin/comments/moderation", {
+    params: { page, size },
+  });
+  return data;
+}
+
 export async function createLesson(
   moduleId: string,
   payload: { title: string; orderIndex: number; published?: boolean }
@@ -157,7 +243,15 @@ export async function createLesson(
 
 export async function updateModule(
   moduleId: string,
-  payload: { title: string; description?: string; orderIndex: number; published?: boolean }
+  payload: {
+    title: string;
+    description?: string;
+    orderIndex: number;
+    published?: boolean;
+    yearNumber?: number;
+    ufCode?: string;
+    ufTitle?: string;
+  }
 ) {
   const { data } = await apiClient.put<Module>(`/api/modules/${moduleId}`, payload);
   return data;
@@ -177,6 +271,27 @@ export async function deleteLesson(lessonId: string) {
 
 export async function createQuiz(payload: Record<string, unknown>) {
   const { data } = await apiClient.post<Quiz>("/api/quiz", payload);
+  return data;
+}
+
+export type QuizAttemptAdmin = {
+  id: string;
+  userId: string;
+  userFullName: string;
+  status: string;
+  score: number | null;
+  startedAt: string;
+  submittedAt: string | null;
+  proctoringEventCount: number;
+};
+
+export async function listQuizAttemptsForStaff(quizId: string) {
+  const { data } = await apiClient.get<QuizAttemptAdmin[]>(`/api/quiz/${quizId}/attempts/all`);
+  return data;
+}
+
+export async function getProctoringEvents(attemptId: string) {
+  const { data } = await apiClient.get<ProctoringEvent[]>(`/api/quiz/attempts/${attemptId}/proctoring-events`);
   return data;
 }
 
@@ -218,6 +333,287 @@ export async function updateQuizQuestion(
 
 export async function deleteQuizQuestion(quizId: string, questionId: string) {
   await apiClient.delete(`/api/quiz/${quizId}/questions/${questionId}`);
+}
+
+export type QuestionBank = { id: string; name: string; description: string | null; questionCount: number };
+
+export async function listQuestionBanks() {
+  const { data } = await apiClient.get<QuestionBank[]>("/api/question-banks");
+  return data;
+}
+
+export async function createQuestionBank(name: string, description?: string) {
+  const { data } = await apiClient.post<QuestionBank>("/api/question-banks", { name, description });
+  return data;
+}
+
+export async function deleteQuestionBank(bankId: string) {
+  await apiClient.delete(`/api/question-banks/${bankId}`);
+}
+
+export async function listBankQuestions(bankId: string) {
+  const { data } = await apiClient.get<Question[]>(`/api/question-banks/${bankId}/questions`);
+  return data;
+}
+
+export async function addBankQuestion(bankId: string, payload: Record<string, unknown>) {
+  const { data } = await apiClient.post<Question>(`/api/question-banks/${bankId}/questions`, payload);
+  return data;
+}
+
+export async function deleteBankQuestion(bankId: string, questionId: string) {
+  await apiClient.delete(`/api/question-banks/${bankId}/questions/${questionId}`);
+}
+
+export async function getPendingReviewAttempts(quizId?: string) {
+  const { data } = await apiClient.get<
+    {
+      attemptId: string;
+      quizId: string;
+      quizTitle: string;
+      userId: string;
+      userFullName: string;
+      submittedAt: string;
+      essayAnswers: {
+        questionId: string;
+        prompt: string;
+        submittedText: string | null;
+        graded: boolean;
+        score: number | null;
+        feedback: string | null;
+      }[];
+    }[]
+  >("/api/quiz/attempts/pending-review", { params: quizId ? { quizId } : undefined });
+  return data;
+}
+
+export type Assignment = {
+  id: string;
+  moduleId: string;
+  title: string;
+  description: string | null;
+  dueAt: string | null;
+  maxScore: number;
+  submissionCount: number;
+};
+
+export type Submission = {
+  id: string;
+  assignmentId: string;
+  userId: string;
+  userFullName: string;
+  assetId: string | null;
+  submittedAt: string;
+  status: "SUBMITTED" | "LATE" | "GRADED";
+  grade: number | null;
+  feedback: string | null;
+};
+
+export async function sendLessonHeartbeat(lessonId: string, deltaSeconds: number) {
+  await apiClient.post(`/api/lessons/${lessonId}/heartbeat`, { deltaSeconds }).catch(() => undefined);
+}
+
+export type Conversation = {
+  id: string;
+  type: "DIRECT" | "COHORT_ROOM";
+  title: string;
+  lastMessagePreview: string | null;
+  lastMessageAt: string | null;
+};
+
+export type ChatMessage = { id: string; senderId: string; senderName: string; body: string; createdAt: string };
+
+export async function listConversations() {
+  const { data } = await apiClient.get<Conversation[]>("/api/conversations");
+  return data;
+}
+
+export async function getOrCreateDirectConversation(otherUserId: string) {
+  const { data } = await apiClient.post<{ conversationId: string }>(`/api/conversations/direct/${otherUserId}`);
+  return data.conversationId;
+}
+
+export async function listConversationMessages(conversationId: string, since?: string) {
+  const { data } = await apiClient.get<ChatMessage[]>(`/api/conversations/${conversationId}/messages`, {
+    params: since ? { since } : undefined,
+  });
+  return data;
+}
+
+export async function sendConversationMessage(conversationId: string, body: string) {
+  const { data } = await apiClient.post<ChatMessage>(`/api/conversations/${conversationId}/messages`, { body });
+  return data;
+}
+
+export type Campaign = {
+  id: string;
+  subject: string;
+  status: "DRAFT" | "SENDING" | "SENT" | "FAILED";
+  targetAudience: "NEWSLETTER_SUBSCRIBERS" | "ALL_STUDENTS" | "SPECIFIC_GROUP";
+  sentAt: string | null;
+  recipientCount: number;
+  sentCount: number;
+  failedCount: number;
+};
+
+export async function listCampaigns() {
+  const { data } = await apiClient.get<Campaign[]>("/api/admin/campaigns");
+  return data;
+}
+
+export async function createCampaign(payload: {
+  subject: string;
+  htmlBody: string;
+  targetAudience: Campaign["targetAudience"];
+  targetGroupId?: string;
+}) {
+  const { data } = await apiClient.post<Campaign>("/api/admin/campaigns", payload);
+  return data;
+}
+
+export async function sendCampaign(campaignId: string) {
+  const { data } = await apiClient.post<{ message: string }>(`/api/admin/campaigns/${campaignId}/send`);
+  return data;
+}
+
+export type VirtualSession = {
+  id: string;
+  moduleId: string | null;
+  groupId: string;
+  groupName: string;
+  title: string;
+  provider: "ZOOM" | "GOOGLE_MEET" | "JITSI" | "OTHER";
+  joinUrl: string;
+  scheduledAt: string;
+  durationMinutes: number;
+};
+
+export async function listGroupSessions(groupId: string) {
+  const { data } = await apiClient.get<VirtualSession[]>(`/api/groups/${groupId}/sessions`);
+  return data;
+}
+
+export async function createVirtualSession(payload: {
+  moduleId?: string;
+  groupId: string;
+  title: string;
+  provider: VirtualSession["provider"];
+  joinUrl: string;
+  scheduledAt: string;
+  durationMinutes?: number;
+}) {
+  const { data } = await apiClient.post<VirtualSession>("/api/admin/sessions", payload);
+  return data;
+}
+
+export async function deleteVirtualSession(sessionId: string) {
+  await apiClient.delete(`/api/admin/sessions/${sessionId}`);
+}
+
+export async function getInactiveStudents(days = 7) {
+  const { data } = await apiClient.get<
+    { userId: string; fullName: string; lastActivity: string | null; daysInactive: number }[]
+  >("/api/admin/analytics/inactive-students", { params: { days } });
+  return data;
+}
+
+export async function getModuleTimeBreakdown(moduleId: string) {
+  const { data } = await apiClient.get<{ lessonId: string; lessonTitle: string; totalSeconds: number }[]>(
+    `/api/admin/analytics/modules/${moduleId}/time`
+  );
+  return data;
+}
+
+export async function listModuleAssignments(moduleId: string) {
+  const { data } = await apiClient.get<Assignment[]>(`/api/modules/${moduleId}/assignments`);
+  return data;
+}
+
+export type LearnerAssignment = {
+  id: string;
+  moduleId: string;
+  moduleTitle: string;
+  title: string;
+  description: string | null;
+  dueAt: string | null;
+  maxScore: number;
+  mySubmission: Submission | null;
+};
+
+export async function listMyAssignments(moduleId: string) {
+  const { data } = await apiClient.get<LearnerAssignment[]>(`/api/modules/${moduleId}/assignments/mine`);
+  return data;
+}
+
+export async function createAssignment(payload: {
+  moduleId: string;
+  title: string;
+  description?: string;
+  dueAt?: string;
+  maxScore?: number;
+}) {
+  const { data } = await apiClient.post<Assignment>("/api/admin/assignments", payload);
+  return data;
+}
+
+export async function deleteAssignment(assignmentId: string) {
+  await apiClient.delete(`/api/admin/assignments/${assignmentId}`);
+}
+
+export async function submitAssignment(assignmentId: string, file: File) {
+  const form = new FormData();
+  form.append("file", file);
+  const { data } = await apiClient.post<Submission>(`/api/assignments/${assignmentId}/submit`, form, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return data;
+}
+
+export async function listSubmissions(assignmentId: string) {
+  const { data } = await apiClient.get<Submission[]>(`/api/admin/assignments/${assignmentId}/submissions`);
+  return data;
+}
+
+export async function gradeSubmission(submissionId: string, grade: number, feedback?: string) {
+  const { data } = await apiClient.patch<{ message: string }>(`/api/admin/submissions/${submissionId}/grade`, {
+    grade,
+    feedback,
+  });
+  return data;
+}
+
+export type GradebookResponse = {
+  evaluations: { id: string; label: string; type: "QUIZ" | "ASSIGNMENT" }[];
+  rows: {
+    userId: string;
+    fullName: string;
+    scores: Record<string, number>;
+    bonus: number;
+    average: number | null;
+  }[];
+};
+
+export async function getGradebook(moduleId: string) {
+  const { data } = await apiClient.get<GradebookResponse>(`/api/admin/gradebook/modules/${moduleId}`);
+  return data;
+}
+
+export async function addGradeAdjustment(userId: string, moduleId: string, points: number, reason?: string) {
+  const { data } = await apiClient.post<{ message: string }>("/api/admin/gradebook/adjustments", {
+    userId,
+    moduleId,
+    points,
+    reason,
+  });
+  return data;
+}
+
+export async function gradeEssay(attemptId: string, questionId: string, score: number, feedback?: string) {
+  const { data } = await apiClient.patch<{ message: string }>(
+    `/api/quiz/attempts/${attemptId}/questions/${questionId}/grade`,
+    { score, feedback }
+  );
+  return data;
 }
 
 export async function getMyCertificate() {
@@ -279,6 +675,7 @@ export type AppSettings = {
   registrationEnabled: boolean;
   defaultResetPassword: string;
   year2OpeningDate?: string | null;
+  themeVariant: string;
 };
 
 export async function getAppSettings() {
@@ -299,6 +696,165 @@ export async function changePassword(currentPassword: string, newPassword: strin
   return data;
 }
 
+export async function forgotPassword(email: string) {
+  const { data } = await apiClient.post<{ message: string }>("/api/auth/forgot-password", { email });
+  return data;
+}
+
+export async function resetPassword(token: string, newPassword: string) {
+  const { data } = await apiClient.post<{ message: string }>("/api/auth/reset-password", {
+    token,
+    newPassword,
+  });
+  return data;
+}
+
+export async function verifyEmail(token: string) {
+  const { data } = await apiClient.post<{ message: string }>("/api/auth/verify-email", { token });
+  return data;
+}
+
+export async function resendVerification(email: string) {
+  const { data } = await apiClient.post<{ message: string }>("/api/auth/resend-verification", { email });
+  return data;
+}
+
+export async function getMyNotifications(page = 0, size = 20) {
+  const { data } = await apiClient.get<NotificationListResponse>("/api/me/notifications", {
+    params: { page, size },
+  });
+  return data;
+}
+
+export async function markNotificationRead(id: string) {
+  const { data } = await apiClient.post<{ message: string }>(`/api/me/notifications/${id}/read`);
+  return data;
+}
+
+export async function searchCatalog(q: string, limit = 8) {
+  const { data } = await apiClient.get<{ items: SearchResultItem[] }>("/api/search", {
+    params: { q, limit },
+  });
+  return data.items;
+}
+
+export async function getMyLevel() {
+  const { data } = await apiClient.get<{ level: number; badgeCount: number; totalBadges: number }>(
+    "/api/me/badges/level"
+  );
+  return data;
+}
+
+export async function getGroupLeaderboard(groupId: string) {
+  const { data } = await apiClient.get<
+    { rank: number; userId: string; fullName: string; averageScore: number }[]
+  >(`/api/admin/groups/${groupId}/leaderboard`);
+  return data;
+}
+
+export async function getMyBadges() {
+  const { data } = await apiClient.get<Badge[]>("/api/me/badges");
+  return data;
+}
+
+export async function getMyAgenda() {
+  const { data } = await apiClient.get<AgendaItem[]>("/api/me/agenda");
+  return data;
+}
+
+export async function getMyTheme() {
+  const { data } = await apiClient.get<{ themeVariant: string }>("/api/me/theme");
+  return data;
+}
+
+/* ---------------------------------------------------------------- Groupes */
+
+export async function listGroups() {
+  const { data } = await apiClient.get<LearnerGroup[]>("/api/admin/groups");
+  return data;
+}
+
+export async function createGroup(
+  name: string,
+  options?: { code?: string; startDate?: string; endDate?: string; enrollmentMode?: EnrollmentMode }
+) {
+  const { data } = await apiClient.post<LearnerGroup>("/api/admin/groups", { name, ...options });
+  return data;
+}
+
+export async function deleteGroup(groupId: string) {
+  const { data } = await apiClient.delete<{ message: string }>(`/api/admin/groups/${groupId}`);
+  return data;
+}
+
+export async function listGroupMembers(groupId: string) {
+  const { data } = await apiClient.get<GroupMember[]>(`/api/admin/groups/${groupId}/members`);
+  return data;
+}
+
+export async function addGroupMember(groupId: string, userId: string) {
+  const { data } = await apiClient.post<{ message: string }>(
+    `/api/admin/groups/${groupId}/members/${userId}`
+  );
+  return data;
+}
+
+export async function removeGroupMember(groupId: string, userId: string) {
+  const { data } = await apiClient.delete<{ message: string }>(
+    `/api/admin/groups/${groupId}/members/${userId}`
+  );
+  return data;
+}
+
+export async function importGroup(name: string, file: File) {
+  const form = new FormData();
+  form.append("name", name);
+  form.append("file", file);
+  const { data } = await apiClient.post<GroupImportResult>("/api/admin/groups/import", form, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return data;
+}
+
+export async function listGroupAssignments(groupId: string) {
+  const { data } = await apiClient.get<GroupAssignment[]>(
+    `/api/admin/groups/${groupId}/assignments`
+  );
+  return data;
+}
+
+export async function assignGroupContent(
+  groupId: string,
+  payload: {
+    targetType: "MODULE" | "UF";
+    moduleId?: string;
+    ufCode?: string;
+    unlockAt?: string | null;
+  }
+) {
+  const { data } = await apiClient.post<GroupAssignment[]>(
+    `/api/admin/groups/${groupId}/assignments`,
+    payload
+  );
+  return data;
+}
+
+export async function revokeGroupAssignment(groupId: string, assignmentId: string) {
+  const { data } = await apiClient.delete<{ message: string }>(
+    `/api/admin/groups/${groupId}/assignments/${assignmentId}`
+  );
+  return data;
+}
+
+export async function completeProfile(payload: {
+  email: string;
+  phone: string;
+  newPassword: string;
+}) {
+  const { data } = await apiClient.patch<User>("/api/auth/complete-profile", payload);
+  return data;
+}
+
 export async function resetUserPassword(userId: string) {
   const { data } = await apiClient.post<{ message: string; temporaryPassword: string }>(
     `/api/admin/users/${userId}/reset-password`
@@ -314,6 +870,21 @@ export async function updateUserRole(userId: string, role: string) {
 export async function setUserEnabled(userId: string, enabled: boolean) {
   const { data } = await apiClient.patch<User>(`/api/admin/users/${userId}/enabled`, {
     enabled,
+  });
+  return data;
+}
+
+export async function bulkSetUsersEnabled(userIds: string[], enabled: boolean) {
+  const { data } = await apiClient.patch<{ message: string }>("/api/admin/users/bulk", {
+    userIds,
+    enabled,
+  });
+  return data;
+}
+
+export async function getAuditLog(page = 0, size = 20) {
+  const { data } = await apiClient.get<PageResponse<AuditLogEntryItem>>("/api/admin/audit-log", {
+    params: { page, size },
   });
   return data;
 }
@@ -469,6 +1040,28 @@ export async function validateLearnerUf(
   return data;
 }
 
+export async function createStageSignoffInvite(payload: {
+  learnerId: string;
+  ufCode: string;
+  tutorEmail: string;
+  tutorName?: string;
+}) {
+  const { data } = await apiClient.post<{ message: string }>("/api/stage/signoff-invites", payload);
+  return data;
+}
+
+export async function getSignoffInvite(token: string) {
+  const { data } = await apiClient.get<SignoffInviteView>(`/api/public/stage-signoff/${token}`);
+  return data;
+}
+
+export async function signOffStage(token: string, note?: string) {
+  const { data } = await apiClient.post<{ message: string }>(`/api/public/stage-signoff/${token}/sign`, {
+    note,
+  });
+  return data;
+}
+
 export async function uploadAsset(file: File, kind?: string) {
   const form = new FormData();
   form.append("file", file);
@@ -480,6 +1073,117 @@ export async function uploadAsset(file: File, kind?: string) {
       headers: { "Content-Type": "multipart/form-data" },
       onUploadProgress: undefined,
     }
+  );
+  return data;
+}
+
+/** Landing — contact form (public) */
+export async function submitContactMessage(payload: {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  message: string;
+}) {
+  const { data } = await apiClient.post<{ message: string }>("/api/public/contact", payload);
+  return data;
+}
+
+/** Landing — newsletter (public) */
+export async function subscribeNewsletter(email: string) {
+  const { data } = await apiClient.post<{ message: string }>("/api/public/newsletter", { email });
+  return data;
+}
+
+export type ContactMessage = {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  message: string;
+  status: "NEW" | "READ" | "ARCHIVED" | string;
+  createdAt: string;
+};
+
+export type NewsletterSubscriber = {
+  id: string;
+  email: string;
+  active: boolean;
+  createdAt: string;
+};
+
+export async function listContactMessages(
+  page: number,
+  size = 10,
+  q?: string,
+  status?: string
+) {
+  const { data } = await apiClient.get<PageResponse<ContactMessage>>(
+    "/api/admin/contact-messages",
+    { params: { page, size, ...(q ? { q } : {}), ...(status ? { status } : {}) } }
+  );
+  return data;
+}
+
+export async function updateContactMessageStatus(
+  id: string,
+  status: "NEW" | "READ" | "ARCHIVED"
+) {
+  const { data } = await apiClient.patch<ContactMessage>(
+    `/api/admin/contact-messages/${id}/status`,
+    { status }
+  );
+  return data;
+}
+
+export async function deleteContactMessage(id: string) {
+  const { data } = await apiClient.delete<{ message: string }>(
+    `/api/admin/contact-messages/${id}`
+  );
+  return data;
+}
+
+export async function bulkUpdateContactMessageStatus(ids: string[], status: "NEW" | "READ" | "ARCHIVED") {
+  const { data } = await apiClient.patch<{ message: string }>("/api/admin/contact-messages/bulk", {
+    ids,
+    status,
+  });
+  return data;
+}
+
+export async function listNewsletterSubscribers(
+  page: number,
+  size = 10,
+  q?: string,
+  active?: boolean
+) {
+  const { data } = await apiClient.get<PageResponse<NewsletterSubscriber>>(
+    "/api/admin/newsletter-subscribers",
+    {
+      params: {
+        page,
+        size,
+        ...(q ? { q } : {}),
+        ...(active === undefined ? {} : { active }),
+      },
+    }
+  );
+  return data;
+}
+
+export async function setNewsletterSubscriberActive(id: string, active: boolean) {
+  const { data } = await apiClient.patch<NewsletterSubscriber>(
+    `/api/admin/newsletter-subscribers/${id}/active`,
+    null,
+    { params: { active } }
+  );
+  return data;
+}
+
+export async function deleteNewsletterSubscriber(id: string) {
+  const { data } = await apiClient.delete<{ message: string }>(
+    `/api/admin/newsletter-subscribers/${id}`
   );
   return data;
 }

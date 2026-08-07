@@ -16,4 +16,6 @@ public class AppPlatformProperties {
     private String defaultResetPassword = "IatReset@123";
     /** Date de rentrée année 2 (ISO yyyy-MM-dd). Null = pas d'ouverture auto. */
     private String year2OpeningDate;
+    /** Palette prédéfinie appliquée à l'appli authentifiée (admin + espace apprenant). */
+    private String themeVariant = "navy-gold";
 }

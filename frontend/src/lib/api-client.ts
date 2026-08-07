@@ -1,5 +1,6 @@
 import axios, { AxiosError, AxiosInstance } from "axios";
 import type { ApiErrorBody } from "@/types/domain";
+import { toast } from "@/lib/toast-store";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
@@ -50,6 +51,11 @@ apiClient.interceptors.response.use(
       if (!path.startsWith("/login") && !path.startsWith("/register")) {
         window.location.href = `/login?next=${encodeURIComponent(path)}`;
       }
+    } else {
+      // Global safety net so an error is never silent, even if the calling code
+      // doesn't render its own inline alert. 401 is excluded: the redirect above
+      // navigates away immediately, so the toast would never actually be seen.
+      toast.error(message);
     }
 
     return Promise.reject(new ApiClientError(status, message, body));

@@ -3,6 +3,8 @@ package ma.iatacademy.api.service;
 import lombok.RequiredArgsConstructor;
 import ma.iatacademy.api.domain.entity.LearnerUfValidation;
 import ma.iatacademy.api.domain.entity.User;
+import ma.iatacademy.api.domain.enums.BadgeCode;
+import ma.iatacademy.api.domain.enums.NotificationType;
 import ma.iatacademy.api.domain.enums.Role;
 import ma.iatacademy.api.dto.stage.UfValidationResponse;
 import ma.iatacademy.api.dto.stage.ValidateUfRequest;
@@ -28,6 +30,8 @@ public class UfValidationService {
 
     private final LearnerUfValidationRepository validationRepository;
     private final UserRepository userRepository;
+    private final NotificationService notificationService;
+    private final BadgeService badgeService;
 
     @Transactional(readOnly = true)
     public boolean isValidated(UUID learnerId, String ufCode) {
@@ -50,7 +54,7 @@ public class UfValidationService {
 
     @Transactional
     public UfValidationResponse validate(UUID learnerId, ValidateUfRequest request, UserPrincipal principal) {
-        if (principal.getRole() != Role.ADMIN && principal.getRole() != Role.FORMATEUR) {
+        if (!principal.getRole().isStaff()) {
             throw new ForbiddenException("Seule l'académie peut valider une unité.");
         }
         String ufCode = request.ufCode().trim();
@@ -70,11 +74,24 @@ public class UfValidationService {
                         .learner(learner)
                         .ufCode(ufCode)
                         .build());
+        boolean wasValidated = row.isValidated();
         row.setValidated(Boolean.TRUE.equals(request.validated()));
         row.setValidatedAt(row.isValidated() ? Instant.now() : null);
         row.setValidatedBy(row.isValidated() ? director : null);
         row.setNote(request.note() != null && !request.note().isBlank() ? request.note().trim() : null);
-        return toResponse(validationRepository.save(row));
+        UfValidationResponse response = toResponse(validationRepository.save(row));
+
+        if (!wasValidated && row.isValidated()) {
+            notificationService.notify(learner, NotificationType.UF_VALIDATED,
+                    "Unité validée",
+                    "Votre unité \"" + ufCode + "\" a été validée par l'académie.",
+                    "/app/stage");
+            if ("UF 5".equals(ufCode)) {
+                badgeService.awardIfAbsent(learner, BadgeCode.STAGE_VALIDATED);
+            }
+        }
+
+        return response;
     }
 
     private UfValidationResponse toResponse(LearnerUfValidation row) {

@@ -84,6 +84,11 @@ public class StageService {
             assertPresentationFormat(asset);
         }
 
+        // The raw file was uploaded generically via /api/assets/upload before we knew
+        // it would become this learner's private document — claim it now so only the
+        // learner + staff can fetch it, instead of any authenticated user.
+        mediaService.claimOwnership(asset.getId(), learner.getId());
+
         LearnerDocument doc = LearnerDocument.builder()
                 .learner(learner)
                 .docType(request.docType())
@@ -113,7 +118,7 @@ public class StageService {
     public void deleteDocument(UUID documentId, UserPrincipal principal) {
         LearnerDocument doc = documentRepository.findById(documentId)
                 .orElseThrow(() -> new NotFoundException("Document introuvable."));
-        boolean staff = principal.getRole() == Role.ADMIN || principal.getRole() == Role.FORMATEUR;
+        boolean staff = principal.getRole().isStaff();
         boolean owner = doc.getUploadedBy().getId().equals(principal.getId())
                 || doc.getLearner().getId().equals(principal.getId());
         if (!staff && !owner) {
@@ -130,7 +135,7 @@ public class StageService {
     }
 
     private void assertCanView(UserPrincipal viewer, UUID learnerId) {
-        if (viewer.getRole() == Role.ADMIN || viewer.getRole() == Role.FORMATEUR) {
+        if (viewer.getRole().isStaff()) {
             return;
         }
         if (!viewer.getId().equals(learnerId)) {
@@ -139,7 +144,7 @@ public class StageService {
     }
 
     private void assertCanUpload(UserPrincipal principal, UUID learnerId, LearnerDocType type) {
-        boolean staff = principal.getRole() == Role.ADMIN || principal.getRole() == Role.FORMATEUR;
+        boolean staff = principal.getRole().isStaff();
         if (DIRECTOR_TYPES.contains(type)) {
             if (!staff) {
                 throw new ForbiddenException("Seul le directeur / formateur peut déposer ce document.");
@@ -217,7 +222,7 @@ public class StageService {
     }
 
     private LearnerDocumentResponse toDocResponse(LearnerDocument doc) {
-        var stream = mediaService.createSignedStream(doc.getAsset().getId());
+        var stream = mediaService.createSignedStreamTrusted(doc.getAsset().getId());
         return new LearnerDocumentResponse(
                 doc.getId(),
                 doc.getLearner().getId(),

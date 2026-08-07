@@ -11,7 +11,7 @@ export default function AdminMediaPage() {
       <div>
         <h1 className="text-2xl font-semibold text-heading">Médias</h1>
         <p className="mt-1 text-sm text-muted">
-          Upload vers POST /api/assets/upload (liens signés à la diffusion)
+          Envoi des fichiers vers la bibliothèque médias (liens signés à la diffusion)
         </p>
       </div>
 
@@ -24,7 +24,7 @@ export default function AdminMediaPage() {
 
       {lastId && (
         <p className="alert alert-success">
-          Dernier media uploadé — assetId : <code className="font-mono">{lastId}</code>
+          Dernier fichier téléversé — identifiant : <code className="font-mono">{lastId}</code>
         </p>
       )}
     </div>

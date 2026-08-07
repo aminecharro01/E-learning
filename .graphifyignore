@@ -1,0 +1,9 @@
+# Vendored template and AI-tool skill docs — not part of the app itself
+_tmpl_tailadmin/
+tailadmin/references/
+.agents/skills/
+.cursor/skills/
+.claude/skills/
+
+# Static/decorative assets — low signal relative to vision-extraction cost
+frontend/public/

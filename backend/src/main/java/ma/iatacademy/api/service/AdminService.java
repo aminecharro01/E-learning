@@ -2,7 +2,6 @@ package ma.iatacademy.api.service;
 
 import lombok.RequiredArgsConstructor;
 import ma.iatacademy.api.domain.entity.Certificate;
-import ma.iatacademy.api.domain.entity.Certificate;
 import ma.iatacademy.api.domain.entity.Formation;
 import ma.iatacademy.api.domain.entity.LessonProgress;
 import ma.iatacademy.api.domain.entity.ModuleEntity;
@@ -18,6 +17,7 @@ import ma.iatacademy.api.dto.admin.LearnerSummaryResponse;
 import ma.iatacademy.api.dto.admin.ResetPasswordResponse;
 import ma.iatacademy.api.dto.common.PageResponse;
 import ma.iatacademy.api.exception.ApiException;
+import ma.iatacademy.api.exception.ForbiddenException;
 import ma.iatacademy.api.exception.NotFoundException;
 import ma.iatacademy.api.repository.*;
 import org.springframework.data.domain.Page;
@@ -50,27 +50,26 @@ public class AdminService {
     private final ProgressionService progressionService;
     private final AppSettingsService appSettingsService;
     private final PasswordEncoder passwordEncoder;
+    private final ContactMessageRepository contactMessageRepository;
+    private final NewsletterSubscriberRepository newsletterSubscriberRepository;
+    private final AuditLogService auditLogService;
+
+    private static final List<AttemptStatus> SCORED_STATUSES = List.of(AttemptStatus.PASSED, AttemptStatus.FAILED);
 
     @Transactional(readOnly = true)
     public AdminStatsResponse stats() {
-        long learners = userRepository.findAll().stream()
-                .filter(u -> u.getRole() == Role.ETUDIANT && u.isEnabled())
-                .count();
-        List<ma.iatacademy.api.domain.entity.QuizAttempt> attempts = quizAttemptRepository.findAll();
-        double avg = attempts.stream()
-                .filter(a -> a.getStatus() == AttemptStatus.PASSED || a.getStatus() == AttemptStatus.FAILED)
-                .map(ma.iatacademy.api.domain.entity.QuizAttempt::getScore)
-                .filter(s -> s != null)
-                .mapToDouble(BigDecimal::doubleValue)
-                .average()
-                .orElse(0.0);
+        long learners = userRepository.countByRoleAndEnabledTrue(Role.ETUDIANT);
+        Double avgOrNull = quizAttemptRepository.averageScoreByStatusIn(SCORED_STATUSES);
+        double avg = avgOrNull != null ? avgOrNull : 0.0;
         return new AdminStatsResponse(
                 learners,
                 BigDecimal.valueOf(avg).setScale(1, RoundingMode.HALF_UP).doubleValue(),
                 certificateRepository.count(),
                 moduleRepository.count(),
-                lessonRepository.findAll().stream().filter(l -> l.isPublished()).count(),
-                attempts.size()
+                lessonRepository.countByPublishedTrue(),
+                quizAttemptRepository.count(),
+                contactMessageRepository.countByStatus("NEW"),
+                newsletterSubscriberRepository.countByActiveTrue()
         );
     }
 
@@ -85,18 +84,11 @@ public class AdminService {
     public PageResponse<UserResponse> listUsersPaged(int page, int size, String q) {
         int safePage = Math.max(page, 0);
         int safeSize = Math.min(Math.max(size, 1), 100);
-        if (q != null && !q.isBlank()) {
-            String needle = q.trim();
-            List<User> all = userRepository.findAll().stream()
-                    .filter(u -> matchesQuery(u, needle))
-                    .sorted((a, b) -> a.getEmail().compareToIgnoreCase(b.getEmail()))
-                    .toList();
-            int from = Math.min(safePage * safeSize, all.size());
-            int to = Math.min(from + safeSize, all.size());
-            List<UserResponse> content = all.subList(from, to).stream().map(this::toUserResponse).toList();
-            return PageResponse.of(content, safePage, safeSize, all.size());
-        }
         Pageable pageable = PageRequest.of(safePage, safeSize, Sort.by("email"));
+        if (q != null && !q.isBlank()) {
+            Page<User> matches = userRepository.searchByQuery(q.trim(), pageable);
+            return PageResponse.from(matches.map(this::toUserResponse));
+        }
         return PageResponse.from(userRepository.findAll(pageable).map(this::toUserResponse));
     }
 
@@ -174,13 +166,20 @@ public class AdminService {
     }
 
     @Transactional
-    public UserResponse updateRole(UUID userId, Role role) {
+    public UserResponse updateRole(UUID userId, Role role, UUID actorId, Role actorRole) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException("Utilisateur introuvable."));
         if (role == Role.SUPPORT) {
             throw new ApiException("Le rôle SUPPORT n'est pas activé en MVP.");
         }
+        boolean touchesAdminTier = role == Role.ADMIN || role == Role.SUPER_ADMIN
+                || user.getRole() == Role.ADMIN || user.getRole() == Role.SUPER_ADMIN;
+        if (touchesAdminTier && actorRole != Role.SUPER_ADMIN) {
+            throw new ForbiddenException(
+                    "Seul le Super Admin peut modifier le rôle d'un Directeur ou d'un Super Admin.");
+        }
         user.setRole(role);
+        auditLogService.record(actorId, "USER_ROLE_CHANGED", "User", userId, "role=" + role);
         return toUserResponse(user);
     }
 
@@ -198,7 +197,34 @@ public class AdminService {
                 user.setPaymentStatus(ma.iatacademy.api.domain.enums.PaymentStatus.PAID);
             }
         }
+        auditLogService.record(actorId, enabled ? "USER_ENABLED" : "USER_DISABLED", "User", userId, null);
         return toUserResponse(user);
+    }
+
+    /** Bulk variant of setEnabled — same rules, applied to every id, skipping the actor's own account. */
+    @Transactional
+    public MessageResponse bulkSetEnabled(List<UUID> userIds, boolean enabled, UUID actorId) {
+        int updated = 0;
+        for (UUID userId : userIds) {
+            if (userId.equals(actorId) && !enabled) {
+                continue;
+            }
+            User user = userRepository.findById(userId).orElse(null);
+            if (user == null) {
+                continue;
+            }
+            user.setEnabled(enabled);
+            if (enabled && user.getActivatedAt() == null) {
+                user.setActivatedAt(java.time.Instant.now());
+                if (user.getPaymentStatus() == ma.iatacademy.api.domain.enums.PaymentStatus.PENDING) {
+                    user.setPaymentStatus(ma.iatacademy.api.domain.enums.PaymentStatus.PAID);
+                }
+            }
+            updated++;
+        }
+        auditLogService.record(actorId, enabled ? "USER_BULK_ENABLED" : "USER_BULK_DISABLED", "User", null,
+                updated + " compte(s)");
+        return new MessageResponse(updated + " compte(s) mis à jour.");
     }
 
     @Transactional
@@ -286,12 +312,13 @@ public class AdminService {
     }
 
     @Transactional
-    public ResetPasswordResponse resetPassword(UUID userId) {
+    public ResetPasswordResponse resetPassword(UUID userId, UUID actorId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException("Utilisateur introuvable."));
         String temporary = appSettingsService.getDefaultResetPassword();
         user.setPasswordHash(passwordEncoder.encode(temporary));
         userRepository.save(user);
+        auditLogService.record(actorId, "USER_PASSWORD_RESET", "User", userId, null);
         return new ResetPasswordResponse(
                 "Mot de passe réinitialisé pour " + user.getEmail() + ".",
                 temporary
@@ -341,11 +368,5 @@ public class AdminService {
 
     private UserResponse toUserResponse(User u) {
         return AuthService.toResponse(u);
-    }
-
-    private boolean matchesQuery(User u, String q) {
-        String needle = q.toLowerCase();
-        return u.getEmail().toLowerCase().contains(needle)
-                || (u.getFullName() != null && u.getFullName().toLowerCase().contains(needle));
     }
 }

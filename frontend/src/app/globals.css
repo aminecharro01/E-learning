@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "../styles/app-horizon.css";
+@import "../styles/boarding.css";
 
 /* Class-based dark mode (TailAdmin-style), not only prefers-color-scheme */
 @custom-variant dark (&:where(.dark, .dark *));
@@ -125,6 +126,64 @@
   --alert-info-fg: #ffd98a;
 
   --shadow-brand: 0 12px 32px -10px rgba(0, 0, 0, 0.55);
+}
+
+/* =============================================================================
+   Theme presets — Super Admin picks one, applied via [data-theme-variant] on
+   <html>. Each preset only overrides brand-identity tokens (the gold and navy
+   ramps feeding --wing, plus primary/secondary/ring); neutrals (background,
+   surface, border, alerts) stay shared across presets so light/dark mode keeps
+   working unchanged underneath. "navy-gold" is the default already defined
+   above, so it has no block here.
+   ============================================================================= */
+[data-theme-variant="ocean-teal"] {
+  --gold-300: #5eead4;
+  --gold-400: #2dd4bf;
+  --gold-500: #14b8a6;
+  --gold-600: #0d9488;
+  --gold-700: #0f766e;
+  --gold-800: #115e59;
+  --navy: #0c343a;
+  --navy-soft: #1d4e52;
+  --navy-muted: #3d6e70;
+  --primary: #0d9488;
+  --primary-hover: #0f766e;
+  --ring: #14b8a6;
+  --secondary: #0c343a;
+  --secondary-hover: #1d4e52;
+}
+
+[data-theme-variant="ocean-teal"].dark {
+  --primary: #14b8a6;
+  --primary-hover: #2dd4bf;
+  --ring: #2dd4bf;
+  --secondary: #1d4e52;
+  --secondary-hover: #3d6e70;
+}
+
+[data-theme-variant="sunset-amber"] {
+  --gold-300: #fdba74;
+  --gold-400: #fb923c;
+  --gold-500: #f97316;
+  --gold-600: #ea580c;
+  --gold-700: #c2410c;
+  --gold-800: #9a3412;
+  --navy: #431407;
+  --navy-soft: #5c1a0a;
+  --navy-muted: #7c2d12;
+  --primary: #ea580c;
+  --primary-hover: #c2410c;
+  --ring: #f97316;
+  --secondary: #431407;
+  --secondary-hover: #5c1a0a;
+}
+
+[data-theme-variant="sunset-amber"].dark {
+  --primary: #f97316;
+  --primary-hover: #fb923c;
+  --ring: #fb923c;
+  --secondary: #5c1a0a;
+  --secondary-hover: #7c2d12;
 }
 
 @theme inline {

@@ -4,17 +4,20 @@ import Image from "next/image";
 import Link from "next/link";
 
 type BrandLogoProps = {
-  href?: string;
+  /** Pass `null` (not `undefined`) to render just the mark with no wrapping link — a
+   * default parameter can't distinguish "omitted" from "explicitly undefined". */
+  href?: string | null;
   className?: string;
   /** Compact mark for dense headers */
   size?: "sm" | "md" | "lg";
   showWordmark?: boolean;
 };
 
+/** Full crest aspect ≈ 1.3∶1 (transparent PNG). Height drives layout. */
 const sizes = {
-  sm: { box: "h-9 w-9", img: 36 },
-  md: { box: "h-11 w-11", img: 44 },
-  lg: { box: "h-14 w-14", img: 56 },
+  sm: { height: 44, width: 57 },
+  md: { height: 56, width: 73 },
+  lg: { height: 80, width: 104 },
 } as const;
 
 export function BrandLogo({
@@ -26,18 +29,15 @@ export function BrandLogo({
   const dim = sizes[size];
   const mark = (
     <span className={`inline-flex items-center gap-2.5 ${className}`}>
-      <span
-        className={`relative ${dim.box} shrink-0 overflow-hidden rounded-lg border border-[color-mix(in_srgb,var(--navy)_25%,transparent)] bg-[var(--bg-raised,#fff)]`}
-      >
-        <Image
-          src="/brand/logo.png"
-          alt="IAT Academy"
-          width={dim.img}
-          height={dim.img}
-          className="object-contain p-0.5"
-          priority
-        />
-      </span>
+      <Image
+        src="/brand/logo.png"
+        alt="IAT Academy"
+        width={dim.width}
+        height={dim.height}
+        className="bg-transparent object-contain"
+        style={{ height: dim.height, width: "auto" }}
+        priority
+      />
       {showWordmark ? (
         <span className="leading-tight">
           <span className="block font-[family-name:var(--font-display)] text-sm font-bold tracking-tight text-heading">

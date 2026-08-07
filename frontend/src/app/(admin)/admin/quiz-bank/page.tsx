@@ -7,16 +7,21 @@ import {
   addQuizQuestion,
   createQuiz,
   getMyProgress,
+  getProctoringEvents,
+  listQuizAttemptsForStaff,
   listQuizQuestions,
   listQuizzesPaged,
   updateQuizQuestion,
+  type QuizAttemptAdmin,
 } from "@/lib/api";
+import type { ProctoringEvent } from "@/types/domain";
 import { QuizSettingsForm } from "@/components/admin/forms/QuizSettingsForm";
 import { QuestionForm } from "@/components/admin/forms/QuestionForm";
 import type { QuestionFormValues, QuizSettingsValues } from "@/components/admin/forms/schemas";
 import { Modal } from "@/components/admin/Modal";
 import type { Module, Question, Quiz } from "@/types/domain";
 import { ApiClientError } from "@/lib/api-client";
+import { moduleSelectGroups } from "@/lib/programme";
 import { btn } from "@/lib/ui";
 
 export default function QuizBankPage() {
@@ -39,8 +44,47 @@ export default function QuizBankPage() {
   const [msg, setMsg] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [attemptsOpen, setAttemptsOpen] = useState(false);
+  const [attempts, setAttempts] = useState<QuizAttemptAdmin[]>([]);
+  const [attemptsLoading, setAttemptsLoading] = useState(false);
+  const [eventsAttemptId, setEventsAttemptId] = useState<string | null>(null);
+  const [events, setEvents] = useState<ProctoringEvent[]>([]);
+  const [eventsLoading, setEventsLoading] = useState(false);
 
   const selectedQuiz = quizzes.find((q) => q.id === selectedQuizId) ?? null;
+
+  useEffect(() => {
+    setAttemptsOpen(false);
+    setAttempts([]);
+  }, [selectedQuizId]);
+
+  async function onToggleAttempts() {
+    if (!selectedQuizId) return;
+    const next = !attemptsOpen;
+    setAttemptsOpen(next);
+    if (next) {
+      setAttemptsLoading(true);
+      try {
+        setAttempts(await listQuizAttemptsForStaff(selectedQuizId));
+      } catch {
+        setAttempts([]);
+      } finally {
+        setAttemptsLoading(false);
+      }
+    }
+  }
+
+  async function onViewEvents(attemptId: string) {
+    setEventsAttemptId(attemptId);
+    setEventsLoading(true);
+    try {
+      setEvents(await getProctoringEvents(attemptId));
+    } catch {
+      setEvents([]);
+    } finally {
+      setEventsLoading(false);
+    }
+  }
 
   const refreshQuizzes = useCallback(async (p: number, moduleId?: string) => {
     const data = await listQuizzesPaged(p, 50, moduleId || undefined);
@@ -111,6 +155,12 @@ export default function QuizBankPage() {
         retryDelayHours: values.retryDelayHours,
         blocking: values.blocking,
         published: values.published,
+        proctoringEnabled: values.proctoringEnabled,
+        focusLossDetection: values.focusLossDetection,
+        copyProtection: values.copyProtection,
+        lockdownMode: values.lockdownMode,
+        drawFromBankId: values.drawFromBankId || undefined,
+        drawCount: values.drawCount || undefined,
       });
       await refreshQuizzes(page, filterModuleId || undefined);
       setSelectedQuizId(data.id);
@@ -124,17 +174,45 @@ export default function QuizBankPage() {
   }
 
   function toPayload(values: QuestionFormValues) {
+    const isChoiceType =
+      values.questionType === "SINGLE_CHOICE" ||
+      values.questionType === "MULTI_CHOICE" ||
+      values.questionType === "TRUE_FALSE";
+
+    let metadata: Record<string, unknown> | null = null;
+    if (values.questionType === "MATCHING") {
+      metadata = { pairs: values.matchingPairs.map((p) => ({ left: p.left, right: p.right })) };
+    } else if (values.questionType === "HOTSPOT") {
+      metadata = {
+        imageAssetId: values.imageAssetId || null,
+        zones: values.hotspotZones.map((z) => ({ x: z.x, y: z.y, width: z.width, height: z.height })),
+      };
+    } else if (values.questionType === "FILL_BLANK") {
+      metadata = {
+        template: values.fillBlankTemplate,
+        acceptedAnswers: (values.fillBlankAcceptedAnswers || "")
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean),
+      };
+    } else if (values.questionType === "ESSAY") {
+      metadata = values.essayMaxLength ? { maxLength: values.essayMaxLength } : {};
+    }
+
     return {
       prompt: values.prompt,
       questionType: values.questionType,
       orderIndex: values.orderIndex,
       explanation: values.explanation || null,
       imageAssetId: values.imageAssetId ? values.imageAssetId : null,
-      options: values.options.map((o, i) => ({
-        label: o.label,
-        correct: o.correct,
-        orderIndex: i,
-      })),
+      options: isChoiceType
+        ? values.options.map((o, i) => ({
+            label: o.label,
+            correct: o.correct,
+            orderIndex: i,
+          }))
+        : [],
+      metadata,
     };
   }
 
@@ -186,7 +264,7 @@ export default function QuizBankPage() {
       <div className="flex flex-wrap items-end justify-between gap-3 px-2 pt-2 lg:px-4">
         <div>
           <p className="eyebrow">Contenu</p>
-          <h1 className="mt-1 text-2xl font-semibold text-heading">Studio Quiz</h1>
+          <h1 className="mt-1 text-2xl font-semibold text-heading">Banque de quiz</h1>
           <p className="mt-1 text-sm text-muted">
             {pageMeta.totalElements} quiz — outline à gauche, questions à droite
           </p>
@@ -211,10 +289,14 @@ export default function QuizBankPage() {
               className="select-theme mt-1 w-full"
             >
               <option value="">Tous les modules</option>
-              {modules.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.orderIndex + 1}. {m.title}
-                </option>
+              {moduleSelectGroups(modules).map((group) => (
+                <optgroup key={group.label} label={group.label}>
+                  {group.modules.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.title}
+                    </option>
+                  ))}
+                </optgroup>
               ))}
             </select>
           </div>
@@ -381,6 +463,44 @@ export default function QuizBankPage() {
                   </li>
                 )}
               </ul>
+
+              <div className="border-t border-theme pt-4">
+                <button type="button" className="text-sm font-medium text-primary hover:underline" onClick={() => void onToggleAttempts()}>
+                  {attemptsOpen ? "Masquer les tentatives" : "Voir les tentatives"}
+                </button>
+                {attemptsOpen && (
+                  <div className="mt-3">
+                    {attemptsLoading ? (
+                      <p className="text-sm text-muted">Chargement…</p>
+                    ) : attempts.length === 0 ? (
+                      <p className="text-sm text-muted">Aucune tentative pour ce quiz.</p>
+                    ) : (
+                      <ul className="space-y-1.5">
+                        {attempts.map((a) => (
+                          <li
+                            key={a.id}
+                            className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-theme px-3 py-1.5 text-xs"
+                          >
+                            <span>
+                              {a.userFullName} — {a.status}
+                              {a.score !== null && ` — ${a.score}%`}
+                            </span>
+                            {a.proctoringEventCount > 0 && (
+                              <button
+                                type="button"
+                                className="badge-inline badge-gold"
+                                onClick={() => void onViewEvents(a.id)}
+                              >
+                                {a.proctoringEventCount} évènement(s) anti-triche
+                              </button>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </div>
@@ -448,6 +568,31 @@ export default function QuizBankPage() {
               </button>
             )}
           </>
+        )}
+      </Modal>
+
+      <Modal
+        open={eventsAttemptId !== null}
+        title="Évènements anti-triche"
+        onClose={() => setEventsAttemptId(null)}
+      >
+        {eventsLoading ? (
+          <p className="text-sm text-muted">Chargement…</p>
+        ) : events.length === 0 ? (
+          <p className="text-sm text-muted">Aucun évènement.</p>
+        ) : (
+          <ul className="space-y-1.5">
+            {events.map((e) => (
+              <li key={e.id} className="rounded-lg border border-theme px-3 py-1.5 text-xs">
+                <span className="font-medium text-heading">{e.eventType}</span>
+                <span className="ml-2 text-muted">
+                  {new Intl.DateTimeFormat("fr-FR", { dateStyle: "short", timeStyle: "medium" }).format(
+                    new Date(e.occurredAt)
+                  )}
+                </span>
+              </li>
+            ))}
+          </ul>
         )}
       </Modal>
     </div>

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { getMyProgress, getMyStageDossier, type LearnerDossier } from "@/lib/api";
 import { StageDossierPanel } from "@/components/stage/StageDossierPanel";
 import { LearnerAppHeader } from "@/components/learner/LearnerAppHeader";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 export default function LearnerStagePage() {
   const router = useRouter();
@@ -59,7 +60,7 @@ export default function LearnerStagePage() {
         </p>
         {error && <p className="alert alert-warning">{error}</p>}
         {!dossier && !error && (
-          <div className="card-theme h-48 animate-pulse rounded-2xl bg-surface-2" />
+          <Skeleton card className="h-48 rounded-2xl" />
         )}
         {dossier && <StageDossierPanel dossier={dossier} mode="learner" onChanged={reload} />}
       </div>

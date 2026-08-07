@@ -35,4 +35,10 @@ public class Asset extends AuditableEntity {
 
     @Column(name = "duration_sec")
     private Integer durationSec;
+
+    // Null means shared/public to any authenticated user (e.g. lesson media authored
+    // by admin/formateur). Set when the asset becomes a personal document (stage
+    // documents, avatars) so access can be restricted to the owner + staff.
+    @Column(name = "owner_id")
+    private UUID ownerId;
 }

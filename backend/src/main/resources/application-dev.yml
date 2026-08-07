@@ -2,6 +2,13 @@ spring:
   jpa:
     show-sql: true
 
+app:
+  jwt:
+    # Local-dev-only fallback so `mvnw spring-boot:run -Dspring-boot.run.profiles=dev`
+    # works without extra setup. Never used outside this profile — production must set
+    # JWT_SECRET explicitly (see application.yml / JwtProperties#validate).
+    secret: ${JWT_SECRET:dev-only-secret-do-not-use-in-production-1234567890}
+
 logging:
   level:
     ma.iatacademy: DEBUG

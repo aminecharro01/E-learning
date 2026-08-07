@@ -4,12 +4,14 @@ import lombok.RequiredArgsConstructor;
 import ma.iatacademy.api.domain.entity.Asset;
 import ma.iatacademy.api.dto.media.AssetResponse;
 import ma.iatacademy.api.dto.media.SignedStreamResponse;
+import ma.iatacademy.api.security.UserPrincipal;
 import ma.iatacademy.api.service.MediaService;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -32,8 +34,11 @@ public class AssetController {
     }
 
     @GetMapping("/{id}/stream")
-    public ResponseEntity<SignedStreamResponse> stream(@PathVariable UUID id) {
-        return ResponseEntity.ok(mediaService.createSignedStream(id));
+    public ResponseEntity<SignedStreamResponse> stream(
+            @PathVariable UUID id,
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        return ResponseEntity.ok(mediaService.createSignedStream(id, principal));
     }
 
     @GetMapping("/{id}/file")
@@ -44,9 +49,25 @@ public class AssetController {
     ) {
         Resource resource = mediaService.loadSignedFile(id, expires, sig);
         Asset asset = mediaService.getAsset(id);
+        boolean renderInline = switch (asset.getAssetKind()) {
+            case "IMAGE", "VIDEO", "PDF" -> true;
+            default -> false;
+        };
+        String disposition = (renderInline ? "inline" : "attachment") + "; filename=\"" + sanitizeFilename(asset.getFilename()) + "\"";
         return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + asset.getFilename() + "\"")
+                .header(HttpHeaders.CONTENT_DISPOSITION, disposition)
+                .header("X-Content-Type-Options", "nosniff")
                 .contentType(MediaType.parseMediaType(asset.getMimeType()))
                 .body(resource);
+    }
+
+    private String sanitizeFilename(String filename) {
+        if (filename == null) {
+            return "file";
+        }
+        // Strip quotes/control characters so a crafted original filename can't break
+        // out of the quoted Content-Disposition value or inject extra header params.
+        String cleaned = filename.replaceAll("[\"\\r\\n]", "");
+        return cleaned.isBlank() ? "file" : cleaned;
     }
 }

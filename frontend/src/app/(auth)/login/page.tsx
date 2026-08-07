@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
-import SignInForm from "@/components/auth/SignInForm";
+import AuthBoardingPass from "@/components/auth/AuthBoardingPass";
 
 export const metadata: Metadata = {
   title: "Connexion | IAT Academy",
@@ -11,12 +11,12 @@ export default function LoginPage() {
   return (
     <Suspense
       fallback={
-        <div className="auth-card">
-          <p className="auth-subtitle">Chargement…</p>
+        <div className="iat-board auth-board">
+          <p className="bp-sub">Chargement…</p>
         </div>
       }
     >
-      <SignInForm />
+      <AuthBoardingPass initialMode="signin" />
     </Suspense>
   );
 }

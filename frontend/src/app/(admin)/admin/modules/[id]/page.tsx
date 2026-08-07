@@ -29,6 +29,8 @@ import { LessonLockBanner } from "@/components/admin/LessonLockBanner";
 import { LessonBlocks } from "@/components/learner/LessonBlocks";
 import type { Lesson, LessonBlock, Module, Quiz } from "@/types/domain";
 import { ApiClientError } from "@/lib/api-client";
+import { yearLabel } from "@/lib/programme";
+import { IconCompass, IconPlane } from "@/components/brand/IatIcons";
 import { btn } from "@/lib/ui";
 
 export default function AdminModuleStudioPage() {
@@ -107,8 +109,25 @@ export default function AdminModuleStudioPage() {
         description: values.description || undefined,
         orderIndex: values.orderIndex,
         published: values.published,
+        yearNumber: values.yearNumber,
+        ufCode: values.ufCode,
+        ufTitle: values.ufTitle,
       });
-      setModule((prev) => (prev ? { ...prev, ...updated } : prev));
+      setModule((prev) =>
+        prev
+          ? {
+              ...prev,
+              title: updated.title,
+              description: updated.description,
+              orderIndex: updated.orderIndex,
+              published: updated.published,
+              yearNumber: updated.yearNumber,
+              ufCode: updated.ufCode,
+              ufTitle: updated.ufTitle,
+              code: updated.code ?? prev.code,
+            }
+          : prev
+      );
       setEditModuleOpen(false);
       setMsg("Module mis à jour.");
     } catch (err) {
@@ -127,8 +146,25 @@ export default function AdminModuleStudioPage() {
         description: module.description || undefined,
         orderIndex: module.orderIndex,
         published: !module.published,
+        yearNumber: module.yearNumber ?? undefined,
+        ufCode: module.ufCode ?? undefined,
+        ufTitle: module.ufTitle ?? undefined,
       });
-      setModule((prev) => (prev ? { ...prev, ...updated } : prev));
+      setModule((prev) =>
+        prev
+          ? {
+              ...prev,
+              title: updated.title,
+              description: updated.description,
+              orderIndex: updated.orderIndex,
+              published: updated.published,
+              yearNumber: updated.yearNumber,
+              ufCode: updated.ufCode,
+              ufTitle: updated.ufTitle,
+              code: updated.code ?? prev.code,
+            }
+          : prev
+      );
       setMsg(updated.published ? "Module publié." : "Module désactivé.");
     } catch (err) {
       setError(err instanceof ApiClientError ? err.message : "Changement impossible.");
@@ -232,42 +268,61 @@ export default function AdminModuleStudioPage() {
   const moduleQuiz = quizzes.find((q) => q.quizType === "FIN_MODULE");
 
   return (
-    <div className="-m-2 flex min-h-[calc(100vh-7rem)] flex-col gap-3 lg:-m-4">
-      <div className="flex flex-wrap items-start justify-between gap-3 px-2 pt-2 lg:px-4">
-        <div>
-          <Link href="/admin/modules" className="text-sm text-primary hover:underline">
-            ← Modules
+    <div className="iat-board -m-2 flex min-h-[calc(100vh-7rem)] flex-col gap-3 lg:-m-4">
+      <section className="boarding-pass mx-2 mt-2 !mb-0 lg:mx-4" aria-label="Atelier du module">
+        <div className="bp-main">
+          <Link href="/admin/modules" className="bp-eyebrow !mb-2 inline-flex">
+            <IconPlane size={14} />
+            ← Catalogue
           </Link>
-          <div className="mt-2 flex flex-wrap items-center gap-2">
-            <h1 className="text-xl font-semibold text-heading">{module.title}</h1>
+          <p className="learn-mod-meta mb-1">
+            {yearLabel(module.yearNumber ?? 1)}
+            {module.ufTitle ? ` · ${module.ufTitle}` : module.ufCode ? ` · ${module.ufCode}` : ""}
+          </p>
+          <h1 className="bp-title !text-[1.35rem] sm:!text-[1.6rem]">
+            {module.title.split(" ").length > 1 ? (
+              <>
+                {module.title.split(" ").slice(0, -1).join(" ")}{" "}
+                <span className="grad">{module.title.split(" ").slice(-1).join(" ")}</span>
+              </>
+            ) : (
+              module.title
+            )}
+          </h1>
+          <p className="bp-desc !mt-2 line-clamp-2">{module.description || "—"}</p>
+          <div className="bp-actions !mt-3">
             <span
-              className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                module.published
-                  ? "bg-[var(--alert-success-bg)] text-[var(--alert-success-fg)]"
-                  : "bg-surface-2 text-muted"
-              }`}
+              className={`badge-inline ${module.published ? "badge-success" : "badge-gold"}`}
             >
+              <IconCompass size={14} />
               {module.published ? "Publié" : "Brouillon"}
             </span>
+            <IconButton label="Modifier le module" onClick={() => setEditModuleOpen(true)}>
+              <IconEdit />
+            </IconButton>
+            <IconButton
+              label={module.published ? "Désactiver" : "Publier"}
+              tone={module.published ? "success" : "warn"}
+              onClick={() => void toggleModulePublished()}
+            >
+              <IconPublish on={module.published} />
+            </IconButton>
+            <Link href={`/app/learn/${module.id}`} className={btn.neutralSm}>
+              Aperçu apprenant
+            </Link>
           </div>
-          <p className="mt-1 max-w-xl text-sm text-muted">{module.description || "—"}</p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <IconButton label="Modifier le module" onClick={() => setEditModuleOpen(true)}>
-            <IconEdit />
-          </IconButton>
-          <IconButton
-            label={module.published ? "Désactiver" : "Publier"}
-            tone={module.published ? "success" : "warn"}
-            onClick={() => void toggleModulePublished()}
-          >
-            <IconPublish on={module.published} />
-          </IconButton>
-          <Link href={`/app/learn/${module.id}`} className={btn.neutralSm}>
-            Aperçu apprenant
-          </Link>
+        <div className="bp-stub">
+          <div className="bp-flight-code">ATELIER</div>
+          <div className="bp-gate">
+            <span>UF</span>
+            {(module.ufCode || "—").replace(/^UF\s*/i, "") || "—"}
+          </div>
+          <div className="bp-barcode" aria-hidden />
         </div>
-      </div>
+        <div className="bp-notch" aria-hidden />
+      </section>
+
 
       {error && <p className="alert alert-error mx-2 lg:mx-4">{error}</p>}
       {msg && <p className="alert alert-success mx-2 lg:mx-4">{msg}</p>}
@@ -313,7 +368,7 @@ export default function AdminModuleStudioPage() {
           </ul>
           {moduleQuiz && (
             <div className="border-t border-theme p-3">
-              <p className="nav-group-label mb-1 text-[11px] font-semibold uppercase">Quiz module</p>
+              <p className="nav-group-label mb-1 text-[11px] font-semibold uppercase">Quiz du module</p>
               <Link
                 href="/admin/quiz-bank"
                 className="block truncate text-sm text-[var(--alert-warning-fg)] hover:underline"
@@ -428,6 +483,9 @@ export default function AdminModuleStudioPage() {
             description: module.description || "",
             orderIndex: module.orderIndex,
             published: module.published,
+            yearNumber: module.yearNumber ?? 1,
+            ufCode: module.ufCode ?? "UF 1",
+            ufTitle: module.ufTitle ?? "Langues et communication",
           }}
           onSubmit={onUpdateModule}
         />

@@ -1,5 +1,4 @@
 import "./landing.css";
-import { AirplaneCursor } from "./AirplaneCursor";
 import { LandingHeader } from "./Header";
 import { LandingHero } from "./Hero";
 import { LandingAbout } from "./About";
@@ -12,7 +11,6 @@ import { LandingFooter } from "./Footer";
 export function LandingPage() {
   return (
     <div className="landing">
-      <AirplaneCursor />
       <LandingHeader />
       <main>
         <LandingHero />

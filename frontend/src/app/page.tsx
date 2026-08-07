@@ -9,9 +9,9 @@ const landingSans = Outfit({
 });
 
 export const metadata: Metadata = {
-  title: "IAT Academy — Formation Aviation, Maritime & Tourisme",
+  title: "IAT Academy — Formation aviation, maritime et tourisme",
   description:
-    "International Airlines & Tourism Academy. Formations PNC, agents d'escale, croisière et tourisme. Plateforme e-learning.",
+    "IAT Academy. Formations PNC, agents d'escale, croisière et tourisme. Plateforme e-learning.",
 };
 
 export default function HomePage() {

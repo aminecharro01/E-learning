@@ -58,4 +58,14 @@ public class QuizAttempt extends AuditableEntity {
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb")
     private Map<String, List<String>> answers;
+
+    /** FILL_BLANK / ESSAY : questionId -> texte libre soumis. */
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "free_text_answers", columnDefinition = "jsonb")
+    private Map<String, String> freeTextAnswers;
+
+    /** MATCHING / HOTSPOT : questionId -> structure de réponse (paires, point cliqué…). */
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "structured_answers", columnDefinition = "jsonb")
+    private Map<String, Object> structuredAnswers;
 }

@@ -16,6 +16,7 @@ import {
   BookIcon,
   CertIcon,
   ChartIcon,
+  MailIcon,
   QuizIcon,
   UsersIcon,
 } from "@/components/admin/icons";
@@ -36,7 +37,7 @@ export default function AdminDashboardPage() {
         setQuizCount(quizzes.totalElements);
       })
       .catch((err) => {
-        setError(err instanceof ApiClientError ? err.message : "Impossible de charger le dashboard.");
+        setError(err instanceof ApiClientError ? err.message : "Impossible de charger le tableau de bord.");
       });
   }, []);
 
@@ -62,7 +63,7 @@ export default function AdminDashboardPage() {
             Gérer les cours
           </Link>
           <Link href="/admin/quiz-bank" className={btn.secondary}>
-            Studio Quiz
+            Banque de quiz
           </Link>
         </div>
       </div>
@@ -79,19 +80,24 @@ export default function AdminDashboardPage() {
           label="Apprenants actifs"
           value={stats?.activeLearners ?? "—"}
           icon={<UsersIcon className="size-6 text-heading" />}
-          badge={{ color: "info", text: "Live" }}
+          badge={{ color: "info", text: "En direct" }}
         />
         <StatCard
-          label="Modules publiés"
-          value={`${published}/${modules.length || 36}`}
-          hint={`${draft} brouillon(s)`}
-          icon={<BookIcon className="size-6 text-heading" />}
+          label="Messages contact"
+          value={stats?.newContactMessages ?? "—"}
+          hint="Non lus"
+          icon={<MailIcon className="size-6 text-heading" />}
+          badge={
+            stats && stats.newContactMessages > 0
+              ? { color: "warning", text: "À traiter" }
+              : { color: "success", text: "À jour" }
+          }
         />
         <StatCard
-          label="Quiz"
-          value={quizCount ?? "—"}
-          hint={`${stats?.quizAttemptsTotal ?? 0} tentatives`}
-          icon={<QuizIcon className="size-6 text-heading" />}
+          label="Infolettre"
+          value={stats?.newsletterSubscribers ?? "—"}
+          hint="Abonnés actifs"
+          icon={<MailIcon className="size-6 text-heading" />}
         />
         <StatCard
           label="Taux de réussite"
@@ -99,7 +105,7 @@ export default function AdminDashboardPage() {
           icon={<ChartIcon className="size-6 text-heading" />}
           badge={
             stats && stats.averageSuccessRate >= 60
-              ? { color: "success", text: "OK" }
+              ? { color: "success", text: "À jour" }
               : { color: "warning", text: "Suivi" }
           }
         />
@@ -174,9 +180,10 @@ export default function AdminDashboardPage() {
 
           <ComponentCard title="Raccourcis" desc="Accès rapide formateur">
             <ul className="space-y-2">
-              <Shortcut href="/admin/modules" label="Studio contenu" />
+              <Shortcut href="/admin/modules" label="Éditeur de contenu" />
               <Shortcut href="/admin/quiz-bank" label="Banque de quiz" />
               <Shortcut href="/admin/learners" label="Suivi apprenants" />
+              <Shortcut href="/admin/leads" label="Contact & infolettre" />
               <Shortcut href="/admin/media" label="Médias" />
               <Shortcut href="/app" label="Vue apprenant" />
             </ul>
@@ -207,7 +214,7 @@ function ModuleRow({ module }: { module: Module }) {
           href={`/admin/modules/${module.id}`}
           className="text-sm font-medium text-primary hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ring)]"
         >
-          Studio
+          Éditer
         </Link>
       </td>
     </tr>

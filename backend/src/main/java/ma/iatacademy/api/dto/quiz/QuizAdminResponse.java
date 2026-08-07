@@ -18,6 +18,10 @@ public record QuizAdminResponse(
         int retryDelayHours,
         boolean blocking,
         boolean published,
+        boolean proctoringEnabled,
+        boolean focusLossDetection,
+        boolean copyProtection,
+        boolean lockdownMode,
         int questionCount
 ) {
 }

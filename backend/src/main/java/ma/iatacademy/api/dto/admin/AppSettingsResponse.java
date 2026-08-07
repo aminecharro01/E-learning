@@ -5,6 +5,7 @@ public record AppSettingsResponse(
         String supportEmail,
         boolean registrationEnabled,
         String defaultResetPassword,
-        String year2OpeningDate
+        String year2OpeningDate,
+        String themeVariant
 ) {
 }

@@ -6,6 +6,7 @@ import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { SidebarProvider, useSidebar } from "@/context/SidebarContext";
 import { AdminSidebar } from "@/components/admin/AdminSidebar";
 import { AdminHeader } from "@/components/admin/AdminHeader";
+import { CommandPalette } from "@/components/admin/CommandPalette";
 
 function AdminShell({ children }: { children: React.ReactNode }) {
   const { user, loading, hasRole } = useAuth();
@@ -19,12 +20,12 @@ function AdminShell({ children }: { children: React.ReactNode }) {
       router.replace(`/login?next=${encodeURIComponent(pathname)}`);
       return;
     }
-    if (!hasRole("ADMIN", "FORMATEUR")) {
+    if (!hasRole("SUPER_ADMIN", "ADMIN", "FORMATEUR")) {
       router.replace("/app");
     }
   }, [loading, user, hasRole, router, pathname]);
 
-  if (loading || !user || !hasRole("ADMIN", "FORMATEUR")) {
+  if (loading || !user || !hasRole("SUPER_ADMIN", "ADMIN", "FORMATEUR")) {
     return (
       <div className="app-horizon flex min-h-screen items-center justify-center text-sm text-muted">
         Vérification de session…
@@ -36,6 +37,7 @@ function AdminShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="app-horizon min-h-screen">
+      <CommandPalette />
       <AdminSidebar />
       {isMobileOpen && (
         <div className="app-overlay fixed inset-0 z-40 lg:hidden" aria-hidden />

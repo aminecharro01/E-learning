@@ -18,6 +18,8 @@ import java.time.format.DateTimeParseException;
 public class AppSettingsService {
 
     private static final String REDIS_KEY = "app:settings:platform";
+    public static final java.util.Set<String> THEME_VARIANTS =
+            java.util.Set.of("navy-gold", "ocean-teal", "sunset-amber");
 
     private final AppPlatformProperties properties;
     private final StringRedisTemplate redisTemplate;
@@ -43,8 +45,17 @@ public class AppSettingsService {
         } catch (DateTimeParseException e) {
             throw new IllegalArgumentException("Date de rentrée année 2 invalide (format AAAA-MM-JJ).");
         }
+        if (!THEME_VARIANTS.contains(request.themeVariant())) {
+            throw new IllegalArgumentException("Thème inconnu : " + request.themeVariant());
+        }
+        properties.setThemeVariant(request.themeVariant());
         persistToRedis();
         return toResponse();
+    }
+
+    public String getThemeVariant() {
+        loadFromRedisIfPresent();
+        return properties.getThemeVariant();
     }
 
     public String getDefaultResetPassword() {
@@ -92,7 +103,8 @@ public class AppSettingsService {
                 properties.getSupportEmail(),
                 properties.isRegistrationEnabled(),
                 properties.getDefaultResetPassword(),
-                properties.getYear2OpeningDate()
+                properties.getYear2OpeningDate(),
+                properties.getThemeVariant()
         );
     }
 
@@ -117,6 +129,9 @@ public class AppSettingsService {
             properties.setDefaultResetPassword(stored.defaultResetPassword());
             if (stored.year2OpeningDate() != null) {
                 properties.setYear2OpeningDate(stored.year2OpeningDate());
+            }
+            if (stored.themeVariant() != null && THEME_VARIANTS.contains(stored.themeVariant())) {
+                properties.setThemeVariant(stored.themeVariant());
             }
         } catch (JsonProcessingException ignored) {
             // keep defaults

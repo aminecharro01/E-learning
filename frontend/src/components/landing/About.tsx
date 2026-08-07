@@ -19,6 +19,14 @@ export function LandingAbout() {
             <blockquote className="landing-about-quote">
               <p>{iat.mission}</p>
             </blockquote>
+            <div className="landing-about-grid mt-6">
+              {iat.journey.map((step) => (
+                <div key={step.title} className="landing-glass-card">
+                  <h3 className="landing-glass-card-title">{step.title}</h3>
+                  <p className="landing-glass-card-text">{step.description}</p>
+                </div>
+              ))}
+            </div>
           </Reveal>
           <Reveal delayMs={140} className="lg:col-span-7">
             <div className="landing-about-grid">
@@ -27,7 +35,7 @@ export function LandingAbout() {
                 <p className="landing-glass-card-text">{iat.about}</p>
               </div>
               <div className="landing-glass-card">
-                <h3 className="landing-glass-card-title">Approche métier</h3>
+                <h3 className="landing-glass-card-title">Ce que vous développez</h3>
                 <p className="landing-glass-card-text">{iat.coursesApproach}</p>
               </div>
               <div className="landing-glass-card landing-glass-card-accent">

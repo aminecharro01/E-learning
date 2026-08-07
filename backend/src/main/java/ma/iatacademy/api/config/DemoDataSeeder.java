@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import ma.iatacademy.api.domain.entity.*;
 import ma.iatacademy.api.domain.enums.*;
 import ma.iatacademy.api.repository.*;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.core.annotation.Order;
@@ -13,15 +14,17 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.Year;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
 /**
- * Seeds demo lessons/quizzes on the official 2-year programme modules.
- * Idempotent via marker lesson "Bienvenue à IAT Academy".
- * Does not rename official module titles from Flyway V3.
+ * Fake data for client demos: catalog content on early modules + distinct learner scenarios.
+ * Content is idempotent via marker lesson. Progress is reset when app.demo.reset-progress-on-startup=true.
  */
 @Slf4j
 @Component
@@ -31,7 +34,8 @@ public class DemoDataSeeder implements ApplicationRunner {
 
     private static final UUID FORMATION_ID =
             UUID.fromString("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
-    private static final String DEMO_MARKER = "Bienvenue à IAT Academy";
+    /** Changing this forces a one-shot catalog reseed on next boot. */
+    private static final String DEMO_MARKER = "Embarquement IAT Academy";
 
     private final ModuleRepository moduleRepository;
     private final LessonRepository lessonRepository;
@@ -39,14 +43,19 @@ public class DemoDataSeeder implements ApplicationRunner {
     private final QuizRepository quizRepository;
     private final UserRepository userRepository;
     private final LessonProgressRepository lessonProgressRepository;
+    private final QuizAttemptRepository quizAttemptRepository;
+    private final LearnerUfValidationRepository ufValidationRepository;
     private final PasswordEncoder passwordEncoder;
     private final EntityManager entityManager;
+
+    @Value("${app.demo.reset-progress-on-startup:true}")
+    private boolean resetProgressOnStartup;
 
     @Override
     @Transactional
     public void run(ApplicationArguments args) {
         ensureStaffUsers();
-        ensureExtraLearners();
+        ensureDemoLearners();
 
         List<ModuleEntity> modules = moduleRepository.findByFormationIdOrderByOrderIndexAsc(FORMATION_ID);
         if (modules.isEmpty()) {
@@ -56,33 +65,76 @@ public class DemoDataSeeder implements ApplicationRunner {
 
         boolean demoReady = lessonRepository.findAll().stream()
                 .anyMatch(l -> DEMO_MARKER.equals(l.getTitle()));
-        if (demoReady) {
-            log.info("Demo content marker found — skipping reseed.");
-            return;
+        if (!demoReady) {
+            log.warn("Clearing catalog + seeding fresh demo lessons/quizzes…");
+            clearCatalogContent();
+            modules = moduleRepository.findByFormationIdOrderByOrderIndexAsc(FORMATION_ID);
+            seedCatalog(modules);
+        } else {
+            log.info("Demo catalog marker present — keep lessons/quizzes.");
         }
 
-        log.warn("Clearing existing catalog content then seeding demo data…");
-        clearCatalogContent();
+        if (resetProgressOnStartup) {
+            log.warn("Resetting learner progress + seeding demo scenarios…");
+            wipeLearnerState();
+            seedScenarios(modules);
+        }
 
-        // refresh modules after clear
-        modules = moduleRepository.findByFormationIdOrderByOrderIndexAsc(FORMATION_ID);
+        log.warn("""
+                Demo ready — scénarios:
+                  apprenant@iat-academy.local / Apprenant@123  → UF1 en cours (module 1 validé)
+                  amina.benali@demo.local / Demo@1234          → UF1 terminée, UF2 démarrée
+                  youssef.idrissi@demo.local / Demo@1234       → débutant (1 section)
+                  lina.cherkaoui@demo.local / Demo@1234        → zéro progression
+                  salma.naji@demo.local / Demo@1234            → année 2 ouverte
+                  karim.ouafi@demo.local / Demo@1234           → paiement / activation en attente
+                """);
+    }
+
+    private void seedCatalog(List<ModuleEntity> modules) {
+        if (modules.size() < 4) {
+            log.warn("Not enough modules for demo catalog (need ≥4, got {}).", modules.size());
+            return;
+        }
 
         seedModuleRich(modules.get(0), MODULE_1_LESSONS);
         seedModuleRich(modules.get(1), MODULE_2_LESSONS);
         seedModuleRich(modules.get(2), MODULE_3_LESSONS);
-        seedModuleLight(modules.get(3), List.of("Attitude professionnelle", "Présentation", "Savoir-être"));
-        seedModuleLight(modules.get(4), List.of("Techniques d'animation", "Jeux de rôle", "Gestion de groupe"));
+        seedModuleLight(modules.get(3), List.of(
+                "Posture professionnelle", "Communication non verbale", "Gestion du stress client"));
 
-        seedFinModuleQuiz(modules.get(0), "Quiz — Techniques de communication", QUIZ_1);
-        seedFinModuleQuiz(modules.get(1), "Quiz — Français", QUIZ_2);
+        if (modules.size() > 4) {
+            seedModuleLight(modules.get(4), List.of(
+                    "Ice-breakers aéroport", "Animation de groupe", "Briefing équipage"));
+        }
+        if (modules.size() > 5) {
+            seedModuleLight(modules.get(5), List.of(
+                    "Accueil landside", "File d'attente", "Réclamations passagers"));
+        }
+        if (modules.size() > 6) {
+            seedModuleLight(modules.get(6), List.of(
+                    "Flux aéroportuaires", "Correspondances", "Gestion des retards"));
+        }
+        if (modules.size() > 7) {
+            seedModuleLight(modules.get(7), List.of(
+                    "GDS découverte", "Devis voyage", "Upsell services"));
+        }
 
-        seedDemoProgress(modules);
-        log.warn("Demo content ready. Login: apprenant@iat-academy.local / Apprenant@123");
+        // Remaining année 1 modules (UF3–UF5) get light demo sections
+        for (int i = 8; i < Math.min(18, modules.size()); i++) {
+            ModuleEntity mod = modules.get(i);
+            seedModuleLight(mod, List.of(
+                    mod.getTitle() + " — intro démo", "Points clés", "Synthèse"));
+        }
+
+        seedFinModuleQuiz(modules.get(0), "Quiz — Techniques de communication", QUIZ_COM);
+        seedFinModuleQuiz(modules.get(1), "Quiz — Français pro", QUIZ_FR);
+        seedFinModuleQuiz(modules.get(2), "Quiz — Anglais aviation", QUIZ_EN);
+        seedFinModuleQuiz(modules.get(3), "Quiz — Comportement & attitude", QUIZ_ATTITUDE);
     }
 
     private void clearCatalogContent() {
-        entityManager.createQuery("DELETE FROM LessonProgress").executeUpdate();
-        entityManager.createQuery("DELETE FROM QuizAttempt").executeUpdate();
+        wipeLearnerState();
         entityManager.createQuery("DELETE FROM AnswerOption").executeUpdate();
         entityManager.createQuery("DELETE FROM Question").executeUpdate();
         entityManager.createQuery("DELETE FROM Quiz").executeUpdate();
@@ -92,28 +144,200 @@ public class DemoDataSeeder implements ApplicationRunner {
         entityManager.clear();
     }
 
+    private void wipeLearnerState() {
+        entityManager.createQuery("DELETE FROM LessonProgress").executeUpdate();
+        entityManager.createQuery("DELETE FROM QuizAttempt").executeUpdate();
+        entityManager.createQuery("DELETE FROM Certificate").executeUpdate();
+        entityManager.createQuery("DELETE FROM LearnerUfValidation").executeUpdate();
+        entityManager.createQuery("DELETE FROM LearnerDocument").executeUpdate();
+        entityManager.flush();
+    }
+
     private void ensureStaffUsers() {
-        createUserIfAbsent("formateur@iat-academy.local", "Formateur@123", "Sara Formateur", Role.FORMATEUR);
+        upsertUser("formateur@iat-academy.local", "Formateur@123", "Sara Formateur",
+                Role.FORMATEUR, PaymentStatus.EXEMPTED, true, false, null);
     }
 
-    private void ensureExtraLearners() {
-        createUserIfAbsent("amina.benali@demo.local", "Demo@1234", "Amina Benali", Role.ETUDIANT);
-        createUserIfAbsent("youssef.idrissi@demo.local", "Demo@1234", "Youssef Idrissi", Role.ETUDIANT);
-        createUserIfAbsent("lina.cherkaoui@demo.local", "Demo@1234", "Lina Cherkaoui", Role.ETUDIANT);
+    private void ensureDemoLearners() {
+        int year = Year.now().getValue();
+        upsertLearner("apprenant@iat-academy.local", "Apprenant@123", "Nora El Amrani",
+                year, true, false, "0612001100", "BE123456", LocalDate.of(2002, 4, 12));
+        upsertLearner("amina.benali@demo.local", "Demo@1234", "Amina Benali",
+                year, true, false, "0612002200", "BH654321", LocalDate.of(2001, 9, 3));
+        upsertLearner("youssef.idrissi@demo.local", "Demo@1234", "Youssef Idrissi",
+                year, true, false, "0612003300", "BJ998877", LocalDate.of(2003, 1, 22));
+        upsertLearner("lina.cherkaoui@demo.local", "Demo@1234", "Lina Cherkaoui",
+                year, true, false, "0612004400", "BK112233", LocalDate.of(2002, 11, 8));
+        upsertLearner("salma.naji@demo.local", "Demo@1234", "Salma Naji",
+                year - 1, true, true, "0612005500", "BL445566", LocalDate.of(2000, 6, 15));
+        // Pending activation — visible in admin users list
+        upsertUser("karim.ouafi@demo.local", "Demo@1234", "Karim Ouafi",
+                Role.ETUDIANT, PaymentStatus.PENDING, false, false, year);
     }
 
-    private void createUserIfAbsent(String email, String password, String fullName, Role role) {
-        if (userRepository.existsByEmailIgnoreCase(email)) return;
-        userRepository.save(User.builder()
-                .email(email)
-                .passwordHash(passwordEncoder.encode(password))
-                .fullName(fullName)
-                .role(role)
-                .enabled(true)
-                .paymentStatus(role == Role.ETUDIANT ? PaymentStatus.PAID : PaymentStatus.EXEMPTED)
-                .activatedAt(Instant.now())
+    private void upsertLearner(
+            String email, String password, String fullName,
+            int enrollmentYear, boolean activated, boolean year2,
+            String phone, String cin, LocalDate birthDate
+    ) {
+        User user = userRepository.findByEmailIgnoreCase(email).orElse(null);
+        if (user == null) {
+            user = User.builder()
+                    .email(email)
+                    .passwordHash(passwordEncoder.encode(password))
+                    .role(Role.ETUDIANT)
+                    .build();
+            log.warn("Demo learner created: {} / {}", email, password);
+        }
+        user.setFullName(fullName);
+        user.setEnabled(true);
+        user.setPaymentStatus(PaymentStatus.PAID);
+        user.setEnrollmentYear(enrollmentYear);
+        user.setActivatedAt(activated ? Instant.now().minusSeconds(86400L * 40) : null);
+        user.setYear2AccessEnabled(year2);
+        user.setPhone(phone);
+        user.setCin(cin);
+        user.setBirthDate(birthDate);
+        user.setAddress("Casablanca — Maroc");
+        userRepository.save(user);
+    }
+
+    private void upsertUser(
+            String email, String password, String fullName,
+            Role role, PaymentStatus payment, boolean enabled, boolean year2, Integer enrollmentYear
+    ) {
+        User user = userRepository.findByEmailIgnoreCase(email).orElse(null);
+        if (user == null) {
+            user = User.builder()
+                    .email(email)
+                    .passwordHash(passwordEncoder.encode(password))
+                    .role(role)
+                    .build();
+            log.warn("Demo user created: {} / {} ({})", email, password, role);
+        }
+        user.setFullName(fullName);
+        user.setEnabled(enabled);
+        user.setPaymentStatus(payment);
+        user.setEnrollmentYear(enrollmentYear);
+        user.setActivatedAt(enabled && role != Role.ETUDIANT ? Instant.now()
+                : (enabled ? Instant.now() : null));
+        if (role == Role.ETUDIANT && payment == PaymentStatus.PENDING) {
+            user.setActivatedAt(null);
+        }
+        user.setYear2AccessEnabled(year2);
+        userRepository.save(user);
+    }
+
+    private void seedScenarios(List<ModuleEntity> modules) {
+        if (modules.isEmpty()) return;
+
+        User apprenant = requireUser("apprenant@iat-academy.local");
+        User amina = requireUser("amina.benali@demo.local");
+        User youssef = requireUser("youssef.idrissi@demo.local");
+        User salma = requireUser("salma.naji@demo.local");
+        User admin = userRepository.findByEmailIgnoreCase("admin@iat-academy.local").orElse(null);
+
+        // Nora — module 1 validé, module 2 en cours
+        completeModule(apprenant, modules.get(0));
+        if (modules.size() > 1) {
+            List<Lesson> m2 = lessonsOf(modules.get(1));
+            for (int i = 0; i < Math.min(2, m2.size()); i++) {
+                completeLesson(apprenant, m2.get(i));
+            }
+        }
+
+        // Amina — toute UF1 validée, premier module UF2 démarré
+        for (int i = 0; i < Math.min(4, modules.size()); i++) {
+            completeModule(amina, modules.get(i));
+        }
+        if (modules.size() > 4) {
+            List<Lesson> uf2first = lessonsOf(modules.get(4));
+            if (!uf2first.isEmpty()) {
+                completeLesson(amina, uf2first.get(0));
+            }
+        }
+
+        // Youssef — tout début
+        List<Lesson> m1 = lessonsOf(modules.get(0));
+        if (!m1.isEmpty()) {
+            completeLesson(youssef, m1.get(0));
+        }
+
+        // Lina — volontairement vide
+
+        // Salma — année 1 content + UF5 validated + year2 flag
+        for (int i = 0; i < Math.min(18, modules.size()); i++) {
+            ModuleEntity mod = modules.get(i);
+            if (!lessonsOf(mod).isEmpty()) {
+                completeModule(salma, mod);
+            }
+        }
+        if (admin != null) {
+            validateUf(salma, "UF 5", admin, "Stage validé — scénario démo année 2");
+        }
+        salma.setYear2AccessEnabled(true);
+        userRepository.save(salma);
+    }
+
+    private User requireUser(String email) {
+        return userRepository.findByEmailIgnoreCase(email)
+                .orElseThrow(() -> new IllegalStateException("Demo user missing: " + email));
+    }
+
+    private List<Lesson> lessonsOf(ModuleEntity module) {
+        return lessonRepository.findByModuleIdOrderByOrderIndexAsc(module.getId());
+    }
+
+    private void completeModule(User user, ModuleEntity module) {
+        lessonsOf(module).forEach(l -> completeLesson(user, l));
+        quizRepository.findByModuleIdAndQuizType(module.getId(), QuizType.FIN_MODULE)
+                .ifPresent(quiz -> passQuiz(user, quiz));
+    }
+
+    private void completeLesson(User user, Lesson lesson) {
+        if (lessonProgressRepository.findByUserIdAndLessonId(user.getId(), lesson.getId()).isPresent()) {
+            return;
+        }
+        lessonProgressRepository.save(LessonProgress.builder()
+                .user(user)
+                .lesson(lesson)
+                .videoWatchedPercent(100)
+                .completed(true)
+                .completedAt(Instant.now().minusSeconds(3600))
                 .build());
-        log.warn("Demo user created: {} / {} ({})", email, password, role);
+    }
+
+    private void passQuiz(User user, Quiz quiz) {
+        boolean already = quizAttemptRepository
+                .findFirstByUserIdAndQuizIdAndStatusOrderBySubmittedAtDesc(
+                        user.getId(), quiz.getId(), AttemptStatus.PASSED)
+                .isPresent();
+        if (already) return;
+        quizAttemptRepository.save(QuizAttempt.builder()
+                .user(user)
+                .quiz(quiz)
+                .startedAt(Instant.now().minusSeconds(900))
+                .submittedAt(Instant.now().minusSeconds(120))
+                .expiresAt(null)
+                .score(BigDecimal.valueOf(86))
+                .status(AttemptStatus.PASSED)
+                .questionOrder(List.of())
+                .answers(Map.of())
+                .build());
+    }
+
+    private void validateUf(User learner, String ufCode, User director, String note) {
+        LearnerUfValidation row = ufValidationRepository
+                .findByLearnerIdAndUfCode(learner.getId(), ufCode)
+                .orElseGet(() -> LearnerUfValidation.builder()
+                        .learner(learner)
+                        .ufCode(ufCode)
+                        .build());
+        row.setValidated(true);
+        row.setValidatedAt(Instant.now().minusSeconds(86400));
+        row.setValidatedBy(director);
+        row.setNote(note);
+        ufValidationRepository.save(row);
     }
 
     private void seedModuleRich(ModuleEntity module, List<LessonSpec> specs) {
@@ -149,9 +373,10 @@ public class DemoDataSeeder implements ApplicationRunner {
                     .orderIndex(0)
                     .content(Map.of("body",
                             "<h2>" + title + "</h2>"
-                                    + "<p>Contenu de démonstration pour <strong>" + module.getTitle()
-                                    + "</strong>. Utilisez l'éditeur TipTap admin pour enrichir cette section.</p>"
-                                    + "<ul><li>Objectif pédagogique</li><li>Points clés</li><li>Quiz associé au module</li></ul>"))
+                                    + "<p>Contenu démo pour <strong>" + module.getTitle()
+                                    + "</strong> (" + module.getCode() + ").</p>"
+                                    + "<ul><li>Objectif pédagogique</li><li>Cas pratique</li>"
+                                    + "<li>Points de contrôle</li></ul>"))
                     .build());
         }
     }
@@ -182,55 +407,16 @@ public class DemoDataSeeder implements ApplicationRunner {
                     .build();
             int oi = 0;
             for (OptionSpec opt : qs.options()) {
-                AnswerOption ao = AnswerOption.builder()
+                q.getOptions().add(AnswerOption.builder()
                         .question(q)
                         .label(opt.label())
                         .correct(opt.correct())
                         .orderIndex(oi++)
-                        .build();
-                q.getOptions().add(ao);
+                        .build());
             }
             quiz.getQuestions().add(q);
         }
         quizRepository.save(quiz);
-    }
-
-    private void seedDemoProgress(List<ModuleEntity> modules) {
-        User demo = userRepository.findByEmailIgnoreCase("apprenant@iat-academy.local").orElse(null);
-        User amina = userRepository.findByEmailIgnoreCase("amina.benali@demo.local").orElse(null);
-        User youssef = userRepository.findByEmailIgnoreCase("youssef.idrissi@demo.local").orElse(null);
-        if (demo == null || modules.isEmpty()) return;
-
-        List<Lesson> m1 = lessonRepository.findByModuleIdOrderByOrderIndexAsc(modules.get(0).getId());
-        List<Lesson> m2 = lessonRepository.findByModuleIdOrderByOrderIndexAsc(modules.get(1).getId());
-
-        for (int i = 0; i < Math.min(2, m1.size()); i++) {
-            completeLesson(demo, m1.get(i));
-        }
-
-        if (amina != null) {
-            m1.forEach(l -> completeLesson(amina, l));
-            for (int i = 0; i < Math.min(2, m2.size()); i++) {
-                completeLesson(amina, m2.get(i));
-            }
-        }
-
-        if (youssef != null && !m1.isEmpty()) {
-            completeLesson(youssef, m1.get(0));
-        }
-    }
-
-    private void completeLesson(User user, Lesson lesson) {
-        if (lessonProgressRepository.findByUserIdAndLessonId(user.getId(), lesson.getId()).isPresent()) {
-            return;
-        }
-        lessonProgressRepository.save(LessonProgress.builder()
-                .user(user)
-                .lesson(lesson)
-                .videoWatchedPercent(100)
-                .completed(true)
-                .completedAt(Instant.now())
-                .build());
     }
 
     private record LessonSpec(String title, String html) {}
@@ -239,139 +425,126 @@ public class DemoDataSeeder implements ApplicationRunner {
 
     private static final List<LessonSpec> MODULE_1_LESSONS = List.of(
             new LessonSpec(DEMO_MARKER, """
-                    <h1>Bienvenue à IAT Academy</h1>
-                    <p>Cette formation vous prépare aux métiers de l'<strong>aéroportuaire</strong> et du transport aérien.</p>
-                    <h2>Objectifs du parcours</h2>
+                    <h1>Embarquement IAT Academy</h1>
+                    <p>Bienvenue à bord du cycle <strong>Hôtesse / Steward / Tourisme &amp; Aéronautique</strong>.</p>
+                    <h2>Ce que vous validez</h2>
                     <ul>
-                      <li>Comprendre l'écosystème aviation civile</li>
-                      <li>Maîtriser la sûreté et la réglementation</li>
-                      <li>Valider 36 modules (cycle 2 ans) + attestation PDF</li>
+                      <li>11 unités de formation sur 2 ans</li>
+                      <li>36 modules + stage + soutenance</li>
+                      <li>Quiz bloquants et suivi de progression</li>
                     </ul>
-                    <blockquote>Conseil : utilisez la barre latérale pour naviguer entre les sections, comme sur Coursera.</blockquote>
+                    <blockquote>Astuce démo : naviguez via la sidebar sans recharger tout le shell.</blockquote>
                     """),
-            new LessonSpec("Acteurs du transport aérien", """
-                    <h1>Les acteurs du transport aérien</h1>
-                    <p>Le système aéronautique repose sur plusieurs parties prenantes.</p>
-                    <h2>Principaux acteurs</h2>
-                    <ol>
-                      <li><strong>ICAO</strong> — normes internationales</li>
-                      <li><strong>IATA</strong> — compagnies aériennes</li>
-                      <li><strong>Aéroports</strong> — exploitation des infrastructures</li>
-                      <li><strong>Handlers</strong> — assistance en escale</li>
-                    </ol>
-                    <h3>À retenir</h3>
-                    <p>Chaque acteur a des responsabilités complémentaires pour la sécurité et la qualité de service.</p>
+            new LessonSpec("Écoute active & reformulation", """
+                    <h1>Écoute active</h1>
+                    <p>Reformuler, clarifier, confirmer — les 3 gestes de l'accueil pro.</p>
+                    <ol><li>Accuser réception</li><li>Reformuler</li><li>Proposer une action</li></ol>
                     """),
-            new LessonSpec("Vocabulaire opérationnel", """
-                    <h1>Vocabulaire opérationnel</h1>
-                    <p>Familiarisez-vous avec les termes utilisés quotidiennement.</p>
-                    <ul>
-                      <li><strong>Turnaround</strong> — rotation avion au sol</li>
-                      <li><strong>Gate</strong> — porte d'embarquement</li>
-                      <li><strong>Stand</strong> — poste de stationnement</li>
-                      <li><strong>FOD</strong> — debris dangereux en piste</li>
-                    </ul>
-                    <p><em>Exercice :</em> notez 5 termes nouveaux et leur définition.</p>
+            new LessonSpec("Communication en situation de stress", """
+                    <h1>Stress opérationnel</h1>
+                    <p>Retards, correspondances manquées, files longues : garder le calme et la clarté.</p>
                     """),
-            new LessonSpec("Organisation d'un aéroport", """
-                    <h1>Organisation d'un aéroport</h1>
-                    <h2>Zones principales</h2>
-                    <ul>
-                      <li>Terminal passagers (landside / airside)</li>
-                      <li>Piste et taxiways</li>
-                      <li>Zone fret</li>
-                      <li>Installations techniques</li>
-                    </ul>
-                    <p>La cloison <u>landside / airside</u> est critique pour la sûreté.</p>
+            new LessonSpec("Briefing oral efficace", """
+                    <h1>Briefing</h1>
+                    <p>Structure START : Situation, Tâche, Action, Résultat, Timing.</p>
                     """)
     );
 
     private static final List<LessonSpec> MODULE_2_LESSONS = List.of(
-            new LessonSpec("Principes de sûreté", """
-                    <h1>Principes de sûreté aéroportuaire</h1>
-                    <p>La sûreté vise à prévenir les actes d'<strong>intervention illicite</strong>.</p>
-                    <h2>Piliers</h2>
-                    <ul><li>Prévention</li><li>Détection</li><li>Réponse</li></ul>
+            new LessonSpec("Français de service", """
+                    <h1>Français de service</h1>
+                    <p>Formules d'accueil, politesse, traitement des réclamations.</p>
                     """),
-            new LessonSpec("Contrôles et screening", """
-                    <h1>Contrôles et screening</h1>
-                    <p>Flux passagers, bagages de cabine et de soute.</p>
-                    <ol>
-                      <li>Contrôle documentaire</li>
-                      <li>Inspection filtrage</li>
-                      <li>Contrôles aléatoires renforcés</li>
-                    </ol>
+            new LessonSpec("Rédaction professionnelle", """
+                    <h1>Écrits pro</h1>
+                    <p>Mails, notes de service, comptes-rendus de vacation.</p>
                     """),
-            new LessonSpec("Badges et accès", """
-                    <h1>Badges et accès zones réservées</h1>
-                    <p>Le contrôle d'accès repose sur l'autorisation, l'identification et la traçabilité.</p>
-                    <blockquote>Ne jamais prêter son badge — règle d'or.</blockquote>
+            new LessonSpec("Annonces passagers", """
+                    <h1>Annonces</h1>
+                    <p>Diction, débit, message standard vs message de crise.</p>
                     """)
     );
 
     private static final List<LessonSpec> MODULE_3_LESSONS = List.of(
-            new LessonSpec("Cadre ICAO", """
-                    <h1>Cadre ICAO</h1>
-                    <p>Les <strong>Annexes</strong> ICAO structurent les standards de sécurité et sûreté.</p>
+            new LessonSpec("English for aviation — basics", """
+                    <h1>Aviation English</h1>
+                    <p>Gate, boarding, delay, connecting flight — vocabulaire landside.</p>
                     """),
-            new LessonSpec("Standards IATA", """
-                    <h1>Standards IATA</h1>
-                    <p>Les résolutions et manuels IATA guident les opérations des compagnies.</p>
+            new LessonSpec("Passenger assistance phrases", """
+                    <h1>Assistance phrases</h1>
+                    <p>How may I help you? / Boarding is now complete.</p>
                     """),
-            new LessonSpec("Conformité locale", """
-                    <h1>Conformité locale</h1>
-                    <p>Chaque État transpose les standards internationaux dans sa réglementation nationale.</p>
+            new LessonSpec("Listening drill", """
+                    <h1>Listening</h1>
+                    <p>Comprendre une annonce en anglais sous bruit ambiant (simulation).</p>
                     """)
     );
 
-    private static final List<QuestionSpec> QUIZ_1 = List.of(
+    private static final List<QuestionSpec> QUIZ_COM = List.of(
             new QuestionSpec(
-                    "Que signifie ICAO ?",
+                    "La reformulation sert surtout à :",
                     QuestionType.SINGLE_CHOICE,
-                    "International Civil Aviation Organization.",
+                    "Vérifier la compréhension mutuelle.",
                     List.of(
-                            new OptionSpec("International Civil Aviation Organization", true),
-                            new OptionSpec("International Cargo Airline Office", false),
-                            new OptionSpec("Internal Cabin Attendant Organization", false)
+                            new OptionSpec("Accélérer l'embarquement uniquement", false),
+                            new OptionSpec("Vérifier qu'on a bien compris le besoin", true),
+                            new OptionSpec("Remplacer le briefing équipage", false)
                     )),
             new QuestionSpec(
-                    "Landside et airside désignent :",
-                    QuestionType.SINGLE_CHOICE,
-                    "Deux zones séparées par le contrôle de sûreté.",
-                    List.of(
-                            new OptionSpec("Deux compagnies concurrentes", false),
-                            new OptionSpec("Zones publiques vs zones contrôlées après sûreté", true),
-                            new OptionSpec("Deux types d'appareils", false)
-                    )),
-            new QuestionSpec(
-                    "Le turnaround concerne la rotation avion au sol.",
+                    "Un briefing oral efficace contient un timing clair.",
                     QuestionType.TRUE_FALSE,
-                    "Oui, c'est le temps entre l'arrivée et le prochain départ.",
+                    "Oui — le T de START inclut le timing.",
+                    List.of(new OptionSpec("Vrai", true), new OptionSpec("Faux", false)))
+    );
+
+    private static final List<QuestionSpec> QUIZ_FR = List.of(
+            new QuestionSpec(
+                    "Quelle formule est la plus professionnelle ?",
+                    QuestionType.SINGLE_CHOICE,
+                    "Politesse + précision.",
                     List.of(
-                            new OptionSpec("Vrai", true),
-                            new OptionSpec("Faux", false)
+                            new OptionSpec("Attends je regarde", false),
+                            new OptionSpec("Je vérifie immédiatement et je reviens vers vous", true),
+                            new OptionSpec("C'est pas mon service", false)
+                    )),
+            new QuestionSpec(
+                    "Quels éléments appartiennent à une annonce claire ? (plusieurs)",
+                    QuestionType.MULTI_CHOICE,
+                    "Qui / quoi / où / quand.",
+                    List.of(
+                            new OptionSpec("Identification du vol", true),
+                            new OptionSpec("Information floue sans action", false),
+                            new OptionSpec("Prochaine étape pour le passager", true),
+                            new OptionSpec("Blague hors contexte", false)
                     ))
     );
 
-    private static final List<QuestionSpec> QUIZ_2 = List.of(
+    private static final List<QuestionSpec> QUIZ_EN = List.of(
             new QuestionSpec(
-                    "La sûreté aéroportuaire vise principalement à :",
+                    "\"Boarding\" means :",
                     QuestionType.SINGLE_CHOICE,
-                    "Prévenir les actes d'intervention illicite.",
+                    "Embarquement des passagers.",
                     List.of(
-                            new OptionSpec("Augmenter les retards", false),
-                            new OptionSpec("Prévenir les actes illicites", true),
-                            new OptionSpec("Remplacer la maintenance", false)
+                            new OptionSpec("Luggage claim", false),
+                            new OptionSpec("Passenger embarkation", true),
+                            new OptionSpec("Aircraft refuel only", false)
                     )),
             new QuestionSpec(
-                    "Quelles sont des bonnes pratiques d'accès ? (plusieurs réponses)",
-                    QuestionType.MULTI_CHOICE,
-                    "Badge personnel + ne jamais prêter + signaler anomalies.",
+                    "\"Connecting flight\" désigne une correspondance.",
+                    QuestionType.TRUE_FALSE,
+                    "Correct.",
+                    List.of(new OptionSpec("True", true), new OptionSpec("False", false)))
+    );
+
+    private static final List<QuestionSpec> QUIZ_ATTITUDE = List.of(
+            new QuestionSpec(
+                    "Face à un passager irrité, la première priorité est :",
+                    QuestionType.SINGLE_CHOICE,
+                    "Sécuriser le dialogue puis traiter le besoin.",
                     List.of(
-                            new OptionSpec("Porter son propre badge", true),
-                            new OptionSpec("Prêter son badge à un collègue", false),
-                            new OptionSpec("Signaler un accès anormal", true),
-                            new OptionSpec("Laisser une porte ouverte pour gagner du temps", false)
+                            new OptionSpec("Hausser le ton", false),
+                            new OptionSpec("Écouter puis reformuler calmement", true),
+                            new OptionSpec("Ignorer et passer au suivant", false)
                     ))
     );
 }

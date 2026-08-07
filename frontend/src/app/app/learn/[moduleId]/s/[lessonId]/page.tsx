@@ -3,12 +3,25 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { getLesson, markLessonComplete } from "@/lib/api";
-import { CourseProvider, useCourse } from "@/components/learner/CourseProvider";
+import { getLesson, markLessonComplete, sendLessonHeartbeat } from "@/lib/api";
+import { useCourse } from "@/components/learner/CourseProvider";
 import { LessonBlocks } from "@/components/learner/LessonBlocks";
+import { LessonQA } from "@/components/learner/LessonQA";
 import type { Lesson } from "@/types/domain";
 import { ApiClientError } from "@/lib/api-client";
+import { IconBadge, IconCompass, IconPlane } from "@/components/brand/IatIcons";
 import { btn } from "@/lib/ui";
+
+function titleWithGrad(text: string) {
+  const parts = text.trim().split(/\s+/);
+  if (parts.length < 2) return text;
+  const last = parts.pop()!;
+  return (
+    <>
+      {parts.join(" ")} <span className="grad">{last}</span>
+    </>
+  );
+}
 
 function SectionContent() {
   const params = useParams<{ moduleId: string; lessonId: string }>();
@@ -28,6 +41,14 @@ function SectionContent() {
       );
   }, [params.lessonId]);
 
+  useEffect(() => {
+    if (!params.lessonId) return;
+    const interval = setInterval(() => {
+      void sendLessonHeartbeat(params.lessonId, 15);
+    }, 15_000);
+    return () => clearInterval(interval);
+  }, [params.lessonId]);
+
   const lessons = useMemo(() => module?.lessons ?? [], [module?.lessons]);
   const idx = useMemo(
     () => lessons.findIndex((l) => l.id === params.lessonId),
@@ -36,6 +57,7 @@ function SectionContent() {
   const prev = idx > 0 ? lessons[idx - 1] : null;
   const next = idx >= 0 && idx < lessons.length - 1 ? lessons[idx + 1] : null;
   const moduleQuiz = module?.quizzes.find((q) => q.quizType === "FIN_MODULE" && !q.lessonId);
+  const sectionCode = `S-${String(Math.max(idx, 0) + 1).padStart(2, "0")}`;
 
   const goNext = useCallback(() => {
     if (next) {
@@ -60,22 +82,32 @@ function SectionContent() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl px-6 py-8">
-      <p className="text-xs text-muted">
-        <span className="font-medium text-heading">{module?.title}</span>
-        {" · "}
-        <span>Section {idx >= 0 ? idx + 1 : "—"}</span>
-        {lessons.length > 0 ? (
-          <span className="text-muted"> / {lessons.length}</span>
-        ) : null}
-      </p>
+    <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
+      <section className="learn-pass" aria-label="Section en cours">
+        <div className="learn-pass-main">
+          <span className="bp-eyebrow">
+            <IconPlane size={14} />
+            Mode lecture
+          </span>
+          <p className="learn-mod-meta">
+            {module?.title ?? "Module"} · Section {idx >= 0 ? idx + 1 : "—"}
+            {lessons.length > 0 ? ` / ${lessons.length}` : ""}
+          </p>
+          <h1 className="learn-pass-title">
+            {lesson ? titleWithGrad(lesson.title) : "Chargement…"}
+          </h1>
+        </div>
+        <div className="learn-pass-stub">
+          <IconCompass size={22} />
+          <span className="course-stub-code">{sectionCode}</span>
+        </div>
+      </section>
 
-      {error && <p className="alert alert-error mt-4">{error}</p>}
+      {error && <p className="alert alert-error mb-4">{error}</p>}
 
       {lesson && (
         <>
-          <h1 className="mt-4 text-2xl font-semibold text-heading">{lesson.title}</h1>
-          <div className="mt-8">
+          <div className="learn-content-card">
             <LessonBlocks
               blocks={lesson.blocks || []}
               lessonId={lesson.id}
@@ -85,12 +117,9 @@ function SectionContent() {
             />
           </div>
 
-          <div className="mt-10 flex flex-wrap items-center justify-between gap-3 border-t border-theme pt-6">
+          <div className="mt-8 flex flex-wrap items-center justify-between gap-3 border-t border-theme pt-6">
             {prev ? (
-              <Link
-                href={`/app/learn/${params.moduleId}/s/${prev.id}`}
-                className={btn.secondary}
-              >
+              <Link href={`/app/learn/${params.moduleId}/s/${prev.id}`} className={btn.secondary}>
                 ← {prev.title}
               </Link>
             ) : (
@@ -103,6 +132,7 @@ function SectionContent() {
                 onClick={() => void onComplete()}
                 className={btn.primary}
               >
+                <IconPlane size={16} />
                 {busy ? "…" : next || moduleQuiz ? "Terminer et continuer" : "Marquer terminé"}
               </button>
               {next && (
@@ -113,28 +143,29 @@ function SectionContent() {
               {!next && moduleQuiz && (
                 <Link
                   href={`/app/learn/${params.moduleId}/quiz/${moduleQuiz.id}`}
-                  className={btn.warning}
+                  className={btn.secondary}
                 >
-                  Passer le quiz →
+                  <IconBadge size={16} />
+                  Passer le quiz
                 </Link>
               )}
             </div>
           </div>
+
+          <LessonQA lessonId={lesson.id} />
+          {params.moduleId && (
+            <LessonQA moduleId={params.moduleId} title="Forum du module" />
+          )}
         </>
       )}
 
       {!lesson && !error && (
-        <p className="mt-8 text-sm text-muted">Chargement du contenu…</p>
+        <p className="mt-6 text-sm text-muted">Chargement du contenu…</p>
       )}
     </div>
   );
 }
 
 export default function LearnSectionPage() {
-  const params = useParams<{ moduleId: string; lessonId: string }>();
-  return (
-    <CourseProvider moduleId={params.moduleId} activeLessonId={params.lessonId}>
-      <SectionContent />
-    </CourseProvider>
-  );
+  return <SectionContent />;
 }

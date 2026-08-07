@@ -8,13 +8,10 @@ type Props = {
   className?: string;
 };
 
-/** Submit wrapper with runway light animation while loading */
+/** Simple submit wrapper (no runway animation). */
 export function AuthRunwaySubmit({ loading, children, className = "" }: Props) {
   return (
-    <div className={`auth-runway-wrap ${loading ? "is-loading" : ""} ${className}`}>
-      <div className="auth-runway-track" aria-hidden>
-        <div className="auth-runway-lights" />
-      </div>
+    <div className={`auth-submit-wrap ${loading ? "is-loading" : ""} ${className}`}>
       {children}
     </div>
   );
@@ -29,6 +26,6 @@ export function passwordStrengthLabel(password: string): { label: string; level:
   if (/[^A-Za-z0-9]/.test(password)) score++;
 
   if (score <= 1) return { label: "Faible — ajoutez des chiffres et majuscules", level: 1 };
-  if (score === 2) return { label: "Correct — presque prêt au décollage", level: 2 };
-  return { label: "Fort — prêt au décollage", level: 3 };
+  if (score === 2) return { label: "Correct", level: 2 };
+  return { label: "Fort", level: 3 };
 }

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import {
+  createStageSignoffInvite,
   getStageDossier,
   getUfValidations,
   listStageDossiers,
@@ -12,7 +13,8 @@ import {
 import { StageDossierPanel } from "@/components/stage/StageDossierPanel";
 import { useAuth } from "@/hooks/useAuth";
 import { ApiClientError } from "@/lib/api-client";
-import { btn } from "@/lib/ui";
+import { btn, inputClass } from "@/lib/ui";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 export default function AdminStagePage() {
   const { isAdmin, isFormateur } = useAuth();
@@ -23,6 +25,10 @@ export default function AdminStagePage() {
   const [error, setError] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [inviteFormFor, setInviteFormFor] = useState<string | null>(null);
+  const [tutorEmail, setTutorEmail] = useState("");
+  const [tutorName, setTutorName] = useState("");
+  const [invitingBusy, setInvitingBusy] = useState(false);
 
   const reloadList = useCallback(() => {
     return listStageDossiers()
@@ -71,6 +77,28 @@ export default function AdminStagePage() {
     }
   }
 
+  async function onSendInvite(ufCode: string) {
+    if (!selectedId || !tutorEmail.trim()) return;
+    setInvitingBusy(true);
+    setError(null);
+    try {
+      const res = await createStageSignoffInvite({
+        learnerId: selectedId,
+        ufCode,
+        tutorEmail: tutorEmail.trim(),
+        tutorName: tutorName.trim() || undefined,
+      });
+      setMsg(res.message);
+      setInviteFormFor(null);
+      setTutorEmail("");
+      setTutorName("");
+    } catch (err) {
+      setError(err instanceof ApiClientError ? err.message : "Envoi de l'invitation impossible.");
+    } finally {
+      setInvitingBusy(false);
+    }
+  }
+
   if (!isAdmin && !isFormateur) {
     return <p className="text-sm text-muted">Accès réservé à l&apos;académie.</p>;
   }
@@ -88,7 +116,7 @@ export default function AdminStagePage() {
 
       {error && <p className="alert alert-warning">{error}</p>}
       {msg && <p className="alert alert-success">{msg}</p>}
-      {loading && <div className="card-theme h-32 animate-pulse rounded-2xl bg-surface-2" />}
+      {loading && <Skeleton card className="h-32 rounded-2xl" />}
 
       {!loading && (
         <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
@@ -151,27 +179,72 @@ export default function AdminStagePage() {
                     validation pour UF 5 et UF 11 — indépendamment des dépôts de fichiers.
                   </p>
                   {validations.map((v) => (
-                    <div
-                      key={v.ufCode}
-                      className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-theme px-3 py-2 text-sm"
-                    >
-                      <div>
-                        <p className="font-medium text-heading">
-                          {v.ufCode === "UF 5" ? "UF Stage (année 1)" : "UF Soutenance (année 2)"}
-                        </p>
-                        <p className="text-xs text-muted">
-                          {v.validated
-                            ? `Validée${v.validatedByName ? ` par ${v.validatedByName}` : ""}`
-                            : "Non validée"}
-                        </p>
+                    <div key={v.ufCode} className="rounded-xl border border-theme px-3 py-2 text-sm">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div>
+                          <p className="font-medium text-heading">
+                            {v.ufCode === "UF 5" ? "UF Stage (année 1)" : "UF Soutenance (année 2)"}
+                          </p>
+                          <p className="text-xs text-muted">
+                            {v.validated
+                              ? `Validée${v.validatedByName ? ` par ${v.validatedByName}` : ""}`
+                              : "Non validée"}
+                          </p>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {!v.validated && (
+                            <button
+                              type="button"
+                              className={btn.secondarySm}
+                              onClick={() =>
+                                setInviteFormFor(inviteFormFor === v.ufCode ? null : v.ufCode)
+                              }
+                            >
+                              Inviter un tuteur
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            className={v.validated ? btn.secondarySm : btn.successSm}
+                            onClick={() => void toggleUf(v.ufCode, !v.validated)}
+                          >
+                            {v.validated ? "Annuler validation" : "Valider l'unité"}
+                          </button>
+                        </div>
                       </div>
-                      <button
-                        type="button"
-                        className={v.validated ? btn.secondarySm : btn.successSm}
-                        onClick={() => void toggleUf(v.ufCode, !v.validated)}
-                      >
-                        {v.validated ? "Annuler validation" : "Valider l'unité"}
-                      </button>
+
+                      {inviteFormFor === v.ufCode && (
+                        <div className="mt-3 flex flex-col gap-2 border-t border-theme pt-3 sm:flex-row sm:items-end">
+                          <div className="flex-1">
+                            <label className="text-xs text-muted">E-mail du tuteur</label>
+                            <input
+                              type="email"
+                              value={tutorEmail}
+                              onChange={(e) => setTutorEmail(e.target.value)}
+                              className={`${inputClass} mt-1`}
+                              placeholder="tuteur@entreprise.com"
+                            />
+                          </div>
+                          <div className="flex-1">
+                            <label className="text-xs text-muted">Nom (optionnel)</label>
+                            <input
+                              type="text"
+                              value={tutorName}
+                              onChange={(e) => setTutorName(e.target.value)}
+                              className={`${inputClass} mt-1`}
+                              placeholder="M./Mme…"
+                            />
+                          </div>
+                          <button
+                            type="button"
+                            disabled={invitingBusy || !tutorEmail.trim()}
+                            className={btn.primarySm}
+                            onClick={() => void onSendInvite(v.ufCode)}
+                          >
+                            {invitingBusy ? "…" : "Envoyer"}
+                          </button>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>

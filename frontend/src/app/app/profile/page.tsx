@@ -1,13 +1,16 @@
 "use client";
 
 import { FormEvent, useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { changePassword, getMe, uploadMyAvatar } from "@/lib/api";
+import { changePassword, confirmTotp, disableTotp, enableTotp, getMe, uploadMyAvatar } from "@/lib/api";
 import type { User } from "@/types/domain";
 import { ApiClientError } from "@/lib/api-client";
 import { resolveAssetUrl } from "@/lib/media";
 import { LearnerAppHeader } from "@/components/learner/LearnerAppHeader";
 import { btn, inputClass } from "@/lib/ui";
+import { Skeleton } from "@/components/ui/Skeleton";
+import { BadgeStrip } from "@/components/ui/BadgeStrip";
 
 const paymentLabel: Record<string, string> = {
   PENDING: "En attente de paiement",
@@ -68,7 +71,7 @@ export default function ProfilePage() {
       setUser(updated);
       setMessage("Photo de profil mise à jour.");
     } catch (err) {
-      setError(err instanceof ApiClientError ? err.message : "Upload impossible.");
+      setError(err instanceof ApiClientError ? err.message : "Envoi impossible.");
     } finally {
       setUploading(false);
       if (fileRef.current) fileRef.current.value = "";
@@ -95,7 +98,7 @@ export default function ProfilePage() {
   if (!user && !error) {
     return (
       <main className="min-h-screen bg-background p-8">
-        <div className="mx-auto max-w-2xl animate-pulse card-theme h-64 rounded-2xl bg-surface-2" />
+        <Skeleton card className="mx-auto h-64 max-w-2xl rounded-2xl" />
       </main>
     );
   }
@@ -166,20 +169,70 @@ export default function ProfilePage() {
             </section>
 
             <section className="card-theme rounded-2xl p-6">
+              <p className="text-sm font-semibold text-primary">Badges</p>
+              <div className="mt-4">
+                <BadgeStrip />
+              </div>
+            </section>
+
+            <TwoFactorSection />
+
+            <section className="card-theme rounded-2xl p-6">
+              <p className="text-sm font-semibold text-primary">Messagerie & devoirs</p>
+              <p className="mt-1 text-xs text-muted">Échangez avec votre formateur, déposez vos devoirs.</p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Link href="/app/messages" className={btn.secondarySm}>
+                  Ouvrir la messagerie
+                </Link>
+                <Link href="/app/assignments" className={btn.secondarySm}>
+                  Mes devoirs
+                </Link>
+              </div>
+            </section>
+
+            <section className="card-theme rounded-2xl p-6">
               <p className="text-sm font-semibold text-primary">Informations personnelles</p>
               <p className="mt-1 text-xs text-muted">Lecture seule — modification réservée à l&apos;admin.</p>
               <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
+                <div>
+                  <dt className="text-muted">Civilité</dt>
+                  <dd className="font-medium text-heading">
+                    {user.civility === "MR"
+                      ? "Mr"
+                      : user.civility === "MME"
+                        ? "Mme"
+                        : user.civility === "MLLE"
+                          ? "Mlle"
+                          : "—"}
+                  </dd>
+                </div>
                 <div>
                   <dt className="text-muted">Nom complet</dt>
                   <dd className="font-medium text-heading">{user.fullName || "—"}</dd>
                 </div>
                 <div>
-                  <dt className="text-muted">Email</dt>
+                  <dt className="text-muted">Courriel</dt>
                   <dd className="font-medium text-heading">{user.email}</dd>
                 </div>
                 <div>
                   <dt className="text-muted">Téléphone</dt>
                   <dd className="font-medium text-heading">{user.phone || "—"}</dd>
+                </div>
+                <div>
+                  <dt className="text-muted">Pays</dt>
+                  <dd className="font-medium text-heading">{user.country || "—"}</dd>
+                </div>
+                <div>
+                  <dt className="text-muted">Ville</dt>
+                  <dd className="font-medium text-heading">{user.city || "—"}</dd>
+                </div>
+                <div>
+                  <dt className="text-muted">Niveau d&apos;études</dt>
+                  <dd className="font-medium text-heading">{user.educationLevel || "—"}</dd>
+                </div>
+                <div>
+                  <dt className="text-muted">Dernier établissement</dt>
+                  <dd className="font-medium text-heading">{user.lastSchoolType || "—"}</dd>
                 </div>
                 <div>
                   <dt className="text-muted">CIN / pièce d&apos;identité</dt>
@@ -245,5 +298,105 @@ export default function ProfilePage() {
         </form>
       </div>
     </main>
+  );
+}
+
+function TwoFactorSection() {
+  const [secret, setSecret] = useState<{ secret: string; otpauthUri: string } | null>(null);
+  const [code, setCode] = useState("");
+  const [enabled, setEnabled] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+
+  async function onEnable() {
+    setBusy(true);
+    setMsg(null);
+    try {
+      setSecret(await enableTotp());
+    } catch (err) {
+      setMsg(err instanceof ApiClientError ? err.message : "Action impossible.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function onConfirm() {
+    setBusy(true);
+    setMsg(null);
+    try {
+      await confirmTotp(code);
+      setEnabled(true);
+      setSecret(null);
+      setCode("");
+      setMsg("2FA activée.");
+    } catch (err) {
+      setMsg(err instanceof ApiClientError ? err.message : "Code invalide.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function onDisable() {
+    setBusy(true);
+    setMsg(null);
+    try {
+      await disableTotp(code);
+      setEnabled(false);
+      setCode("");
+      setMsg("2FA désactivée.");
+    } catch (err) {
+      setMsg(err instanceof ApiClientError ? err.message : "Code invalide.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <section className="card-theme rounded-2xl p-6">
+      <p className="text-sm font-semibold text-primary">Authentification à deux facteurs</p>
+      <p className="mt-1 text-xs text-muted">
+        Optionnelle — code à 6 chiffres depuis une application type Google Authenticator.
+      </p>
+      {msg && <p className="mt-2 text-xs">{msg}</p>}
+
+      {!secret && !enabled && (
+        <button type="button" className={`${btn.secondarySm} mt-3`} disabled={busy} onClick={() => void onEnable()}>
+          Activer la 2FA
+        </button>
+      )}
+
+      {secret && (
+        <div className="mt-3 space-y-2">
+          <p className="text-xs text-body">
+            Ajoutez ce secret dans votre application d&apos;authentification : <code className="text-heading">{secret.secret}</code>
+          </p>
+          <div className="flex gap-2">
+            <input
+              className={inputClass}
+              placeholder="Code à 6 chiffres"
+              value={code}
+              onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+            />
+            <button type="button" className={btn.primarySm} disabled={busy || code.length !== 6} onClick={() => void onConfirm()}>
+              Confirmer
+            </button>
+          </div>
+        </div>
+      )}
+
+      {enabled && (
+        <div className="mt-3 flex gap-2">
+          <input
+            className={inputClass}
+            placeholder="Code à 6 chiffres pour désactiver"
+            value={code}
+            onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+          />
+          <button type="button" className={btn.dangerSm} disabled={busy || code.length !== 6} onClick={() => void onDisable()}>
+            Désactiver
+          </button>
+        </div>
+      )}
+    </section>
   );
 }

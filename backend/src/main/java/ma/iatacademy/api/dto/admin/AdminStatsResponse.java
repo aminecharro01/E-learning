@@ -6,6 +6,8 @@ public record AdminStatsResponse(
         long certificatesIssued,
         long modulesCount,
         long publishedLessons,
-        long quizAttemptsTotal
+        long quizAttemptsTotal,
+        long newContactMessages,
+        long newsletterSubscribers
 ) {
 }

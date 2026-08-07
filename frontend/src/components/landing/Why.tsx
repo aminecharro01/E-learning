@@ -13,10 +13,10 @@ export function LandingWhy() {
             Pourquoi IAT
           </p>
           <h2 className="landing-h2 max-w-3xl">
-            Lancez votre carrière dans l&apos;aviation, le maritime ou le tourisme
+            Un cycle professionnel pensé pour l&apos;emploi
           </h2>
           <p className="mt-4 max-w-2xl text-lg landing-text-muted">
-            Une formation de haut niveau, ancrée dans le réel.
+            Deux années, un diplôme, une immersion terrain — et un espace apprenant pour suivre votre progression.
           </p>
         </Reveal>
         <div className="landing-bento mt-12">

@@ -10,4 +10,5 @@ import java.util.UUID;
 public interface LessonProgressRepository extends JpaRepository<LessonProgress, UUID> {
     Optional<LessonProgress> findByUserIdAndLessonId(UUID userId, UUID lessonId);
     List<LessonProgress> findByUserId(UUID userId);
+    Optional<LessonProgress> findTopByUserIdOrderByUpdatedAtDesc(UUID userId);
 }

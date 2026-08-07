@@ -1,5 +1,6 @@
 package ma.iatacademy.api.dto;
 
+import ma.iatacademy.api.domain.enums.Civility;
 import ma.iatacademy.api.domain.enums.PaymentStatus;
 import ma.iatacademy.api.domain.enums.Role;
 
@@ -11,6 +12,13 @@ public record UserResponse(
         UUID id,
         String email,
         String fullName,
+        Civility civility,
+        String firstName,
+        String lastName,
+        String country,
+        String city,
+        String educationLevel,
+        String lastSchoolType,
         Role role,
         boolean enabled,
         String phone,
@@ -21,6 +29,12 @@ public record UserResponse(
         PaymentStatus paymentStatus,
         Instant activatedAt,
         boolean year2AccessEnabled,
-        UUID avatarAssetId
+        UUID avatarAssetId,
+        Instant termsAcceptedAt,
+        boolean marketingOptIn,
+        String matricule,
+        boolean profileCompleted,
+        UUID groupId,
+        String groupName
 ) {
 }

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import {
+  bulkSetUsersEnabled,
   listUsersPaged,
   setUserEnabled,
   setUserYear2Access,
@@ -20,7 +21,7 @@ import { ApiClientError } from "@/lib/api-client";
 import { btn } from "@/lib/ui";
 
 export default function AdminUsersPage() {
-  const { isAdmin } = useAuth();
+  const { isAdmin, isSuperAdmin } = useAuth();
   const [users, setUsers] = useState<User[]>([]);
   const [modules, setModules] = useState<Module[]>([]);
   const [pageMeta, setPageMeta] = useState<PageMeta | null>(null);
@@ -35,6 +36,32 @@ export default function AdminUsersPage() {
   const [resetResult, setResetResult] = useState<string | null>(null);
   const [unlock, setUnlock] = useState<{ userId: string; moduleId: string } | null>(null);
   const [busy, setBusy] = useState(false);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+
+  function toggleSelected(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  async function onBulkSetEnabled(enabled: boolean) {
+    if (selected.size === 0) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await bulkSetUsersEnabled(Array.from(selected), enabled);
+      setMsg(res.message);
+      setSelected(new Set());
+      await reload(page, query);
+    } catch (err) {
+      setError(err instanceof ApiClientError ? err.message : "Erreur.");
+    } finally {
+      setBusy(false);
+    }
+  }
 
   const reload = useCallback(async (p: number, q: string) => {
     const [u, prog] = await Promise.all([
@@ -75,8 +102,21 @@ export default function AdminUsersPage() {
   }
 
   const columns: DataTableColumn<User>[] = [
+    {
+      key: "select",
+      header: "",
+      render: (u) => (
+        <input
+          type="checkbox"
+          checked={selected.has(u.id)}
+          onChange={() => toggleSelected(u.id)}
+          onClick={(e) => e.stopPropagation()}
+          aria-label={`Sélectionner ${u.email}`}
+        />
+      ),
+    },
     { key: "name", header: "Nom", render: (u) => u.fullName || "—" },
-    { key: "email", header: "Email", render: (u) => u.email },
+    { key: "email", header: "Courriel", render: (u) => u.email },
     {
       key: "role",
       header: "Rôle",
@@ -84,6 +124,7 @@ export default function AdminUsersPage() {
         <select
           value={u.role}
           className="select-theme"
+          disabled={!isSuperAdmin && (u.role === "ADMIN" || u.role === "SUPER_ADMIN")}
           onChange={(e) => {
             void updateUserRole(u.id, e.target.value as Role)
               .then(() => reload(page, query))
@@ -92,9 +133,12 @@ export default function AdminUsersPage() {
               );
           }}
         >
-          <option value="ETUDIANT">ETUDIANT</option>
-          <option value="FORMATEUR">FORMATEUR</option>
-          <option value="ADMIN">ADMIN</option>
+          <option value="ETUDIANT">Étudiant</option>
+          <option value="FORMATEUR">Formateur</option>
+          {(isSuperAdmin || u.role === "ADMIN") && <option value="ADMIN">Directeur</option>}
+          {(isSuperAdmin || u.role === "SUPER_ADMIN") && (
+            <option value="SUPER_ADMIN">Super Admin</option>
+          )}
         </select>
       ),
     },
@@ -159,7 +203,7 @@ export default function AdminUsersPage() {
               setResetTarget(u);
             }}
           >
-            Reset MDP
+            Réinit. MDP
           </button>
         </div>
       ),
@@ -222,6 +266,21 @@ export default function AdminUsersPage() {
       </div>
       {error && <p className="alert alert-error">{error}</p>}
       {msg && <p className="alert alert-success">{msg}</p>}
+
+      {selected.size > 0 && (
+        <div className="card-theme flex flex-wrap items-center gap-3 rounded-xl px-4 py-3">
+          <span className="text-sm text-heading">{selected.size} sélectionné(s)</span>
+          <button type="button" className={btn.successXs} disabled={busy} onClick={() => void onBulkSetEnabled(true)}>
+            Activer
+          </button>
+          <button type="button" className={btn.dangerXs} disabled={busy} onClick={() => void onBulkSetEnabled(false)}>
+            Suspendre
+          </button>
+          <button type="button" className={btn.neutralXs} onClick={() => setSelected(new Set())}>
+            Désélectionner
+          </button>
+        </div>
+      )}
 
       <DataTable
         columns={columns}

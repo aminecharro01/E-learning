@@ -22,6 +22,13 @@ const DEFAULT_ACCEPT: Record<Kind, string> = {
   SLIDE: "application/pdf,image/*",
 };
 
+const KIND_LABEL: Record<Kind, string> = {
+  VIDEO: "Vidéo",
+  PDF: "PDF",
+  IMAGE: "Image",
+  SLIDE: "Diapositive",
+};
+
 export function FileUpload({
   kind = "IMAGE",
   accept,
@@ -59,7 +66,7 @@ export function FileUpload({
       onUploaded(data);
       setProgress(100);
     } catch {
-      setError("Échec de l'upload. Vérifiez le type/taille du fichier.");
+      setError("Échec du téléversement. Vérifiez le type et la taille du fichier.");
     } finally {
       setBusy(false);
     }
@@ -68,7 +75,9 @@ export function FileUpload({
   return (
     <div className="upload-zone">
       <label className="flex cursor-pointer flex-col gap-2">
-        <span className="text-sm font-medium text-heading">Uploader un fichier ({kind})</span>
+        <span className="text-sm font-medium text-heading">
+          Téléverser un fichier ({KIND_LABEL[kind]})
+        </span>
         <input
           type="file"
           accept={accept || DEFAULT_ACCEPT[kind]}

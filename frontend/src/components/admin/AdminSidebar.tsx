@@ -12,8 +12,13 @@ import { btn } from "@/lib/ui";
 import { BrandLogo } from "@/components/brand/BrandLogo";
 import {
   BookIcon,
+  CalendarIcon,
   ChartIcon,
+  ChatIcon,
+  ClipboardIcon,
+  ClockIcon,
   GridIcon,
+  MailIcon,
   MediaIcon,
   QuizIcon,
   SettingsIcon,
@@ -21,25 +26,29 @@ import {
   UsersIcon,
 } from "@/components/admin/icons";
 
-type NavItem = {
+export type NavItem = {
   name: string;
   path: string;
   icon: ReactNode;
   adminOnly?: boolean;
+  /** Réservé au Super Admin — réglages plateforme, pas de la compétence du Directeur. */
+  superAdminOnly?: boolean;
 };
 
-type NavGroup = {
+export type NavGroup = {
   label: string;
   items: NavItem[];
 };
 
-const GROUPS: NavGroup[] = [
+export const GROUPS: NavGroup[] = [
   {
     label: "Menu",
     items: [
-      { name: "Dashboard", path: "/admin", icon: <GridIcon /> },
+      { name: "Tableau de bord", path: "/admin", icon: <GridIcon /> },
       { name: "Cours & modules", path: "/admin/modules", icon: <BookIcon /> },
       { name: "Quiz", path: "/admin/quiz-bank", icon: <QuizIcon /> },
+      { name: "Banques de questions", path: "/admin/question-banks", icon: <QuizIcon /> },
+      { name: "Correction manuelle", path: "/admin/grading", icon: <ClipboardIcon /> },
       { name: "Médias", path: "/admin/media", icon: <MediaIcon /> },
       { name: "Stage & soutenance", path: "/admin/stage", icon: <BookIcon /> },
     ],
@@ -48,6 +57,13 @@ const GROUPS: NavGroup[] = [
     label: "Suivi",
     items: [
       { name: "Apprenants", path: "/admin/learners", icon: <UsersIcon /> },
+      { name: "Groupes (présentiel)", path: "/admin/groups", icon: <UsersIcon />, adminOnly: true },
+      { name: "Forums", path: "/admin/forum", icon: <ChatIcon /> },
+      { name: "Devoirs & notes", path: "/admin/gradebook", icon: <ClipboardIcon /> },
+      { name: "Sessions live", path: "/admin/sessions", icon: <CalendarIcon /> },
+      { name: "Analytics", path: "/admin/analytics", icon: <ChartIcon /> },
+      { name: "Contact & infolettre", path: "/admin/leads", icon: <MailIcon /> },
+      { name: "Campagnes email", path: "/admin/campaigns", icon: <MailIcon />, adminOnly: true },
       { name: "Diplômes", path: "/admin/diplomas", icon: <ChartIcon />, adminOnly: true },
       { name: "Statistiques", path: "/admin/stats", icon: <ChartIcon /> },
     ],
@@ -65,6 +81,12 @@ const GROUPS: NavGroup[] = [
         name: "Paramètres",
         path: "/admin/settings",
         icon: <SettingsIcon />,
+        superAdminOnly: true,
+      },
+      {
+        name: "Journal d'audit",
+        path: "/admin/audit-log",
+        icon: <ClockIcon />,
         adminOnly: true,
       },
     ],
@@ -74,7 +96,7 @@ const GROUPS: NavGroup[] = [
 export function AdminSidebar() {
   const pathname = usePathname();
   const { isExpanded, isMobileOpen, isHovered, setIsHovered } = useSidebar();
-  const { isAdmin } = useAuth();
+  const { isAdmin, isSuperAdmin } = useAuth();
 
   const wide = isExpanded || isHovered || isMobileOpen;
 
@@ -88,18 +110,20 @@ export function AdminSidebar() {
       onMouseLeave={() => setIsHovered(false)}
     >
       <Link href="/admin" className={`mb-8 flex items-center ${wide ? "gap-3 px-2" : "justify-center"}`}>
-        <BrandLogo href={undefined} size="sm" />
+        <BrandLogo href={null} size={wide ? "md" : "sm"} />
         {wide && (
           <span>
-            <span className="block text-sm font-semibold text-heading">IAT Academy</span>
-            <span className="block text-xs text-muted">Espace formateur</span>
+            <span className="block text-sm font-semibold text-heading">Espace formateur</span>
+            <span className="block text-xs text-muted">Administration</span>
           </span>
         )}
       </Link>
 
       <nav className="no-scrollbar flex flex-1 flex-col overflow-y-auto">
         {GROUPS.map((group) => {
-          const items = group.items.filter((item) => !item.adminOnly || isAdmin);
+          const items = group.items.filter(
+            (item) => (!item.adminOnly || isAdmin) && (!item.superAdminOnly || isSuperAdmin)
+          );
           if (items.length === 0) return null;
           return (
             <div key={group.label} className="mb-5">
@@ -146,9 +170,9 @@ export function AdminSidebar() {
       {wide && (
         <div className="app-sidebar-cta mt-auto rounded-2xl p-4">
           <p className="text-sm font-medium text-heading">Vue apprenant</p>
-          <p className="mt-1 text-xs text-muted">Prévisualisez le parcours Coursera-style.</p>
+          <p className="mt-1 text-xs text-muted">Prévisualisez le parcours tel que vu par l&apos;étudiant.</p>
           <Link href="/app" className={`${btn.primarySm} mt-3 w-full`}>
-            Ouvrir /app
+            Ouvrir l&apos;espace apprenant
           </Link>
         </div>
       )}

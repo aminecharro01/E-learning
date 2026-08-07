@@ -70,6 +70,23 @@ public class Quiz extends AuditableEntity {
     @Builder.Default
     private boolean published = false;
 
+    /** Anti-triche optionnel — jamais activé par défaut, décision du directeur par quiz. */
+    @Column(name = "proctoring_enabled", nullable = false)
+    @Builder.Default
+    private boolean proctoringEnabled = false;
+
+    @Column(name = "focus_loss_detection", nullable = false)
+    @Builder.Default
+    private boolean focusLossDetection = false;
+
+    @Column(name = "copy_protection", nullable = false)
+    @Builder.Default
+    private boolean copyProtection = false;
+
+    @Column(name = "lockdown_mode", nullable = false)
+    @Builder.Default
+    private boolean lockdownMode = false;
+
     @OneToMany(mappedBy = "quiz", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<Question> questions = new ArrayList<>();

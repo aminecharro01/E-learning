@@ -13,6 +13,14 @@ public record QuizStartResponse(
         int timeLimitSeconds,
         int passingScore,
         boolean preview,
-        List<QuizQuestionPublic> questions
+        List<QuizQuestionPublic> questions,
+        ProctoringConfig proctoring
 ) {
+    public record ProctoringConfig(
+            boolean enabled,
+            boolean focusLossDetection,
+            boolean copyProtection,
+            boolean lockdownMode
+    ) {
+    }
 }

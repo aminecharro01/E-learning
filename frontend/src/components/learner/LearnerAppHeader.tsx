@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 import { getMe, getMyProgress, logout } from "@/lib/api";
 import type { User } from "@/types/domain";
 import { ThemeToggleButton } from "@/components/ThemeToggleButton";
+import { NotificationBell } from "@/components/ui/NotificationBell";
+import { LearnerSearch } from "@/components/learner/LearnerSearch";
 import { BrandLogo } from "@/components/brand/BrandLogo";
 import { btn } from "@/lib/ui";
 
@@ -91,14 +93,16 @@ export function LearnerAppHeader({
       <div className={containerClassName}>
         <div className="min-w-0">
           <div className="mb-1 flex items-center gap-3">
-            <BrandLogo href="/app" size="sm" />
-            <p className="eyebrow !mb-0">IAT Academy</p>
+            <BrandLogo href="/app" size="md" />
+            <p className="eyebrow !mb-0">Espace apprenant</p>
           </div>
           <h1 className="truncate text-xl font-bold tracking-tight text-heading">
             {user ? greetingForNow(user.fullName) : "Espace apprenant"}
           </h1>
         </div>
         <nav className="flex flex-wrap items-center justify-end gap-1.5 sm:gap-2" aria-label="Navigation apprenant">
+          <LearnerSearch />
+          <NotificationBell />
           <ThemeToggleButton />
           {showParcoursLink ? (
             <Link href="/app" className={btn.icon} aria-label="Parcours" title="Parcours">

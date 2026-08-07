@@ -9,6 +9,7 @@ public record AppSettingsRequest(
         boolean registrationEnabled,
         @NotBlank @Size(min = 8, max = 100) String defaultResetPassword,
         /** Date ISO yyyy-MM-dd ou vide pour désactiver l'ouverture auto. */
-        String year2OpeningDate
+        String year2OpeningDate,
+        @NotBlank String themeVariant
 ) {
 }

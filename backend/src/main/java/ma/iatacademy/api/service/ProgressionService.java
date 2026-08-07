@@ -7,12 +7,15 @@ import ma.iatacademy.api.domain.entity.LessonProgress;
 import ma.iatacademy.api.domain.entity.ModuleEntity;
 import ma.iatacademy.api.domain.entity.User;
 import ma.iatacademy.api.domain.enums.AttemptStatus;
+import ma.iatacademy.api.domain.enums.BadgeCode;
 import ma.iatacademy.api.domain.enums.ModuleLearnerStatus;
+import ma.iatacademy.api.domain.enums.NotificationType;
 import ma.iatacademy.api.domain.enums.QuizType;
 import ma.iatacademy.api.domain.enums.Role;
 import ma.iatacademy.api.dto.progress.LessonProgressResponse;
 import ma.iatacademy.api.exception.ForbiddenException;
 import ma.iatacademy.api.exception.NotFoundException;
+import ma.iatacademy.api.repository.GroupContentAssignmentRepository;
 import ma.iatacademy.api.repository.LessonProgressRepository;
 import ma.iatacademy.api.repository.LessonRepository;
 import ma.iatacademy.api.repository.ModuleRepository;
@@ -46,11 +49,16 @@ public class ProgressionService {
     private final QuizProperties quizProperties;
     private final AppSettingsService appSettingsService;
     private final UfValidationService ufValidationService;
+    private final NotificationService notificationService;
+    private final BadgeService badgeService;
+    private final GroupContentAssignmentRepository assignmentRepository;
 
     @Transactional
     public LessonProgressResponse updateLessonProgress(UUID userId, UUID lessonId, int videoWatchedPercent) {
         Lesson lesson = lessonRepository.findById(lessonId)
                 .orElseThrow(() -> new NotFoundException("Leçon introuvable."));
+
+        boolean wasModuleCompleted = isModuleContentCompleted(userId, lesson.getModule().getId());
 
         LessonProgress progress = lessonProgressRepository.findByUserIdAndLessonId(userId, lessonId)
                 .orElseGet(() -> LessonProgress.builder()
@@ -65,6 +73,16 @@ public class ProgressionService {
             progress.setCompletedAt(Instant.now());
         }
         lessonProgressRepository.save(progress);
+
+        if (!wasModuleCompleted && isModuleContentCompleted(userId, lesson.getModule().getId())) {
+            User learner = userRepository.getReferenceById(userId);
+            notificationService.notify(learner, NotificationType.MODULE_COMPLETED,
+                    "Module terminé",
+                    "Vous avez terminé le module \"" + lesson.getModule().getTitle() + "\".",
+                    "/app");
+            badgeService.awardIfAbsent(learner, BadgeCode.FIRST_MODULE);
+        }
+
         return new LessonProgressResponse(
                 lessonId,
                 progress.getVideoWatchedPercent(),
@@ -91,7 +109,7 @@ public class ProgressionService {
 
     @Transactional(readOnly = true)
     public void assertModuleAccessible(UserPrincipal principal, ModuleEntity module) {
-        if (principal.getRole() == Role.ADMIN || principal.getRole() == Role.FORMATEUR) {
+        if (principal.getRole().isStaff()) {
             return;
         }
         if (!isModuleAccessible(principal.getId(), module)) {
@@ -104,6 +122,16 @@ public class ProgressionService {
 
     @Transactional
     public boolean isModuleAccessible(UUID userId, ModuleEntity module) {
+        // Apprenant hybride (rattaché à un groupe) : aucun déblocage automatique.
+        // L'accès dépend uniquement des affectations décidées par le directeur —
+        // la progression séquentielle par UF ci-dessous ne s'applique pas à lui.
+        User learner = userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("Utilisateur introuvable."));
+        if (learner.getGroup() != null) {
+            return assignmentRepository.isUnlocked(
+                    learner.getGroup().getId(), module.getId(), Instant.now());
+        }
+
         int year = yearOf(module);
         if (year >= 2) {
             ensureYear2AccessIfEligible(userId);

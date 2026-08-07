@@ -6,6 +6,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { ApiClientError } from "@/lib/api-client";
 import { Badge } from "@/components/admin/ui/Badge";
 import { btn } from "@/lib/ui";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 export default function AdminDiplomasPage() {
   const { isAdmin } = useAuth();
@@ -42,7 +43,7 @@ export default function AdminDiplomasPage() {
 
       {error && <p className="alert alert-warning">{error}</p>}
       {msg && <p className="alert alert-success">{msg}</p>}
-      {loading && <div className="card-theme h-32 animate-pulse rounded-2xl bg-surface-2" />}
+      {loading && <Skeleton card className="h-32 rounded-2xl" />}
 
       {!loading && items.length === 0 && (
         <p className="text-sm text-muted">Aucun diplôme généré pour le moment.</p>

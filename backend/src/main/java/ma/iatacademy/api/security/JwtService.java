@@ -36,6 +36,27 @@ public class JwtService {
                 .compact();
     }
 
+    /** Jeton court (5 min), jamais posé en cookie — porté par le corps de la réponse le temps de saisir le code TOTP. */
+    public String generatePendingTotpToken(UUID userId) {
+        Date now = new Date();
+        Date expiry = new Date(now.getTime() + 5 * 60 * 1000L);
+        return Jwts.builder()
+                .subject(userId.toString())
+                .claim("pending2fa", true)
+                .issuedAt(now)
+                .expiration(expiry)
+                .signWith(key)
+                .compact();
+    }
+
+    public UUID extractPendingTotpUserId(String token) {
+        Claims claims = parseClaims(token);
+        if (!Boolean.TRUE.equals(claims.get("pending2fa", Boolean.class))) {
+            throw new IllegalArgumentException("Not a pending 2FA token");
+        }
+        return UUID.fromString(claims.getSubject());
+    }
+
     public Claims parseClaims(String token) {
         return Jwts.parser()
                 .verifyWith(key)

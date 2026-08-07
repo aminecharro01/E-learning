@@ -35,9 +35,15 @@ const passwordSchema = z
 
 type PasswordValues = z.infer<typeof passwordSchema>;
 
+const THEME_PRESETS = [
+  { id: "navy-gold", label: "Navy & Or", swatch: ["#142b4b", "#e08d1b"] },
+  { id: "ocean-teal", label: "Océan & Sarcelle", swatch: ["#0c343a", "#0d9488"] },
+  { id: "sunset-amber", label: "Coucher & Ambre", swatch: ["#431407", "#ea580c"] },
+] as const;
+
 const appSchema = z.object({
   platformName: z.string().trim().min(2).max(120),
-  supportEmail: z.string().trim().email("Email invalide").or(z.literal("")),
+  supportEmail: z.string().trim().email("Courriel invalide").or(z.literal("")),
   registrationEnabled: z.boolean(),
   defaultResetPassword: z.string().min(8).max(100),
   year2OpeningDate: z
@@ -46,6 +52,7 @@ const appSchema = z.object({
     .nullable()
     .transform((v) => (v && v.trim() ? v.trim() : null))
     .refine((v) => v === null || /^\d{4}-\d{2}-\d{2}$/.test(v), "Date invalide (AAAA-MM-JJ)"),
+  themeVariant: z.string().min(1),
 });
 
 type AppValues = z.infer<typeof appSchema>;
@@ -53,7 +60,7 @@ type AppValues = z.infer<typeof appSchema>;
 type Tab = "password" | "app" | "quiz";
 
 export default function AdminSettingsPage() {
-  const { isAdmin } = useAuth();
+  const { isAdmin, isSuperAdmin } = useAuth();
   const [tab, setTab] = useState<Tab>("password");
   const [error, setError] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
@@ -77,16 +84,16 @@ export default function AdminSettingsPage() {
       setLoading(false);
       return;
     }
-    Promise.all([getAppSettings(), getQuizSettings()])
+    Promise.all([isSuperAdmin ? getAppSettings() : Promise.resolve(null), getQuizSettings()])
       .then(([app, quiz]) => {
-        appForm.reset(app);
+        if (app) appForm.reset(app);
         quizForm.reset(quiz);
       })
       .catch((err) =>
         setError(err instanceof ApiClientError ? err.message : "Chargement impossible.")
       )
       .finally(() => setLoading(false));
-  }, [isAdmin, appForm, quizForm]);
+  }, [isAdmin, isSuperAdmin, appForm, quizForm]);
 
   async function onChangePassword(values: PasswordValues) {
     setError(null);
@@ -106,6 +113,7 @@ export default function AdminSettingsPage() {
     try {
       const saved = await updateAppSettings(values as AppSettings);
       appForm.reset(saved);
+      document.documentElement.dataset.themeVariant = saved.themeVariant;
       setMsg("Paramètres application enregistrés.");
     } catch (err) {
       setError(err instanceof ApiClientError ? err.message : "Enregistrement impossible.");
@@ -124,9 +132,9 @@ export default function AdminSettingsPage() {
     }
   }
 
-  const tabs: { id: Tab; label: string; adminOnly?: boolean }[] = [
+  const tabs: { id: Tab; label: string; adminOnly?: boolean; superAdminOnly?: boolean }[] = [
     { id: "password", label: "Mot de passe" },
-    { id: "app", label: "Application", adminOnly: true },
+    { id: "app", label: "Application", superAdminOnly: true },
     { id: "quiz", label: "Quiz (défauts)", adminOnly: true },
   ];
 
@@ -141,7 +149,7 @@ export default function AdminSettingsPage() {
 
       <div className="flex flex-wrap gap-2 border-b border-theme pb-3">
         {tabs
-          .filter((t) => !t.adminOnly || isAdmin)
+          .filter((t) => (!t.adminOnly || isAdmin) && (!t.superAdminOnly || isSuperAdmin))
           .map((t) => (
             <button
               key={t.id}
@@ -216,7 +224,7 @@ export default function AdminSettingsPage() {
         </ComponentCard>
       )}
 
-      {tab === "app" && isAdmin && (
+      {tab === "app" && isSuperAdmin && (
         <ComponentCard
           title="Paramètres application"
           desc="Nom, support, inscriptions, rentrée année 2, mot de passe temporaire"
@@ -228,7 +236,7 @@ export default function AdminSettingsPage() {
               <FormField label="Nom de la plateforme" error={appForm.formState.errors.platformName}>
                 <input className={inputClass} {...appForm.register("platformName")} />
               </FormField>
-              <FormField label="Email support" error={appForm.formState.errors.supportEmail}>
+              <FormField label="Courriel support" error={appForm.formState.errors.supportEmail}>
                 <input
                   type="email"
                   className={inputClass}
@@ -260,6 +268,33 @@ export default function AdminSettingsPage() {
                 <input type="checkbox" {...appForm.register("registrationEnabled")} />
                 Autoriser les nouvelles inscriptions
               </label>
+              <FormField label="Thème de la plateforme">
+                <div className="flex flex-wrap gap-3">
+                  {THEME_PRESETS.map((preset) => {
+                    const active = appForm.watch("themeVariant") === preset.id;
+                    return (
+                      <button
+                        key={preset.id}
+                        type="button"
+                        onClick={() =>
+                          appForm.setValue("themeVariant", preset.id, { shouldDirty: true })
+                        }
+                        className={`card-theme flex flex-col items-center gap-2 rounded-xl p-3 text-xs font-medium ${
+                          active ? "ring-2 ring-[var(--ring)]" : ""
+                        }`}
+                        aria-pressed={active}
+                      >
+                        <span className="flex overflow-hidden rounded-full border border-theme">
+                          {preset.swatch.map((color) => (
+                            <span key={color} className="h-6 w-6" style={{ background: color }} />
+                          ))}
+                        </span>
+                        {preset.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </FormField>
               <button
                 type="submit"
                 disabled={appForm.formState.isSubmitting}
@@ -358,10 +393,11 @@ export default function AdminSettingsPage() {
         </ComponentCard>
       )}
 
-      {!isAdmin && tab !== "password" && (
-        <p className="text-sm text-muted">
-          Les paramètres Application / Quiz sont réservés aux administrateurs.
-        </p>
+      {tab === "app" && !isSuperAdmin && (
+        <p className="text-sm text-muted">Réservé au Super Admin.</p>
+      )}
+      {tab === "quiz" && !isAdmin && (
+        <p className="text-sm text-muted">Réservé aux administrateurs.</p>
       )}
     </div>
   );

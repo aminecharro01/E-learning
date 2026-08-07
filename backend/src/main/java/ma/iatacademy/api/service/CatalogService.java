@@ -59,7 +59,7 @@ public class CatalogService {
         progressionService.assertModuleAccessible(principal, module);
 
         ModuleLearnerStatus status = progressionService.resolveModuleStatus(principal.getId(), module);
-        boolean staff = principal.getRole() == Role.ADMIN || principal.getRole() == Role.FORMATEUR;
+        boolean staff = principal.getRole().isStaff();
 
         List<LessonSummaryResponse> lessons = lessonRepository
                 .findByModuleIdOrderByOrderIndexAsc(moduleId)
@@ -129,6 +129,15 @@ public class CatalogService {
         module.setOrderIndex(request.orderIndex());
         if (request.published() != null) {
             module.setPublished(request.published());
+        }
+        if (request.yearNumber() != null) {
+            module.setYearNumber(request.yearNumber());
+        }
+        if (request.ufCode() != null && !request.ufCode().isBlank()) {
+            module.setUfCode(request.ufCode().trim());
+        }
+        if (request.ufTitle() != null && !request.ufTitle().isBlank()) {
+            module.setUfTitle(request.ufTitle().trim());
         }
         return toModuleSummary(module, ModuleLearnerStatus.AVAILABLE);
     }

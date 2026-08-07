@@ -34,11 +34,21 @@ const cairo = Cairo({
 export const metadata: Metadata = {
   title: "IAT Academy",
   description:
-    "Plateforme e-learning IAT Academy — International Airlines and Tourism Academy",
+    "Plateforme e-learning IAT Academy — formations aux métiers de l'air, de l'accueil et du tourisme",
   icons: {
     icon: "/brand/logo.png",
+    apple: "/brand/logo.png",
   },
+  manifest: "/manifest.json",
 };
+
+const swRegisterScript = `
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function () {
+    navigator.serviceWorker.register('/sw.js').catch(function () {});
+  });
+}
+`;
 
 const themeInitScript = `
 (function(){
@@ -67,6 +77,7 @@ export default function RootLayout({
       <head>
         <meta name="theme-color" content="#142B4B" />
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+        <script dangerouslySetInnerHTML={{ __html: swRegisterScript }} />
       </head>
       <body
         className={`${poppins.variable} ${inter.variable} ${jetbrains.variable} ${cairo.variable} antialiased`}

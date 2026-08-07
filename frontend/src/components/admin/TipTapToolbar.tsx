@@ -154,7 +154,7 @@ export function TipTapToolbar({ editor }: Props) {
         <span className="line-through">S</span>
       </ToolBtn>
       <ToolBtn
-        label="Code inline"
+        label="Code"
         active={editor.isActive("code")}
         disabled={!editor.can().chain().focus().toggleCode().run()}
         onClick={() => editor.chain().focus().toggleCode().run()}
@@ -267,7 +267,7 @@ export function TipTapToolbar({ editor }: Props) {
                 )
                 .run();
             } catch {
-              window.alert("Upload image impossible.");
+              window.alert("Impossible d’envoyer l’image.");
             }
           }}
         />
@@ -303,7 +303,7 @@ export function TipTapToolbar({ editor }: Props) {
                 })
                 .run();
             } catch {
-              window.alert("Upload vidéo impossible.");
+              window.alert("Impossible d’envoyer la vidéo.");
             }
           }}
         />

@@ -16,15 +16,22 @@
 
 ---
 
-## Comptes démo
+## Comptes démo (scénarios)
 
-| Rôle | Email | Mot de passe |
-|------|-------|--------------|
-| **Admin** | `admin@iat-academy.local` | `Admin@123` |
-| **Apprenant** | `apprenant@iat-academy.local` | `Apprenant@123` |
-| Formateur (optionnel) | `formateur@iat-academy.local` | `Formateur@123` |
+| Scénario | Email | Mot de passe | À montrer |
+|----------|-------|--------------|-----------|
+| **Super Admin** | `superadmin@iat-academy.local` | `SuperAdmin@123` | Réglages plateforme, thème, gestion des rôles Directeur |
+| **Admin (Directeur)** | `admin@iat-academy.local` | `Admin@123` | Studio, users, validations |
+| **Formateur** | `formateur@iat-academy.local` | `Formateur@123` | Vue staff / quiz aperçu |
+| **UF1 en cours** | `apprenant@iat-academy.local` | `Apprenant@123` | Module 1 validé, Français en cours |
+| **UF2 débloquée** | `amina.benali@demo.local` | `Demo@1234` | UF1 complète, animation démarrée |
+| **Débutant** | `youssef.idrissi@demo.local` | `Demo@1234` | 1 section faite |
+| **Zéro progression** | `lina.cherkaoui@demo.local` | `Demo@1234` | Compte payé, rien commencé |
+| **Année 2 ouverte** | `salma.naji@demo.local` | `Demo@1234` | `year2` + UF5 validée |
+| **Activation pending** | `karim.ouafi@demo.local` | `Demo@1234` | Paiement PENDING, compte désactivé |
 
-> Préférer **2 onglets** : un apprenant + un admin (fenêtres privées si besoin).
+> Préférer **2 onglets** : un apprenant + un admin (fenêtres privées si besoin).  
+> Au démarrage API, la progression démo est **réinitialisée** (`app.demo.reset-progress-on-startup`, défaut `true`). Désactiver avec `DEMO_RESET_PROGRESS=false` si besoin.
 
 ---
 
@@ -32,62 +39,69 @@
 
 ### 1. Landing (1 min)
 1. Ouvrir http://localhost:3000  
-2. Montrer l’identité visuelle Horizon (aviation), scroll rapide expertise / CTA.  
+2. Montrer l’identité boarding-pass / charte IAT.  
 3. Cliquer **Se connecter**.
 
-### 2. Parcours apprenant (5–6 min)
+### 2. Parcours apprenant — scénario principal (5–6 min)
 1. Login : `apprenant@iat-academy.local` / `Apprenant@123`  
-2. **Dashboard** `/app` — progression, modules (ouverts vs cadenas).  
-3. Ouvrir un **module débloqué** → leçon (vidéo / texte / PDF).  
-4. Faire avancer la progression (marquer terminé ou regarder la vidéo).  
-5. Lancer un **quiz fin de module** — minuteur, questions, soumission, score.  
-6. Montrer que le **module suivant** se débloque après réussite (si déjà progressé en seed, expliquer la règle).  
-7. Si dispo : **attestation / certificat** sur le dashboard (tous modules validés).
+2. **Dashboard** `/app` — boarding-pass, UF1, modules ouverts vs cadenas.  
+3. Ouvrir **Techniques de communication** (déjà validé) puis **Français** (en cours).  
+4. Naviguer sidebar leçon ↔ leçon (shell stable).  
+5. Lancer un **quiz** — options, timer, soumission.  
+6. Option : reconnecter **Amina** pour montrer UF2 débloquée, ou **Salma** pour l’année 2.
 
 ### 3. Espace admin (4–5 min)
 1. Login admin : `admin@iat-academy.local` / `Admin@123`  
-2. **Dashboard** — stats / vue d’ensemble.  
-3. **Modules** → ouvrir le **studio** (éditeur de blocs TipTap, drag & drop).  
-4. **Banque de quiz** — questions, paramètres (seuil, durée, tentatives).  
-5. **Apprenants** — suivi de progression.  
-6. **Médias** — upload (image / PDF / vidéo si fichier prêt).  
-7. **Paramètres** — inscription, seuils (si exposés).  
-8. Toggle **clair / sombre** dans le header.
+2. **Apprenants** — comparer Nora / Amina / Lina / Karim (pending).  
+3. **Modules** → studio TipTap.  
+4. **Banque de quiz**.  
+5. Toggle clair / sombre.
 
 ### 4. Clôture (1 min)
-- Rappeler : formation **2 ans**, **36 modules** (11 UF) ; contenu démo sur les premiers modules UF1–UF2 ; reste à renseigner avec l’école.  
-- Activation compte : inscription → paiement → directeur active dans `/admin/users`.  
-- Passer au fichier **CLIENT_QUESTIONS.md** / **PROGRAMME_2_ANS_ADAPTATION.md** pour les points encore ouverts.
+- Rappeler : formation **2 ans**, **36 modules** (11 UF) ; contenu riche sur UF1–UF2 début.  
+- Activation : inscription → paiement → admin active (`Karim` = contre-exemple).  
+- Points ouverts : **CLIENT_QUESTIONS.md** / **PROGRAMME_2_ANS_ADAPTATION.md**.
 
 ---
 
-## Ce qui est prêt vs à préciser
+## À faire (rappel)
 
-| Prêt (MVP) | À valider / à venir |
-|------------|---------------------|
-| Auth JWT (cookie), rôles | Mot de passe oublié (mailto pour l’instant) |
-| Leçons multi-blocs + verrou édition | Contenu modules 6–20 |
-| Quiz applicatif + fin de module | Quiz **pratique** + **final** (spec client) |
-| Progression linéaire + attestation PDF | Page publique `/verify/{code}` |
-| Admin studio + stats | Déploiement VPS Hostinger finalisé |
-| UI Horizon light/dark (app) | CI / tests E2E |
+- [ ] **Newsletter — envoi d’emails** : aujourd’hui seules les inscriptions sont stockées (`newsletter_subscribers` + admin `/admin/leads`). Brancher l’envoi réel de campagnes (SMTP / provider type Mailchimp, Resend, etc.) pour diffuser les actualités aux abonnés actifs.
+
+---
+
+## Reset démo
+
+```bash
+# Postgres + Redis
+docker compose up -d postgres redis
+
+# Backend (reseed auto : nouveau marker catalogue + reset progression)
+cd backend
+.\mvnw.cmd spring-boot:run "-Dspring-boot.run.profiles=dev"
+```
+
+Purge manuelle SQL (si besoin) :
+
+```sql
+DELETE FROM lesson_progress;
+DELETE FROM quiz_attempts;
+DELETE FROM certificates;
+DELETE FROM learner_uf_validations;
+DELETE FROM learner_documents;
+-- Forcer re-seed catalogue : supprimer les leçons puis redémarrer l’API
+DELETE FROM lessons; -- (cascade via seeder clear — préférer redémarrage après wipe seeder)
+```
 
 ---
 
 ## Si quelque chose plante
 
 ```bash
-# 1. Bases
 docker compose up -d postgres redis
-
-# 2. Backend (terminal 1)
-cd backend
-.\mvnw.cmd spring-boot:run "-Dspring-boot.run.profiles=dev"
-
-# 3. Frontend (terminal 2)
-cd frontend
-npm run dev
+cd backend && .\mvnw.cmd spring-boot:run "-Dspring-boot.run.profiles=dev"
+cd frontend && npm run dev
 ```
 
-- Port **5433** = Postgres Docker (pas 5432).  
-- Port **8080** / **3000** déjà pris → fermer l’ancien process puis relancer.
+- Port **5433** = Postgres Docker.  
+- Ports **8080** / **3000** déjà pris → tuer l’ancien process.

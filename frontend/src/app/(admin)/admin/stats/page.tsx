@@ -34,7 +34,7 @@ export default function AdminStatsPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold text-heading">Statistiques</h1>
-        <p className="mt-1 text-sm text-muted">Métriques live depuis /api/admin/stats</p>
+        <p className="mt-1 text-sm text-muted">Indicateurs en temps réel de la plateforme</p>
       </div>
       {error && <div className="alert alert-error">{error}</div>}
 
@@ -59,7 +59,7 @@ export default function AdminStatsPage() {
           value={stats?.modulesCount ?? "—"}
           icon={<BookIcon className="size-6 text-heading" />}
         />
-        <StatCard label="Leçons publiées" value={stats?.publishedLessons ?? "—"} />
+        <StatCard label="Sections publiées" value={stats?.publishedLessons ?? "—"} />
         <StatCard
           label="Tentatives quiz"
           value={stats?.quizAttemptsTotal ?? "—"}

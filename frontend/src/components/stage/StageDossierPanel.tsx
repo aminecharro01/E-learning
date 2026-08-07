@@ -10,6 +10,7 @@ import {
 } from "@/lib/api";
 import { ApiClientError } from "@/lib/api-client";
 import { btn } from "@/lib/ui";
+import { Stepper, Step, type StepStatus } from "@/components/ui/Stepper";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
@@ -39,7 +40,7 @@ export function StageDossierPanel({ dossier, mode, onChanged }: Props) {
       setMsg("Document déposé.");
       onChanged();
     } catch (err) {
-      setError(err instanceof ApiClientError ? err.message : "Upload impossible.");
+      setError(err instanceof ApiClientError ? err.message : "Envoi impossible.");
     } finally {
       setBusyType(null);
     }
@@ -142,51 +143,60 @@ export function StageDossierPanel({ dossier, mode, onChanged }: Props) {
     return (
       <section className="card-theme rounded-2xl p-5">
         <h2 className="text-lg font-bold text-heading">{title}</h2>
-        <ul className="mt-4 space-y-4">
-          {slots.map((slot) => (
-            <li key={slot.docType} className="rounded-xl border border-theme p-4">
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <p className="font-semibold text-heading">{slot.label}</p>
-                  <p className="mt-1 text-xs text-muted">
-                    {slot.owner === "DIRECTOR" ? "Dépôt académie / directeur" : "Dépôt apprenant"}
-                    {slot.filled ? " · Déposé" : " · Manquant"}
-                  </p>
-                </div>
+        <Stepper className="mt-4">
+          {slots.map((slot, index) => {
+            const status: StepStatus = slot.filled ? "done" : canUpload(slot.owner) ? "current" : "pending";
+            return (
+              <Step
+                key={slot.docType}
+                status={status}
+                isLast={index === slots.length - 1}
+                title={
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <p className="font-semibold text-heading">{slot.label}</p>
+                      <p className="mt-1 text-xs text-muted">
+                        {slot.owner === "DIRECTOR" ? "Dépôt académie / directeur" : "Dépôt apprenant"}
+                        {slot.filled ? " · Déposé" : " · Manquant"}
+                      </p>
+                    </div>
+                    {canUpload(slot.owner) && (
+                      <label className={`${btn.secondarySm} cursor-pointer`}>
+                        {busyType === slot.docType ? "…" : slot.filled ? "Remplacer" : "Déposer"}
+                        <input
+                          type="file"
+                          className="hidden"
+                          accept={
+                            slot.docType === "PRESENTATION_SOUTENANCE"
+                              ? ".pdf,.ppt,.pptx,application/pdf,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation"
+                              : ".pdf,.doc,.docx,.ppt,.pptx,.odt"
+                          }
+                          disabled={busyType === slot.docType}
+                          onChange={(e) => {
+                            const file = e.target.files?.[0] ?? null;
+                            e.target.value = "";
+                            void onUpload(slot.docType, file);
+                          }}
+                        />
+                      </label>
+                    )}
+                  </div>
+                }
+              >
                 {canUpload(slot.owner) && (
-                  <label className={`${btn.secondarySm} cursor-pointer`}>
-                    {busyType === slot.docType ? "…" : slot.filled ? "Remplacer" : "Déposer"}
-                    <input
-                      type="file"
-                      className="hidden"
-                      accept={
-                        slot.docType === "PRESENTATION_SOUTENANCE"
-                          ? ".pdf,.ppt,.pptx,application/pdf,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation"
-                          : ".pdf,.doc,.docx,.ppt,.pptx,.odt"
-                      }
-                      disabled={busyType === slot.docType}
-                      onChange={(e) => {
-                        const file = e.target.files?.[0] ?? null;
-                        e.target.value = "";
-                        void onUpload(slot.docType, file);
-                      }}
-                    />
-                  </label>
+                  <p className="mt-2 text-xs text-muted">
+                    {slot.docType === "PRESENTATION_SOUTENANCE"
+                      ? "Formats acceptés : PDF ou PowerPoint (.ppt / .pptx)."
+                      : "Formats : PDF, Word, PowerPoint."}
+                  </p>
                 )}
-              </div>
-              {canUpload(slot.owner) && (
-                <p className="mt-2 text-xs text-muted">
-                  {slot.docType === "PRESENTATION_SOUTENANCE"
-                    ? "Formats acceptés : PDF ou PowerPoint (.ppt / .pptx)."
-                    : "Formats : PDF, Word, PowerPoint."}
-                </p>
-              )}
-              {!canUpload(slot.owner) && !slot.filled && (
-                <p className="mt-2 text-xs text-muted">En attente du dépôt par l&apos;autre partie.</p>
-              )}
-            </li>
-          ))}
-        </ul>
+                {!canUpload(slot.owner) && !slot.filled && (
+                  <p className="mt-2 text-xs text-muted">En attente du dépôt par l&apos;autre partie.</p>
+                )}
+              </Step>
+            );
+          })}
+        </Stepper>
       </section>
     );
   }

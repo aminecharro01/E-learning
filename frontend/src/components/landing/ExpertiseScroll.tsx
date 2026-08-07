@@ -99,7 +99,7 @@ export function LandingExpertiseScroll() {
       id="expertise"
       ref={sectionRef}
       className="landing-flight-section scroll-mt-20"
-      aria-label="Domaines de formation"
+      aria-label="Axes de formation"
     >
       <div className={`landing-flight-sticky ${useScrollPin ? "is-pinned" : ""}`}>
         <div className="landing-flight-sticky-inner">
@@ -109,13 +109,13 @@ export function LandingExpertiseScroll() {
                 <div>
                   <p className="landing-section-kicker">
                     <AirplaneIcon className="landing-kicker-plane" />
-                    Formations
+                    Parcours
                   </p>
-                  <h2 className="landing-h2 landing-h2-light">Nos domaines d&apos;expertise</h2>
+                  <h2 className="landing-h2 landing-h2-light">Les axes de votre formation</h2>
                   <p className="landing-flight-hint">
                     {useScrollPin
-                      ? "Faites défiler pour explorer chaque filière"
-                      : "Parcourez nos filières aviation, maritime et tourisme"}
+                      ? "Faites défiler pour explorer chaque axe"
+                      : "Communication, tourisme, aéronautique, service à bord et insertion"}
                   </p>
                 </div>
                 <div className="landing-flight-counter" aria-live="polite">

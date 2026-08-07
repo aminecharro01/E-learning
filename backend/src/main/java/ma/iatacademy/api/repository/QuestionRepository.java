@@ -8,4 +8,6 @@ import java.util.UUID;
 
 public interface QuestionRepository extends JpaRepository<Question, UUID> {
     List<Question> findByQuizIdOrderByOrderIndexAsc(UUID quizId);
+    List<Question> findByQuestionBankIdOrderByOrderIndexAsc(UUID questionBankId);
+    long countByQuestionBankId(UUID questionBankId);
 }

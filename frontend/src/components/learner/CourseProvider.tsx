@@ -1,6 +1,7 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 import { getModule, getMyProgress } from "@/lib/api";
 import type { ModuleDetail, ModuleLearnerStatus } from "@/types/domain";
 import { CourseSidebar, type UfSidebarModule } from "@/components/learner/CourseSidebar";
@@ -9,6 +10,7 @@ import { ApiClientError } from "@/lib/api-client";
 
 type CourseContextValue = {
   module: ModuleDetail | null;
+  moduleId: string | null;
   reload: () => Promise<void>;
   setLessonCompleted: (lessonId: string, completed: boolean) => void;
 };
@@ -21,13 +23,6 @@ export function useCourse() {
   return ctx;
 }
 
-type ProviderProps = {
-  moduleId: string;
-  activeLessonId?: string;
-  activeQuizId?: string;
-  children: React.ReactNode;
-};
-
 function normalizeDetail(data: ModuleDetail): ModuleDetail {
   return {
     ...data,
@@ -36,92 +31,161 @@ function normalizeDetail(data: ModuleDetail): ModuleDetail {
   };
 }
 
-export function CourseProvider({
-  moduleId,
-  activeLessonId,
-  activeQuizId,
-  children,
-}: ProviderProps) {
+/** Parse /app/learn/:moduleId[/s|:quiz/:id] without remounting the shell. */
+export function parseLearnPath(pathname: string): {
+  moduleId: string | null;
+  activeLessonId?: string;
+  activeQuizId?: string;
+} {
+  const parts = pathname.split("/").filter(Boolean);
+  const learnIdx = parts.indexOf("learn");
+  if (learnIdx < 0 || !parts[learnIdx + 1]) {
+    return { moduleId: null };
+  }
+  const moduleId = parts[learnIdx + 1];
+  const kind = parts[learnIdx + 2];
+  const itemId = parts[learnIdx + 3];
+  if (kind === "s" && itemId) return { moduleId, activeLessonId: itemId };
+  if (kind === "quiz" && itemId) return { moduleId, activeQuizId: itemId };
+  return { moduleId };
+}
+
+async function loadUfBundle(targetModuleId: string): Promise<{
+  current: ModuleDetail;
+  ufTitle: string;
+  details: UfSidebarModule[];
+}> {
+  const [progress, currentDetail] = await Promise.all([
+    getMyProgress(),
+    getModule(targetModuleId),
+  ]);
+  const current = normalizeDetail(currentDetail);
+
+  const summary = progress.modules.find((m) => m.id === targetModuleId);
+  const ufCode = summary?.ufCode ?? current.ufCode ?? null;
+  const ufTitle = summary?.ufTitle ?? current.ufTitle ?? "Unité de formation";
+
+  const siblings = progress.modules
+    .filter((m) => (ufCode ? m.ufCode === ufCode : m.id === targetModuleId))
+    .toSorted((a, b) => a.orderIndex - b.orderIndex);
+
+  const details = await Promise.all(
+    siblings.map(async (s) => {
+      const status = (s.learnerStatus ?? "LOCKED") as ModuleLearnerStatus;
+      const locked = status === "LOCKED";
+      if (locked) {
+        return {
+          id: s.id,
+          title: s.title,
+          learnerStatus: status,
+          orderIndex: s.orderIndex,
+          locked: true,
+          detail: null,
+        } satisfies UfSidebarModule;
+      }
+      if (s.id === targetModuleId) {
+        return {
+          id: s.id,
+          title: s.title,
+          learnerStatus: status,
+          orderIndex: s.orderIndex,
+          locked: false,
+          detail: current,
+        } satisfies UfSidebarModule;
+      }
+      try {
+        const detail = normalizeDetail(await getModule(s.id));
+        return {
+          id: s.id,
+          title: s.title,
+          learnerStatus: status,
+          orderIndex: s.orderIndex,
+          locked: false,
+          detail,
+        } satisfies UfSidebarModule;
+      } catch {
+        return {
+          id: s.id,
+          title: s.title,
+          learnerStatus: status,
+          orderIndex: s.orderIndex,
+          locked: true,
+          detail: null,
+        } satisfies UfSidebarModule;
+      }
+    })
+  );
+
+  return { current, ufTitle, details };
+}
+
+type ProviderProps = {
+  children: React.ReactNode;
+};
+
+export function CourseProvider({ children }: ProviderProps) {
+  const pathname = usePathname();
+  const { moduleId, activeLessonId, activeQuizId } = useMemo(
+    () => parseLearnPath(pathname),
+    [pathname]
+  );
+
   const [module, setModule] = useState<ModuleDetail | null>(null);
   const [ufTitle, setUfTitle] = useState("Unité de formation");
   const [ufModules, setUfModules] = useState<UfSidebarModule[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [collapsed, setCollapsed] = useState(false);
 
+  const ufModulesRef = useRef(ufModules);
+  ufModulesRef.current = ufModules;
+
+  const applyBundle = useCallback(
+    (bundle: Awaited<ReturnType<typeof loadUfBundle>>) => {
+      setModule(bundle.current);
+      setUfTitle(bundle.ufTitle);
+      setUfModules(bundle.details);
+      setError(null);
+    },
+    []
+  );
+
   const reload = useCallback(async () => {
-    const [progress, currentDetail] = await Promise.all([getMyProgress(), getModule(moduleId)]);
-    const current = normalizeDetail(currentDetail);
-    setModule(current);
+    if (!moduleId) return;
+    applyBundle(await loadUfBundle(moduleId));
+  }, [moduleId, applyBundle]);
 
-    const summary = progress.modules.find((m) => m.id === moduleId);
-    const ufCode = summary?.ufCode ?? current.ufCode ?? null;
-    const title = summary?.ufTitle ?? current.ufTitle ?? "Unité de formation";
-    setUfTitle(title);
-
-    const siblings = progress.modules
-      .filter((m) => (ufCode ? m.ufCode === ufCode : m.id === moduleId))
-      .toSorted((a, b) => a.orderIndex - b.orderIndex);
-
-    const details = await Promise.all(
-      siblings.map(async (s) => {
-        const status = (s.learnerStatus ?? "LOCKED") as ModuleLearnerStatus;
-        const locked = status === "LOCKED";
-        if (locked) {
-          return {
-            id: s.id,
-            title: s.title,
-            learnerStatus: status,
-            orderIndex: s.orderIndex,
-            locked: true,
-            detail: null,
-          } satisfies UfSidebarModule;
-        }
-        if (s.id === moduleId) {
-          return {
-            id: s.id,
-            title: s.title,
-            learnerStatus: status,
-            orderIndex: s.orderIndex,
-            locked: false,
-            detail: current,
-          } satisfies UfSidebarModule;
-        }
-        try {
-          const detail = normalizeDetail(await getModule(s.id));
-          return {
-            id: s.id,
-            title: s.title,
-            learnerStatus: status,
-            orderIndex: s.orderIndex,
-            locked: false,
-            detail,
-          } satisfies UfSidebarModule;
-        } catch {
-          return {
-            id: s.id,
-            title: s.title,
-            learnerStatus: status,
-            orderIndex: s.orderIndex,
-            locked: true,
-            detail: null,
-          } satisfies UfSidebarModule;
-        }
-      })
-    );
-
-    setUfModules(details);
-  }, [moduleId]);
-
+  // Keep shell mounted: load UF once, then switch module from cache when possible.
   useEffect(() => {
-    setError(null);
-    reload().catch((err) => {
-      if (err instanceof ApiClientError && err.status === 403) {
-        setError("Module verrouillé. Validez le module précédent.");
-      } else {
-        setError("Impossible de charger le module.");
-      }
-    });
-  }, [reload]);
+    if (!moduleId) return;
+
+    const cached = ufModulesRef.current.find((m) => m.id === moduleId);
+    if (cached?.detail) {
+      setModule(cached.detail);
+      setError(null);
+      return;
+    }
+
+    let cancelled = false;
+    const targetId = moduleId;
+
+    loadUfBundle(targetId)
+      .then((bundle) => {
+        if (cancelled) return;
+        applyBundle(bundle);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        if (err instanceof ApiClientError && err.status === 403) {
+          setError("Module verrouillé. Validez le module précédent.");
+        } else {
+          setError("Impossible de charger le module.");
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [moduleId, applyBundle]);
 
   const setLessonCompleted = useCallback((lessonId: string, completed: boolean) => {
     const patch = (detail: ModuleDetail | null) => {
@@ -139,17 +203,17 @@ export function CourseProvider({
   }, []);
 
   const value = useMemo(
-    () => ({ module, reload, setLessonCompleted }),
-    [module, reload, setLessonCompleted]
+    () => ({ module, moduleId, reload, setLessonCompleted }),
+    [module, moduleId, reload, setLessonCompleted]
   );
 
   return (
     <CourseContext.Provider value={value}>
-      <div className="flex h-screen flex-col">
+      <div className="iat-board flex h-screen flex-col">
         <LearnerAppHeader containerClassName="flex w-full items-center justify-between gap-4 px-4 py-3 sm:px-6" />
 
-        <div className="flex min-h-0 flex-1">
-          {ufModules.length > 0 && (
+        <div className="learn-shell">
+          {ufModules.length > 0 && moduleId && (
             <CourseSidebar
               ufTitle={ufTitle}
               modules={ufModules}
@@ -160,7 +224,7 @@ export function CourseProvider({
               onToggleCollapse={() => setCollapsed((v) => !v)}
             />
           )}
-          <main className="min-w-0 flex-1 overflow-y-auto">
+          <main className="learn-main">
             {error && <p className="alert alert-error m-6">{error}</p>}
             {!error && children}
           </main>

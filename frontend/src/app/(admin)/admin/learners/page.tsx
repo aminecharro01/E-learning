@@ -58,7 +58,7 @@ export default function AdminLearnersPage() {
 
   const columns: DataTableColumn<LearnerSummary>[] = [
     { key: "name", header: "Nom", render: (r) => r.fullName || "—" },
-    { key: "email", header: "Email", render: (r) => r.email },
+    { key: "email", header: "Courriel", render: (r) => r.email },
     {
       key: "progress",
       header: "Progression",

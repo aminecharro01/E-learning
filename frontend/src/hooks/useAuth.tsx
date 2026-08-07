@@ -20,6 +20,7 @@ type AuthContextValue = {
   refresh: () => Promise<void>;
   logout: () => Promise<void>;
   isAdmin: boolean;
+  isSuperAdmin: boolean;
   isFormateur: boolean;
   hasRole: (...roles: Role[]) => boolean;
 };
@@ -63,8 +64,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       error,
       refresh,
       logout,
-      isAdmin: user?.role === "ADMIN",
-      isFormateur: user?.role === "FORMATEUR" || user?.role === "ADMIN",
+      isAdmin: user?.role === "ADMIN" || user?.role === "SUPER_ADMIN",
+      isSuperAdmin: user?.role === "SUPER_ADMIN",
+      isFormateur: user?.role === "FORMATEUR" || user?.role === "ADMIN" || user?.role === "SUPER_ADMIN",
       hasRole: (...roles: Role[]) => (user ? roles.includes(user.role) : false),
     }),
     [user, loading, error, refresh, logout]

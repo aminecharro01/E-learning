@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { Lesson, ModuleDetail, ModuleLearnerStatus, ModuleQuizItem } from "@/types/domain";
+import { IconBadge, IconCheck, IconCompass, IconPlane, IconTower } from "@/components/brand/IatIcons";
 import { btn } from "@/lib/ui";
 
 export type UfSidebarModule = {
@@ -43,8 +44,8 @@ function ModuleLessons({
   );
 
   return (
-    <div className="pb-2 pl-2">
-      <ul className="space-y-0.5">
+    <div className="pb-2">
+      <ul>
         {lessons.map((lesson, idx) => {
           const active = lesson.id === activeLessonId;
           const quiz = sectionQuizMap.get(lesson.id);
@@ -52,30 +53,31 @@ function ModuleLessons({
             <li key={lesson.id}>
               <Link
                 href={`/app/learn/${moduleId}/s/${lesson.id}`}
-                className={`nav-item flex items-start gap-2.5 px-2.5 py-2 text-sm ${
-                  active ? "nav-item-active font-medium" : ""
-                }`}
+                scroll={false}
+                prefetch
+                className={`learn-lesson-link ${active ? "is-active" : ""}`}
               >
                 <span
                   className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold ${
                     lesson.completed
-                      ? "bg-success text-[var(--success-fg)]"
+                      ? "bg-[var(--alert-success-bg)] text-[var(--success)]"
                       : active
-                        ? "bg-primary text-[var(--primary-fg)]"
+                        ? "bg-[color-mix(in_srgb,var(--gold-500)_22%,transparent)] text-[var(--gold-700)]"
                         : "bg-surface-2 text-muted"
                   }`}
                 >
-                  {lesson.completed ? "✓" : idx + 1}
+                  {lesson.completed ? <IconCheck size={12} /> : idx + 1}
                 </span>
-                <span className="leading-snug">{lesson.title}</span>
+                <span>{lesson.title}</span>
               </Link>
               {quiz && (
                 <Link
                   href={`/app/learn/${moduleId}/quiz/${quiz.id}`}
-                  className={`nav-item ml-7 mt-0.5 block rounded-md px-2 py-1.5 text-xs ${
-                    activeQuizId === quiz.id ? "nav-item-active font-medium" : ""
-                  }`}
+                  scroll={false}
+                  prefetch
+                  className={`learn-quiz-link ${activeQuizId === quiz.id ? "is-active" : ""}`}
                 >
+                  <IconBadge size={14} />
                   Quiz · {quiz.title}
                 </Link>
               )}
@@ -86,21 +88,20 @@ function ModuleLessons({
 
       {moduleQuizzes.length > 0 && (
         <div className="mt-2 border-t border-theme pt-2">
-          <p className="mb-1 px-2 text-[10px] font-semibold uppercase tracking-wide text-muted">
+          <p className="bp-eyebrow !mb-1 px-3 !text-[10px]">
+            <IconCompass size={12} />
             Évaluation
           </p>
-          <ul className="space-y-0.5">
+          <ul>
             {moduleQuizzes.map((quiz) => (
               <li key={quiz.id}>
                 <Link
                   href={`/app/learn/${moduleId}/quiz/${quiz.id}`}
-                  className={`nav-item flex items-center gap-2 px-2.5 py-2 text-sm ${
-                    activeQuizId === quiz.id ? "nav-item-active font-medium" : ""
-                  }`}
+                  scroll={false}
+                  prefetch
+                  className={`learn-quiz-link !ml-2 ${activeQuizId === quiz.id ? "is-active" : ""}`}
                 >
-                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-warning text-[10px] font-bold text-[var(--warning-fg)]">
-                    Q
-                  </span>
+                  <IconBadge size={14} />
                   {quiz.title}
                 </Link>
               </li>
@@ -144,28 +145,31 @@ export function CourseSidebar({
 
   if (collapsed) {
     return (
-      <aside className="app-sidebar flex w-12 shrink-0 flex-col">
+      <aside className="learn-sidebar is-collapsed">
         <button
           type="button"
           onClick={onToggleCollapse}
-          className={`${btn.neutralSm} m-2`}
+          className={`${btn.icon} m-2`}
           aria-label="Ouvrir le sommaire"
           title="Ouvrir le sommaire"
         >
-          ☰
+          <IconTower size={18} />
         </button>
       </aside>
     );
   }
 
   return (
-    <aside className="app-sidebar flex w-72 shrink-0 flex-col">
-      <div className="border-b border-theme px-4 py-4">
+    <aside className="learn-sidebar">
+      <div className="learn-sidebar-head">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
-            <p className="eyebrow">Unité de formation</p>
-            <h2 className="mt-0.5 text-sm font-semibold leading-snug text-heading">{ufTitle}</h2>
-            <p className="mt-1 text-[11px] text-muted">
+            <p className="bp-eyebrow !mb-1">
+              <IconPlane size={14} />
+              Unité de formation
+            </p>
+            <h2 className="learn-mod-title text-[0.9375rem]!">{ufTitle}</h2>
+            <p className="learn-mod-meta mt-1">
               {modules.length} module{modules.length > 1 ? "s" : ""}
             </p>
           </div>
@@ -182,66 +186,81 @@ export function CourseSidebar({
         </div>
       </div>
 
-      <nav className="flex-1 overflow-y-auto px-2 py-3">
-        <ul className="space-y-1">
+      <nav className="learn-sidebar-nav" aria-label="Sommaire du module">
+        <ul>
           {modules.map((mod, index) => {
             const open = expandedIds.has(mod.id);
             const isActive = mod.id === activeModuleId;
             const lessons = mod.detail?.lessons ?? [];
             const quizzes = mod.detail?.quizzes ?? [];
             const done = lessons.filter((l) => l.completed).length;
+            const code = `M-${String(index + 1).padStart(2, "0")}`;
 
             return (
-              <li
-                key={mod.id}
-                className={`overflow-hidden rounded-lg border ${
-                  isActive ? "border-primary/40 bg-surface" : "border-transparent"
-                }`}
-              >
-                <button
-                  type="button"
-                  disabled={mod.locked}
-                  onClick={() => toggleModule(mod.id, mod.locked)}
-                  className={`flex w-full items-start gap-2 px-2.5 py-2.5 text-left text-sm ${
-                    mod.locked ? "cursor-not-allowed opacity-60" : "hover:bg-surface-2/70"
-                  }`}
-                  aria-expanded={mod.locked ? false : open}
-                >
-                  <span
-                    className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold ${
-                      mod.learnerStatus === "COMPLETED"
-                        ? "bg-success text-[var(--success-fg)]"
+              <li key={mod.id} className={`learn-mod ${isActive ? "is-active" : ""}`}>
+                <div className="learn-mod-btn">
+                  <button
+                    type="button"
+                    disabled={mod.locked}
+                    onClick={() => toggleModule(mod.id, mod.locked)}
+                    className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] font-bold disabled:cursor-not-allowed"
+                    style={{
+                      background: mod.learnerStatus === "COMPLETED"
+                        ? "var(--alert-success-bg)"
                         : isActive
-                          ? "bg-primary text-[var(--primary-fg)]"
-                          : "bg-surface-2 text-muted"
-                    }`}
+                          ? "color-mix(in srgb, var(--gold-500) 22%, transparent)"
+                          : "var(--surface-2, #f1f5f9)",
+                      color: mod.learnerStatus === "COMPLETED"
+                        ? "var(--success)"
+                        : isActive
+                          ? "var(--gold-700)"
+                          : "var(--muted-fg, #64748b)",
+                    }}
+                    aria-expanded={mod.locked ? false : open}
+                    aria-label={open ? "Replier le module" : "Déplier le module"}
                   >
                     {mod.locked ? (
-                      <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
                         <path d="M17 8h-1V6a4 4 0 0 0-8 0v2H7a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V10a2 2 0 0 0-2-2zm-7-2a2 2 0 0 1 4 0v2h-4V6zm7 14H7V10h10v10z" />
                       </svg>
                     ) : mod.learnerStatus === "COMPLETED" ? (
-                      "✓"
+                      <IconCheck size={12} />
                     ) : (
                       index + 1
                     )}
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block font-medium leading-snug text-heading">{mod.title}</span>
-                    <span className="mt-0.5 block text-[11px] text-muted">
-                      {mod.locked
-                        ? "Verrouillé"
-                        : lessons.length > 0
-                          ? `${done}/${lessons.length} sections`
-                          : "Disponible"}
+                  </button>
+                  {mod.locked ? (
+                    <span className="min-w-0 flex-1">
+                      <span className="learn-mod-title">{mod.title}</span>
+                      <span className="learn-mod-meta block">{code} · Verrouillé</span>
                     </span>
-                  </span>
-                  {!mod.locked && (
-                    <span className="mt-0.5 text-muted" aria-hidden>
-                      {open ? "▾" : "▸"}
-                    </span>
+                  ) : (
+                    <Link
+                      href={`/app/learn/${mod.id}`}
+                      className="min-w-0 flex-1 rounded-md text-left hover:opacity-90"
+                      onClick={() => {
+                        if (!open) toggleModule(mod.id, false);
+                      }}
+                    >
+                      <span className="learn-mod-title">{mod.title}</span>
+                      <span className="learn-mod-meta block">
+                        {code}
+                        {" · "}
+                        {lessons.length > 0 ? `${done}/${lessons.length}` : "Disponible"}
+                      </span>
+                    </Link>
                   )}
-                </button>
+                  {!mod.locked && (
+                    <button
+                      type="button"
+                      className="mt-0.5 text-muted"
+                      aria-label={open ? "Replier" : "Déplier"}
+                      onClick={() => toggleModule(mod.id, false)}
+                    >
+                      {open ? "▾" : "▸"}
+                    </button>
+                  )}
+                </div>
 
                 {open && !mod.locked && mod.detail && (
                   <ModuleLessons

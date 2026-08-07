@@ -3,6 +3,7 @@ package ma.iatacademy.api.controller;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import ma.iatacademy.api.dto.MessageResponse;
+import ma.iatacademy.api.dto.stage.CreateSignoffInviteRequest;
 import ma.iatacademy.api.dto.stage.LearnerDocumentResponse;
 import ma.iatacademy.api.dto.stage.LearnerDossierResponse;
 import ma.iatacademy.api.dto.stage.UfValidationResponse;
@@ -10,6 +11,7 @@ import ma.iatacademy.api.dto.stage.UploadLearnerDocumentRequest;
 import ma.iatacademy.api.dto.stage.ValidateUfRequest;
 import ma.iatacademy.api.security.UserPrincipal;
 import ma.iatacademy.api.service.StageService;
+import ma.iatacademy.api.service.StageSignoffService;
 import ma.iatacademy.api.service.UfValidationService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -27,6 +29,7 @@ public class StageController {
 
     private final StageService stageService;
     private final UfValidationService ufValidationService;
+    private final StageSignoffService stageSignoffService;
 
     @GetMapping("/me")
     @PreAuthorize("hasRole('ETUDIANT')")
@@ -108,5 +111,14 @@ public class StageController {
             @AuthenticationPrincipal UserPrincipal principal
     ) {
         return ResponseEntity.ok(ufValidationService.validate(learnerId, request, principal));
+    }
+
+    @PostMapping("/signoff-invites")
+    @PreAuthorize("hasAnyRole('ADMIN','FORMATEUR')")
+    public ResponseEntity<MessageResponse> createSignoffInvite(
+            @Valid @RequestBody CreateSignoffInviteRequest request,
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        return ResponseEntity.ok(stageSignoffService.createInvite(request, principal.getId()));
     }
 }

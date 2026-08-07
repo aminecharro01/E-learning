@@ -25,15 +25,32 @@ spring:
         enabled: false
   servlet:
     multipart:
-      max-file-size: 500MB
-      max-request-size: 520MB
+      # Generous enough for course videos/PDFs without leaving the upload endpoint
+      # wide open as a disk-exhaustion vector.
+      max-file-size: 200MB
+      max-request-size: 210MB
+  mail:
+    host: ${MAIL_HOST:}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
 
 server:
   port: ${SERVER_PORT:8080}
 
 app:
   jwt:
-    secret: ${JWT_SECRET:change-me-to-a-long-random-secret-at-least-256-bits-long!!}
+    # No fallback here on purpose: JWT_SECRET must be set explicitly (dev profile
+    # supplies its own local-only value). Booting without it fails fast — see
+    # JwtProperties#validate — instead of silently signing tokens with a secret
+    # that's sitting in this file in plain text.
+    secret: ${JWT_SECRET:}
     expiration-ms: ${JWT_EXPIRATION_MS:86400000}
     cookie-name: ${JWT_COOKIE_NAME:iat_token}
     cookie-secure: ${JWT_COOKIE_SECURE:false}
@@ -46,9 +63,21 @@ app:
     support-email: ${APP_SUPPORT_EMAIL:support@iat-academy.local}
     registration-enabled: ${APP_REGISTRATION_ENABLED:true}
     default-reset-password: ${APP_DEFAULT_RESET_PASSWORD:IatReset@123}
+  mail:
+    # Off by default so local/dev boots without real SMTP creds — EmailServiceImpl
+    # logs the message instead of sending when disabled. Set MAIL_ENABLED=true and
+    # supply spring.mail.* creds (MAIL_HOST/MAIL_USERNAME/MAIL_PASSWORD) to send for real.
+    enabled: ${MAIL_ENABLED:false}
+    from: ${MAIL_FROM:no-reply@iat-academy.local}
+    frontend-base-url: ${FRONTEND_BASE_URL:http://localhost:3000}
   cors:
     allowed-origins:
       - ${CORS_ORIGINS:http://localhost:3000}
+  security:
+    # IPs of reverse proxies allowed to set X-Forwarded-For (comma-separated).
+    # Leave empty (default) unless the API sits behind a known proxy/load balancer —
+    # otherwise the header is attacker-controlled and must be ignored.
+    trusted-proxies: ${TRUSTED_PROXIES:}
   quiz:
     # TODO: à valider avec le client
     default-section-passing-score: 50
@@ -57,6 +86,12 @@ app:
     default-module-time-limit-seconds: 5400
     default-retry-delay-hours: 24
     section-completion-video-percent: 90
+  demo:
+    # Remet progression / certificats / validations UF à chaque démarrage (scénarios démo)
+    reset-progress-on-startup: ${DEMO_RESET_PROGRESS:true}
+  swagger:
+    # See SecurityConfig — also gates whether swagger paths are publicly reachable.
+    enabled: ${SWAGGER_ENABLED:true}
 
 springdoc:
   api-docs:

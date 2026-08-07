@@ -1,26 +1,41 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import { submitContactMessage } from "@/lib/api";
+import { ApiClientError } from "@/lib/api-client";
 import { iat } from "./content";
 
 export function LandingContact() {
-  const [sent, setSent] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
 
-  function onSubmit(e: FormEvent<HTMLFormElement>) {
+  async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    const fd = new FormData(e.currentTarget);
-    const first = String(fd.get("firstname") || "").trim();
-    const last = String(fd.get("lastname") || "").trim();
+    setError(null);
+    setSuccess(null);
+    const form = e.currentTarget;
+    const fd = new FormData(form);
+    const firstName = String(fd.get("firstname") || "").trim();
+    const lastName = String(fd.get("lastname") || "").trim();
     const email = String(fd.get("email") || "").trim();
     const phone = String(fd.get("phone") || "").trim();
     const message = String(fd.get("message") || "").trim();
 
-    const subject = encodeURIComponent(`Contact IAT Academy — ${first} ${last}`);
-    const body = encodeURIComponent(
-      `Nom: ${first} ${last}\nEmail: ${email}\nTéléphone: ${phone}\n\n${message}`
-    );
-    window.location.href = `${iat.emailHref}?subject=${subject}&body=${body}`;
-    setSent(true);
+    setLoading(true);
+    try {
+      const res = await submitContactMessage({ firstName, lastName, email, phone, message });
+      setSuccess(res.message);
+      form.reset();
+    } catch (err) {
+      setError(
+        err instanceof ApiClientError
+          ? err.message
+          : "Envoi impossible. Réessayez ou contactez-nous par téléphone."
+      );
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -35,7 +50,7 @@ export function LandingContact() {
               <span>{iat.phone}</span>
             </a>
             <a href={iat.emailHref} className="landing-contact-row">
-              <span className="landing-contact-label">Email</span>
+              <span className="landing-contact-label">Courriel</span>
               <span>{iat.email}</span>
             </a>
             <a
@@ -49,35 +64,81 @@ export function LandingContact() {
             </a>
           </div>
 
-          <form onSubmit={onSubmit} className="landing-form lg:col-span-3">
+          <form onSubmit={onSubmit} className="landing-form lg:col-span-3" noValidate>
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="landing-field">
                 <span>Prénom</span>
-                <input name="firstname" required placeholder="Amina" />
+                <input
+                  name="firstname"
+                  required
+                  maxLength={100}
+                  autoComplete="given-name"
+                  placeholder="Amina"
+                  disabled={loading}
+                />
               </label>
               <label className="landing-field">
                 <span>Nom</span>
-                <input name="lastname" required placeholder="Benali" />
+                <input
+                  name="lastname"
+                  required
+                  maxLength={100}
+                  autoComplete="family-name"
+                  placeholder="Benali"
+                  disabled={loading}
+                />
               </label>
               <label className="landing-field">
-                <span>Email</span>
-                <input name="email" type="email" required placeholder="vous@email.com" />
+                <span>Courriel</span>
+                <input
+                  name="email"
+                  type="email"
+                  required
+                  maxLength={255}
+                  autoComplete="email"
+                  placeholder="vous@email.com"
+                  disabled={loading}
+                />
               </label>
               <label className="landing-field">
                 <span>Téléphone</span>
-                <input name="phone" type="tel" required placeholder="+212 …" />
+                <input
+                  name="phone"
+                  type="tel"
+                  required
+                  maxLength={40}
+                  autoComplete="tel"
+                  placeholder="+212 …"
+                  disabled={loading}
+                />
               </label>
             </div>
             <label className="landing-field mt-4 block">
               <span>Message</span>
-              <textarea name="message" required rows={4} placeholder="Votre message…" />
+              <textarea
+                name="message"
+                required
+                rows={4}
+                maxLength={4000}
+                placeholder="Votre message…"
+                disabled={loading}
+              />
             </label>
-            <button type="submit" className="landing-btn-primary mt-5">
-              Envoyer
+            <button type="submit" className="landing-btn-primary mt-5" disabled={loading}>
+              {loading ? "Envoi…" : "Envoyer"}
             </button>
-        {sent && (
-          <p className="mt-3 text-sm text-[var(--landing-primary)]" role="status" aria-live="polite">
-                Votre client mail va s&apos;ouvrir — merci pour votre message.
+            {error && (
+              <p className="mt-3 text-sm text-[var(--danger,#b83232)]" role="alert">
+                {error}
+              </p>
+            )}
+            {success && (
+              <p
+                className="mt-3 text-sm text-[var(--landing-primary)]"
+                role="status"
+                aria-live="polite"
+              >
+                {success}
               </p>
             )}
           </form>

@@ -3,6 +3,9 @@ package ma.iatacademy.api.controller;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import ma.iatacademy.api.dto.common.PageResponse;
+import ma.iatacademy.api.dto.proctoring.ProctoringEventRequest;
+import ma.iatacademy.api.dto.proctoring.ProctoringEventResponse;
+import ma.iatacademy.api.dto.MessageResponse;
 import ma.iatacademy.api.dto.quiz.*;
 import ma.iatacademy.api.security.UserPrincipal;
 import ma.iatacademy.api.service.QuizService;
@@ -37,6 +40,12 @@ public class QuizController {
             @AuthenticationPrincipal UserPrincipal principal
     ) {
         return ResponseEntity.ok(quizService.submit(id, request, principal));
+    }
+
+    @GetMapping("/{id}/attempts/all")
+    @PreAuthorize("hasAnyRole('ADMIN','FORMATEUR')")
+    public ResponseEntity<List<QuizAttemptAdminResponse>> attemptsForStaff(@PathVariable UUID id) {
+        return ResponseEntity.ok(quizService.listAttemptsForStaff(id));
     }
 
     @GetMapping("/{id}/attempts")
@@ -99,5 +108,41 @@ public class QuizController {
     @PreAuthorize("hasAnyRole('ADMIN','FORMATEUR')")
     public ResponseEntity<List<QuestionAdminResponse>> listQuestions(@PathVariable UUID id) {
         return ResponseEntity.ok(quizService.listQuestions(id));
+    }
+
+    @PostMapping("/attempts/{attemptId}/proctoring-events")
+    public ResponseEntity<MessageResponse> recordProctoringEvent(
+            @PathVariable UUID attemptId,
+            @Valid @RequestBody ProctoringEventRequest request,
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        quizService.recordProctoringEvent(attemptId, request, principal);
+        return ResponseEntity.ok(new MessageResponse("Évènement enregistré."));
+    }
+
+    @GetMapping("/attempts/{attemptId}/proctoring-events")
+    @PreAuthorize("hasAnyRole('ADMIN','FORMATEUR')")
+    public ResponseEntity<List<ProctoringEventResponse>> listProctoringEvents(@PathVariable UUID attemptId) {
+        return ResponseEntity.ok(quizService.listProctoringEvents(attemptId));
+    }
+
+    @GetMapping("/attempts/pending-review")
+    @PreAuthorize("hasAnyRole('ADMIN','FORMATEUR')")
+    public ResponseEntity<List<PendingReviewAttemptResponse>> listPendingReview(
+            @RequestParam(required = false) UUID quizId
+    ) {
+        return ResponseEntity.ok(quizService.listPendingReview(quizId));
+    }
+
+    @PatchMapping("/attempts/{attemptId}/questions/{questionId}/grade")
+    @PreAuthorize("hasAnyRole('ADMIN','FORMATEUR')")
+    public ResponseEntity<MessageResponse> gradeEssay(
+            @PathVariable UUID attemptId,
+            @PathVariable UUID questionId,
+            @Valid @RequestBody GradeEssayRequest request,
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        quizService.gradeEssay(attemptId, questionId, request, principal.getId());
+        return ResponseEntity.ok(new MessageResponse("Question corrigée."));
     }
 }

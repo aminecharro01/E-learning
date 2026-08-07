@@ -5,8 +5,9 @@ import { useForm, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { quizSettingsSchema, type QuizSettingsValues } from "./schemas";
 import { FormField, inputClass } from "./FormField";
-import { getModule } from "@/lib/api";
+import { getModule, listQuestionBanks, type QuestionBank } from "@/lib/api";
 import type { Lesson, Module } from "@/types/domain";
+import { moduleSelectGroups } from "@/lib/programme";
 import { btn } from "@/lib/ui";
 
 type Props = {
@@ -38,6 +39,12 @@ export function QuizSettingsForm({ modules, defaultValues, busy, onSubmit }: Pro
       retryDelayHours: 24,
       blocking: true,
       published: true,
+      proctoringEnabled: false,
+      focusLossDetection: false,
+      copyProtection: false,
+      lockdownMode: false,
+      drawFromBankId: "",
+      drawCount: undefined,
       ...defaultValues,
     },
   });
@@ -50,6 +57,13 @@ export function QuizSettingsForm({ modules, defaultValues, busy, onSubmit }: Pro
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [lessonsLoading, setLessonsLoading] = useState(false);
   const [lessonsError, setLessonsError] = useState<string | null>(null);
+  const [banks, setBanks] = useState<QuestionBank[]>([]);
+
+  useEffect(() => {
+    listQuestionBanks()
+      .then(setBanks)
+      .catch(() => setBanks([]));
+  }, []);
 
   const timeMinutes = useMemo(
     () => Math.round((Number(timeLimitSeconds) || 0) / 60),
@@ -140,10 +154,14 @@ export function QuizSettingsForm({ modules, defaultValues, busy, onSubmit }: Pro
         }
       >
         <select className={inputClass} {...register("moduleId")}>
-          {modules.map((m) => (
-            <option key={m.id} value={m.id}>
-              {m.orderIndex + 1}. {m.title}
-            </option>
+          {moduleSelectGroups(modules).map((group) => (
+            <optgroup key={group.label} label={group.label}>
+              {group.modules.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.title}
+                </option>
+              ))}
+            </optgroup>
           ))}
         </select>
       </FormField>
@@ -221,6 +239,51 @@ export function QuizSettingsForm({ modules, defaultValues, busy, onSubmit }: Pro
           <input type="checkbox" {...register("published")} /> Publié
         </label>
       </div>
+
+      {banks.length > 0 && (
+        <FormField
+          label="Générer depuis une banque (optionnel)"
+          hint="Tire au hasard N questions dans une banque — laissez vide pour créer un quiz vide"
+        >
+          <div className="grid gap-2 sm:grid-cols-2">
+            <select className={inputClass} {...register("drawFromBankId")}>
+              <option value="">— Aucune —</option>
+              {banks.map((b) => (
+                <option key={b.id} value={b.id}>
+                  {b.name} ({b.questionCount})
+                </option>
+              ))}
+            </select>
+            <input
+              type="number"
+              min={1}
+              className={inputClass}
+              placeholder="Nombre de questions"
+              {...register("drawCount")}
+            />
+          </div>
+        </FormField>
+      )}
+
+      <FormField
+        label="Anti-triche (optionnel)"
+        hint="Désactivé par défaut — à activer explicitement pour un examen surveillé."
+      >
+        <div className="flex flex-wrap gap-4 text-sm text-body">
+          <label className="flex items-center gap-2">
+            <input type="checkbox" {...register("proctoringEnabled")} /> Activer la surveillance
+          </label>
+          <label className="flex items-center gap-2">
+            <input type="checkbox" {...register("focusLossDetection")} /> Détecter perte de focus
+          </label>
+          <label className="flex items-center gap-2">
+            <input type="checkbox" {...register("copyProtection")} /> Bloquer copier-coller
+          </label>
+          <label className="flex items-center gap-2">
+            <input type="checkbox" {...register("lockdownMode")} /> Verrouillage plein écran
+          </label>
+        </div>
+      </FormField>
 
       <button
         type="submit"

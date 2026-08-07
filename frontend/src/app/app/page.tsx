@@ -10,7 +10,20 @@ import {
 } from "@/lib/api";
 import type { Certificate, Module } from "@/types/domain";
 import { LearnerAppHeader } from "@/components/learner/LearnerAppHeader";
+import {
+  IconBadge,
+  IconCheck,
+  IconCompass,
+  IconPlane,
+  IconTower,
+  IconWing,
+} from "@/components/brand/IatIcons";
+import { groupUfs, yearLabel as formatYearLabel, type UfGroup } from "@/lib/programme";
 import { btn } from "@/lib/ui";
+import { Skeleton } from "@/components/ui/Skeleton";
+import { ProgressRing } from "@/components/ui/ProgressRing";
+import { BadgeStrip } from "@/components/ui/BadgeStrip";
+import { AgendaWidget } from "@/components/ui/AgendaWidget";
 
 const statusLabel: Record<string, string> = {
   LOCKED: "Verrouillé",
@@ -18,31 +31,6 @@ const statusLabel: Record<string, string> = {
   IN_PROGRESS: "En cours",
   COMPLETED: "Validé",
 };
-
-type UfGroup = {
-  ufCode: string;
-  ufTitle: string;
-  modules: Module[];
-};
-
-function groupUfs(modules: Module[]): UfGroup[] {
-  const ufMap = new Map<string, UfGroup>();
-  for (const module of modules) {
-    const ufKey = module.ufCode ?? "UF";
-    if (!ufMap.has(ufKey)) {
-      ufMap.set(ufKey, {
-        ufCode: ufKey,
-        ufTitle: module.ufTitle ?? ufKey,
-        modules: [],
-      });
-    }
-    ufMap.get(ufKey)!.modules.push(module);
-  }
-  return [...ufMap.values()].map((uf) => ({
-    ...uf,
-    modules: uf.modules.toSorted((a, b) => a.orderIndex - b.orderIndex),
-  }));
-}
 
 function defaultExpandedUf(ufs: UfGroup[]): string | null {
   if (ufs.length === 0) return null;
@@ -54,59 +42,60 @@ function defaultExpandedUf(ufs: UfGroup[]): string | null {
   return (active ?? ufs[0]).ufCode;
 }
 
-function ModuleCard({ module }: { module: Module }) {
+function statusBadgeClass(status: string) {
+  if (status === "COMPLETED") return "badge-inline badge-success";
+  if (status === "LOCKED") return "badge-inline badge-alert";
+  if (status === "IN_PROGRESS") return "badge-inline badge-gold";
+  return "badge-inline badge-navy";
+}
+
+function ModuleCard({ module, index }: { module: Module; index: number }) {
   const locked = module.learnerStatus === "LOCKED";
   const status = module.learnerStatus ?? "AVAILABLE";
-  const fill = Math.max(0, Math.min(100, module.progressPercent ?? (status === "COMPLETED" ? 100 : 0)));
+  const fill = Math.max(
+    0,
+    Math.min(100, module.progressPercent ?? (status === "COMPLETED" ? 100 : 0))
+  );
+  const code = `M-${String(index + 1).padStart(2, "0")}`;
 
-  const inner = (
+  const body = (
     <>
-      <div
-        className="pointer-events-none absolute inset-y-0 left-0 transition-[width] duration-500"
-        style={{
-          width: `${fill}%`,
-          background:
-            status === "COMPLETED"
-              ? "color-mix(in srgb, var(--alert-success-fg) 18%, transparent)"
-              : "color-mix(in srgb, var(--primary) 22%, transparent)",
-        }}
-        aria-hidden
-      />
-      <div className="relative z-[1] flex h-full min-h-32 flex-col justify-between p-4">
-        <div className="flex items-start justify-between gap-3">
-          <span className="text-xs font-semibold uppercase tracking-wide text-primary">Module</span>
-          <span
-            className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${
-              status === "COMPLETED"
-                ? "bg-[var(--alert-success-bg)] text-[var(--alert-success-fg)]"
-                : "bg-surface-2/90 text-muted backdrop-blur-sm"
-            }`}
-          >
-            {statusLabel[status]}
+      <div className="course-body">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <span className="course-tag">
+            <IconTower size={14} />
+            Module
           </span>
+          <span className={statusBadgeClass(status)}>{statusLabel[status]}</span>
         </div>
-        <div>
-          <p className="mt-4 line-clamp-2 font-semibold leading-6 text-heading">{module.title}</p>
-          <p className="mt-2 text-xs font-medium tabular-nums text-muted">{fill}% complété</p>
+        <div className="flex items-center gap-3">
+          <ProgressRing percent={fill} size={48} strokeWidth={5} />
+          <div className="min-w-0 flex-1">
+            <div className="course-title">{module.title}</div>
+            <div className="course-meta">
+              {fill}% complété
+              {status === "IN_PROGRESS" ? " · En vol" : ""}
+            </div>
+          </div>
         </div>
+      </div>
+      <div className="course-stub">
+        {status === "COMPLETED" ? <IconCheck size={22} /> : <IconPlane size={22} />}
+        <span className="course-stub-code">{code}</span>
       </div>
     </>
   );
 
   if (locked) {
-    return (
-      <div className="card-theme relative min-h-32 overflow-hidden rounded-xl bg-surface-2 opacity-70">
-        {inner}
-      </div>
-    );
+    return <div className="course-card is-locked">{body}</div>;
   }
 
   return (
     <Link
       href={`/app/learn/${module.id}`}
-      className="card-theme relative block min-h-32 overflow-hidden rounded-xl transition-[border-color,box-shadow,transform] duration-200 hover:-translate-y-0.5 hover:border-primary hover:shadow-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ring)] motion-reduce:transform-none"
+      className="course-card focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ring)]"
     >
-      {inner}
+      {body}
     </Link>
   );
 }
@@ -128,6 +117,16 @@ export default function AppHomePage() {
         if (progressResult.status === "fulfilled") {
           setProgress(progressResult.value);
           setCertificate(certificateResult.status === "fulfilled" ? certificateResult.value : null);
+          // Fallback if /me failed: infer année 2 from unlocked year-2 modules
+          if (meResult.status !== "fulfilled") {
+            const unlockedY2 = progressResult.value.modules.some(
+              (m) =>
+                (m.yearNumber ?? 1) === 2 &&
+                m.learnerStatus != null &&
+                m.learnerStatus !== "LOCKED"
+            );
+            if (unlockedY2) setYear2Access(true);
+          }
         } else {
           setError("Connexion requise ou serveur indisponible.");
         }
@@ -159,12 +158,15 @@ export default function AppHomePage() {
     [progress]
   );
 
-  const yearLabel = currentYear === 2 ? "2ème Année" : "1ère Année";
+  const yearLabel = formatYearLabel(currentYear);
   const yearCompletion = useMemo(() => {
     if (yearModules.length === 0) return 0;
     const done = yearModules.filter((m) => m.learnerStatus === "COMPLETED").length;
     return Math.round((done * 1000) / yearModules.length) / 10;
   }, [yearModules]);
+
+  const gateCode = currentYear === 2 ? "A2" : "A1";
+  const flightCode = `IAT · ${String(currentYear).padStart(2, "0")}`;
 
   function toggleUf(ufCode: string) {
     setExpandedUfs((prev) => {
@@ -176,12 +178,21 @@ export default function AppHomePage() {
   }
 
   return (
-    <main className="min-h-screen bg-background">
+    <main className="iat-board min-h-screen bg-background">
       <LearnerAppHeader showParcoursLink={false} stageUnlocked={stageUnlocked} />
 
-      <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10">
+      <div className="relative mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10">
+        <div
+          className="pointer-events-none absolute inset-x-0 top-0 h-72 opacity-[0.09]"
+          aria-hidden
+          style={{
+            background:
+              "radial-gradient(55% 50% at 15% 0%, var(--gold-500), transparent 60%), radial-gradient(50% 45% at 85% 10%, var(--navy-soft), transparent 55%)",
+          }}
+        />
+
         {error && (
-          <p className="alert alert-warning mb-6" aria-live="polite">
+          <p className="alert alert-warning relative mb-6" aria-live="polite">
             {error}{" "}
             <Link href="/login" className="underline">
               Se connecter
@@ -190,98 +201,143 @@ export default function AppHomePage() {
         )}
 
         {!progress && !error && (
-          <div className="space-y-6" aria-label="Chargement de votre parcours" aria-busy="true">
-            <div className="card-theme h-56 animate-pulse rounded-2xl bg-surface-2" />
+          <div className="relative space-y-6" aria-label="Chargement de votre parcours" aria-busy="true">
+            <Skeleton className="h-56 rounded-2xl" />
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {Array.from({ length: 6 }).map((_, index) => (
-                <div key={index} className="card-theme h-28 animate-pulse rounded-xl bg-surface-2" />
+                <Skeleton key={index} className="h-28 rounded-xl" />
               ))}
             </div>
           </div>
         )}
 
         {progress && (
-          <>
-            <section className="card-theme overflow-hidden rounded-2xl">
-              <div className="bg-[linear-gradient(135deg,color-mix(in_srgb,var(--primary)_12%,var(--surface)),var(--surface))] p-6 sm:p-8">
-                <div className="flex flex-wrap items-start justify-between gap-4">
-                  <div className="max-w-2xl">
-                    <p className="text-sm font-semibold text-primary">{yearLabel}</p>
-                    <h2 className="mt-1 text-2xl font-bold tracking-tight text-heading sm:text-3xl">
-                      {progress.formationTitle}
-                    </h2>
-                    <p className="mt-2 text-sm leading-6 text-muted">
-                      {ufs.length} unités de formation · {yearModules.length} modules cette année.
-                    </p>
+          <div className="relative space-y-10">
+            <section className="boarding-pass" aria-label="Embarquement et progression">
+              <div className="bp-main">
+                <span className="bp-eyebrow">
+                  <IconPlane size={16} />
+                  Embarquement — {yearLabel}
+                </span>
+                <h2 className="bp-title">
+                  Reprenez
+                  <br />
+                  <span className="grad">votre vol d&apos;apprentissage.</span>
+                </h2>
+                <p className="bp-sub">
+                  {progress.formationTitle} · {ufs.length} unités de formation ·{" "}
+                  {yearModules.length} modules cette année.
+                </p>
+
+                <dl className="bp-meta">
+                  <div>
+                    <dt>From</dt>
+                    <dd>{yearLabel}</dd>
                   </div>
-                  <div className="rounded-2xl bg-primary px-4 py-3 text-center text-[var(--primary-fg)] shadow-sm">
-                    <strong className="block text-2xl font-bold tabular-nums">{yearCompletion}%</strong>
-                    <span className="text-xs font-medium opacity-90">année en cours</span>
+                  <div>
+                    <dt>To</dt>
+                    <dd>
+                      {progress.resumeModuleTitle
+                        ? progress.resumeModuleTitle.slice(0, 28) +
+                          (progress.resumeModuleTitle.length > 28 ? "…" : "")
+                        : "Prochain module"}
+                    </dd>
                   </div>
-                </div>
+                  <div>
+                    <dt>Progress</dt>
+                    <dd>{yearCompletion}%</dd>
+                  </div>
+                </dl>
+
                 <div
-                  className="progress-track mt-6 h-2.5"
+                  className="progress-wing"
                   role="progressbar"
                   aria-label="Progression de l'année"
                   aria-valuemin={0}
                   aria-valuemax={100}
                   aria-valuenow={yearCompletion}
                 >
-                  <div className="progress-fill h-full" style={{ width: `${yearCompletion}%` }} />
+                  <div style={{ width: `${yearCompletion}%` }} />
+                </div>
+
+                <div className="bp-actions">
+                  {progress.currentModuleId && progress.resumeLessonId ? (
+                    <Link
+                      href={`/app/learn/${progress.currentModuleId}/s/${progress.resumeLessonId}`}
+                      className={btn.primary}
+                    >
+                      <IconPlane size={16} />
+                      Continuer où je me suis arrêté
+                    </Link>
+                  ) : (
+                    <span className="badge-inline badge-gold">
+                      <IconCompass size={14} />
+                      Parcours à jour
+                    </span>
+                  )}
+                  {certificate ? (
+                    <span className="badge-inline badge-success">
+                      <IconBadge size={14} />
+                      Diplôme en cours de remise
+                    </span>
+                  ) : null}
                 </div>
               </div>
 
-              {progress.currentModuleId && progress.resumeLessonId && (
-                <div className="m-4 flex flex-wrap items-center justify-between gap-4 rounded-xl bg-[var(--alert-info-bg)] p-4 text-[var(--alert-info-fg)] sm:m-6">
-                  <div>
-                    <p className="text-sm font-semibold">
-                      Reprendre : {progress.resumeModuleTitle || "module en cours"}
-                    </p>
-                    <p className="mt-1 text-xs opacity-90">Continuez là où vous vous êtes arrêté.</p>
-                  </div>
-                  <Link
-                    href={`/app/learn/${progress.currentModuleId}/s/${progress.resumeLessonId}`}
-                    className={btn.primarySm}
-                  >
-                    Continuer →
-                  </Link>
+              <div className="bp-stub">
+                <div className="bp-flight-code">{flightCode}</div>
+                <div className="bp-gate">
+                  <span>PORTE</span>
+                  {gateCode}
                 </div>
-              )}
-
-              {certificate ? (
-                <div className="m-4 rounded-xl bg-[var(--alert-success-bg)] p-4 text-[var(--alert-success-fg)] sm:m-6">
-                  <p className="text-sm font-semibold">Parcours terminé — diplôme en cours de remise</p>
-                  <p className="mt-1 text-xs opacity-90">
-                    Code de vérification : {certificate.verificationCode}.
-                    {certificate.physicallyDelivered ? " Statut : déjà remis." : ""}
-                  </p>
-                </div>
-              ) : null}
+                <div className="bp-barcode" aria-hidden />
+              </div>
+              <div className="bp-notch" aria-hidden />
             </section>
 
-            <section className="mt-10">
-              <div className="mb-5">
-                <p className="text-sm font-semibold text-primary">{yearLabel}</p>
-                <h3 className="mt-1 text-xl font-bold tracking-tight text-heading">
-                  Unités de formation
-                </h3>
-              </div>
+            <div className="grid gap-4 lg:grid-cols-[1fr_auto]">
+              <BadgeStrip />
+              <AgendaWidget />
+            </div>
 
-              {ufs.map((uf) => {
+            {certificate ? (
+              <div className="alert alert-success flex items-start gap-3 rounded-xl border border-[var(--success)] bg-[var(--alert-success-bg)] p-4 text-[var(--alert-success-fg)]">
+                <IconWing size={22} />
+                <div>
+                  <p className="font-semibold">Parcours terminé — diplôme en cours de remise</p>
+                  <p className="mt-1 text-sm opacity-90">
+                    Code : {certificate.verificationCode}
+                    {certificate.physicallyDelivered ? " · déjà remis." : ""}
+                  </p>
+                </div>
+              </div>
+            ) : null}
+
+            <section>
+              <div className="section-head">
+                <span className="section-num">01</span>
+                <h3 className="section-title">Unités de formation</h3>
+              </div>
+              <p className="section-desc">
+                {yearLabel} — ouvrez une UF pour accéder à ses modules (cartes boarding pass).
+              </p>
+
+              {ufs.map((uf, ufIndex) => {
                 const open = expandedUfs.has(uf.ufCode);
                 return (
-                  <div key={uf.ufCode} className="mb-4 overflow-hidden rounded-2xl border border-theme bg-surface">
+                  <div key={uf.ufCode} className="uf-panel">
                     <button
                       type="button"
                       onClick={() => toggleUf(uf.ufCode)}
-                      className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition-colors hover:bg-surface-2/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ring)]"
+                      className="uf-toggle focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ring)]"
                       aria-expanded={open}
                     >
                       <div>
-                        <h4 className="text-sm font-semibold text-heading">{uf.ufTitle}</h4>
-                        <p className="mt-0.5 text-xs text-muted">
-                          {uf.modules.length} module{uf.modules.length > 1 ? "s" : ""}
-                        </p>
+                        <div className="uf-toggle-title">{uf.ufTitle}</div>
+                        <div className="uf-toggle-meta">
+                          UF-{String(ufIndex + 1).padStart(2, "0")} · {uf.modules.length} module
+                          {uf.modules.length > 1 ? "s" : ""}
+                        </div>
                       </div>
                       <span className="text-muted" aria-hidden>
                         {open ? "▾" : "▸"}
@@ -289,9 +345,9 @@ export default function AppHomePage() {
                     </button>
                     {open ? (
                       <ul className="grid gap-4 border-t border-theme p-4 sm:grid-cols-2 lg:grid-cols-3">
-                        {uf.modules.map((module) => (
+                        {uf.modules.map((module, moduleIndex) => (
                           <li key={module.id}>
-                            <ModuleCard module={module} />
+                            <ModuleCard module={module} index={moduleIndex} />
                           </li>
                         ))}
                       </ul>
@@ -300,7 +356,7 @@ export default function AppHomePage() {
                 );
               })}
             </section>
-          </>
+          </div>
         )}
       </div>
     </main>

@@ -1,39 +1,64 @@
 /* =============================================================================
-   IAT Academy — Horizon 2026 landing (aviation theme, scoped)
+   IAT Academy — Landing (same tokens as dashboard /app, light + dark)
    ============================================================================= */
 
 .landing-root,
 .landing {
-  --landing-midnight: #0d1522;
-  --landing-deep: #142b4b;
-  --landing-panel: #142033;
-  --landing-panel-2: #1a2a42;
-  --landing-primary: #f5a623;
-  --landing-primary-glow: #ffc65c;
-  --landing-secondary: #24446f;
-  --landing-gold: #e08d1b;
-  --landing-ink: #e8eef6;
-  --landing-muted: #9bb0cc;
-  --landing-bg: #0d1522;
-  --landing-surface: #142033;
-  --landing-cloud: #1a2a42;
-  --landing-on-dark: #ffffff;
-  --landing-on-dark-muted: #9bb0cc;
-  --landing-glass: rgba(255, 255, 255, 0.06);
-  --landing-glass-border: rgba(255, 255, 255, 0.12);
+  --landing-midnight: var(--background);
+  --landing-deep: var(--surface);
+  --landing-panel: var(--surface);
+  --landing-panel-2: var(--surface-2);
+  --landing-primary: var(--primary);
+  --landing-primary-glow: var(--gold-400);
+  --landing-secondary: var(--navy-soft);
+  --landing-gold: var(--gold-600);
+  --landing-ink: var(--foreground);
+  --landing-muted: var(--muted);
+  --landing-bg: var(--background);
+  --landing-surface: var(--surface);
+  --landing-cloud: var(--surface-2);
+  --landing-on-dark: var(--heading);
+  --landing-on-dark-muted: var(--muted);
+  --landing-glass: color-mix(in srgb, var(--navy) 6%, transparent);
+  --landing-glass-border: var(--border);
+  --landing-hover: color-mix(in srgb, var(--navy) 7%, transparent);
+  --landing-input-bg: var(--input-bg);
+  --landing-input-border: var(--input-border);
+  --landing-sky-top: #f7f9fc;
+  --landing-sky-mid: #eef2f8;
+  --landing-sky-bot: #e8eef6;
+  --landing-overlay: linear-gradient(180deg, transparent 40%, rgba(20, 43, 75, 0.72) 100%);
+  --landing-card-shadow: var(--shadow-brand);
   --font-landing: var(--font-body);
 
-  color-scheme: dark;
-  background: var(--landing-bg);
-  color: var(--landing-ink);
-  font-family: var(--font-landing);
+  color-scheme: light;
   min-height: 100vh;
   overflow-x: clip;
+  background:
+    radial-gradient(ellipse 55% 50% at 15% 0%, color-mix(in srgb, var(--gold-500) 14%, transparent), transparent 60%),
+    radial-gradient(ellipse 50% 45% at 85% 10%, color-mix(in srgb, var(--navy-soft) 12%, transparent), transparent 55%),
+    linear-gradient(180deg, #f7f9fc 0%, #eef2f8 100%);
+  color: var(--landing-ink);
+  font-family: var(--font-landing);
 }
 
 html.dark .landing-root,
 html.dark .landing {
-  background: var(--landing-bg);
+  --landing-gold: var(--gold-400);
+  --landing-glass: rgba(255, 255, 255, 0.06);
+  --landing-glass-border: rgba(255, 255, 255, 0.12);
+  --landing-hover: rgba(255, 255, 255, 0.08);
+  --landing-sky-top: #0a1220;
+  --landing-sky-mid: #0d1522;
+  --landing-sky-bot: #142033;
+  --landing-overlay: linear-gradient(180deg, transparent 40%, rgba(5, 11, 24, 0.85) 100%);
+  --landing-card-shadow: 0 12px 32px -10px rgba(0, 0, 0, 0.55);
+
+  color-scheme: dark;
+  background:
+    radial-gradient(ellipse 55% 50% at 15% 0%, color-mix(in srgb, var(--gold-500) 18%, transparent), transparent 60%),
+    radial-gradient(ellipse 50% 45% at 85% 10%, color-mix(in srgb, var(--navy-soft) 22%, transparent), transparent 55%),
+    linear-gradient(180deg, #0d1522 0%, #0a101a 100%);
   color: var(--landing-ink);
 }
 
@@ -91,10 +116,16 @@ html.dark .landing {
 }
 
 .landing-h1-brand {
-  background: linear-gradient(135deg, #7ec8ff 0%, #fff 55%, #c9e4ff 100%);
+  background: linear-gradient(135deg, var(--navy-soft) 0%, var(--navy) 45%, var(--gold-600) 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
+}
+
+html.dark .landing-h1-brand {
+  background: linear-gradient(135deg, #7ec8ff 0%, #fff 55%, #c9e4ff 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
 }
 
 .landing-h1-tagline {
@@ -163,10 +194,16 @@ html.dark .landing {
 }
 
 .landing-header.is-sticky {
-  background: color-mix(in srgb, var(--landing-midnight) 88%, transparent);
-  backdrop-filter: blur(16px);
-  box-shadow: 0 4px 32px rgba(0, 0, 0, 0.25);
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 2px 12px color-mix(in srgb, var(--navy) 10%, transparent);
   padding-block: 0.65rem;
+  border-bottom: 1px solid var(--border);
+}
+
+html.dark .landing-header.is-sticky {
+  background: color-mix(in srgb, #0d1522 92%, transparent);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
 }
 
 .landing-header.is-sticky .landing-brand-name,
@@ -219,7 +256,7 @@ html.dark .landing {
 }
 
 .landing-nav-link:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--landing-hover);
 }
 
 .landing-btn-ghost-nav {
@@ -232,6 +269,25 @@ html.dark .landing {
 
 .landing-btn-ghost-nav:hover {
   color: var(--landing-on-dark);
+}
+
+.landing-theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  padding: 0.5rem;
+  color: var(--landing-on-dark);
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none;
+}
+
+.landing-theme-toggle:hover {
+  color: var(--landing-gold);
+  background: transparent !important;
 }
 
 .landing-menu-btn {
@@ -266,7 +322,8 @@ html.dark .landing {
   background: var(--landing-deep);
   color: var(--landing-on-dark);
   padding: 1.25rem;
-  box-shadow: -12px 0 40px rgba(0, 0, 0, 0.35);
+  box-shadow: -12px 0 40px color-mix(in srgb, var(--navy) 25%, transparent);
+  border-left: 1px solid var(--landing-glass-border);
 }
 
 .landing-mobile-link {
@@ -277,7 +334,7 @@ html.dark .landing {
 }
 
 .landing-mobile-link:hover {
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--landing-hover);
   color: var(--landing-on-dark);
 }
 
@@ -288,19 +345,18 @@ html.dark .landing {
   justify-content: center;
   border: 0;
   border-radius: 9999px;
-  background: linear-gradient(135deg, var(--landing-primary-glow), var(--landing-secondary));
-  color: #fff;
+  background: var(--landing-primary);
+  color: var(--primary-fg);
   font-weight: 650;
   padding: 0.6rem 1.4rem;
-  box-shadow: 0 4px 24px rgba(30, 111, 217, 0.45);
+  box-shadow: var(--landing-card-shadow);
   touch-action: manipulation;
-  transition: transform 0.2s, box-shadow 0.2s, filter 0.2s;
+  transition: background 0.15s, transform 0.15s;
 }
 
 .landing-btn-glow:hover {
+  background: var(--landing-primary-glow);
   transform: translateY(-1px);
-  box-shadow: 0 8px 32px rgba(30, 111, 217, 0.55);
-  filter: brightness(1.05);
 }
 
 .landing-btn-sm {
@@ -318,18 +374,17 @@ html.dark .landing {
   align-items: center;
   justify-content: center;
   border-radius: 9999px;
-  border: 1px solid rgba(255, 255, 255, 0.35);
+  border: 1px solid var(--landing-glass-border);
   color: var(--landing-on-dark);
   font-weight: 600;
   padding: 0.85rem 1.65rem;
-  backdrop-filter: blur(8px);
   touch-action: manipulation;
   transition: background 0.2s, border-color 0.2s;
 }
 
 .landing-btn-outline-light:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.55);
+  background: var(--landing-hover);
+  border-color: color-mix(in srgb, var(--landing-gold) 45%, var(--landing-glass-border));
 }
 
 .landing-btn-ghost {
@@ -337,11 +392,11 @@ html.dark .landing {
   align-items: center;
   justify-content: center;
   border-radius: 9999px;
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--landing-glass);
   color: var(--landing-on-dark);
   font-weight: 600;
   padding: 0.55rem 1.35rem;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid var(--landing-glass-border);
   touch-action: manipulation;
   transition: background 0.2s;
 }
@@ -374,26 +429,27 @@ html.dark .landing {
   position: relative;
   overflow: hidden;
   min-height: min(100vh, 920px);
-  background: var(--landing-midnight);
+  background: transparent;
 }
 
 .landing-hero-sky {
   position: absolute;
   inset: 0;
-  background:
-    radial-gradient(ellipse 80% 50% at 50% 100%, rgba(30, 111, 217, 0.35), transparent 70%),
-    radial-gradient(ellipse 60% 40% at 80% 20%, rgba(201, 169, 98, 0.08), transparent 50%),
-    linear-gradient(180deg, #050b18 0%, #0a1628 45%, #0c2848 100%);
+  background: linear-gradient(
+    180deg,
+    var(--landing-sky-top) 0%,
+    var(--landing-sky-mid) 50%,
+    var(--landing-sky-bot) 100%
+  );
+  opacity: 0.55;
+}
+
+html.dark .landing-hero-sky {
+  opacity: 1;
 }
 
 .landing-hero-paths {
-  position: absolute;
-  inset: auto 0 18% 0;
-  width: 100%;
-  height: 40%;
-  color: var(--landing-primary-glow);
-  pointer-events: none;
-  opacity: 0.6;
+  display: none;
 }
 
 .landing-hero-horizon {
@@ -441,7 +497,6 @@ html.dark .landing {
   background: var(--landing-glass);
   border: 1px solid var(--landing-glass-border);
   color: var(--landing-on-dark-muted);
-  backdrop-filter: blur(10px);
 }
 
 .landing-hero-chips {
@@ -459,8 +514,8 @@ html.dark .landing {
   gap: 0.45rem;
   padding: 0.45rem 0.85rem;
   border-radius: 9999px;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--landing-glass);
+  border: 1px solid var(--landing-glass-border);
   font-size: 0.82rem;
   font-weight: 550;
   color: var(--landing-on-dark-muted);
@@ -489,19 +544,18 @@ html.dark .landing {
   aspect-ratio: 4 / 3;
   border-radius: 1.25rem;
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid var(--landing-glass-border);
+  box-shadow: var(--landing-card-shadow);
 }
 
 .landing-hero-photo-glow {
-  box-shadow:
-    0 24px 64px rgba(0, 0, 0, 0.45),
-    0 0 0 1px rgba(126, 200, 255, 0.15);
+  /* legacy class kept for compatibility */
 }
 
 .landing-hero-photo-overlay {
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, transparent 40%, rgba(5, 11, 24, 0.85) 100%);
+  background: var(--landing-overlay);
 }
 
 .landing-hero-photo-caption {
@@ -510,6 +564,8 @@ html.dark .landing {
   right: 0;
   bottom: 0;
   padding: 1.25rem 1.5rem;
+  --landing-on-dark: #ffffff;
+  --landing-on-dark-muted: #c5d3e6;
 }
 
 .landing-hero-photo-secondary {
@@ -521,7 +577,7 @@ html.dark .landing {
   aspect-ratio: 1;
   border-radius: 1rem;
   overflow: hidden;
-  border: 3px solid var(--landing-midnight);
+  border: 3px solid var(--background);
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4);
 }
 
@@ -587,16 +643,58 @@ html.dark .landing {
 .landing-glass-card {
   padding: 1.35rem 1.5rem;
   border-radius: 1rem;
-  background: var(--landing-glass);
+  background: var(--landing-panel);
   border: 1px solid var(--landing-glass-border);
-  backdrop-filter: blur(12px);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--landing-card-shadow);
+}
+
+/* À propos — cartes remplies en orange primaire */
+.landing-about .landing-glass-card {
+  background: var(--primary);
+  border: 1px solid color-mix(in srgb, var(--primary) 80%, var(--gold-700));
+  color: var(--primary-fg);
+  box-shadow: 0 10px 28px color-mix(in srgb, var(--primary) 35%, transparent);
+}
+
+.landing-about .landing-glass-card-title {
+  color: color-mix(in srgb, var(--primary-fg) 92%, white);
+  opacity: 0.92;
+}
+
+.landing-about .landing-glass-card-text {
+  color: var(--primary-fg);
+}
+
+.landing-about .landing-about-link {
+  color: var(--primary-fg);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.landing-about .landing-about-link:hover {
+  opacity: 0.85;
 }
 
 .landing-glass-card-accent {
+  background: color-mix(in srgb, var(--navy-soft) 12%, var(--landing-panel));
+  border-color: color-mix(in srgb, var(--gold-500) 35%, var(--landing-glass-border));
+  color: var(--landing-on-dark);
+}
+
+.landing-about .landing-glass-card-accent {
+  background: color-mix(in srgb, var(--primary) 88%, var(--gold-700));
+  border-color: color-mix(in srgb, var(--gold-700) 40%, var(--primary));
+}
+
+html.dark .landing-glass-card-accent {
   background: linear-gradient(135deg, rgba(30, 111, 217, 0.28), rgba(12, 74, 138, 0.45));
   border-color: rgba(126, 200, 255, 0.2);
-  color: var(--landing-on-dark);
+}
+
+html.dark .landing-about .landing-glass-card-accent {
+  background: color-mix(in srgb, var(--primary) 85%, var(--gold-700));
+  border-color: color-mix(in srgb, var(--gold-400) 45%, var(--primary));
 }
 
 .landing-glass-card-title {
@@ -717,18 +815,18 @@ html.dark .landing {
   flex-direction: column;
   border-radius: 1.25rem;
   overflow: hidden;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--landing-panel);
+  border: 1px solid var(--landing-glass-border);
   opacity: 0.72;
   transform: scale(0.97);
-  transition: opacity 0.35s ease, transform 0.35s ease, border-color 0.35s ease;
+  transition: opacity 0.35s ease, transform 0.35s ease, border-color 0.35s ease, box-shadow 0.35s ease;
 }
 
 .landing-flight-card.is-active {
   opacity: 1;
   transform: scale(1);
-  border-color: rgba(126, 200, 255, 0.35);
-  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.35);
+  border-color: color-mix(in srgb, var(--landing-gold) 45%, var(--landing-glass-border));
+  box-shadow: var(--landing-card-shadow);
 }
 
 .landing-flight-card-media {
@@ -796,7 +894,7 @@ html.dark .landing {
   bottom: 1.75rem;
   height: 3px;
   border-radius: 9999px;
-  background: rgba(255, 255, 255, 0.12);
+  background: var(--landing-glass-border);
 }
 
 .landing-flight-progress-bar {
@@ -875,7 +973,7 @@ html.dark .landing {
   min-height: 220px;
   background: var(--landing-panel);
   border: 1px solid var(--landing-glass-border);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+  box-shadow: var(--landing-card-shadow);
   transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
@@ -908,6 +1006,8 @@ html.dark .landing {
   min-height: 220px;
   height: 100%;
   padding: 1.35rem;
+  --landing-on-dark: #ffffff;
+  --landing-on-dark-muted: #c5d3e6;
 }
 
 .landing-bento-featured .landing-bento-content {
@@ -945,8 +1045,8 @@ html.dark .landing {
 }
 
 .landing-contact-row:hover {
-  background: rgba(61, 142, 245, 0.12);
-  border-color: rgba(126, 200, 255, 0.25);
+  background: color-mix(in srgb, var(--gold-500) 12%, var(--landing-glass));
+  border-color: color-mix(in srgb, var(--gold-500) 35%, var(--landing-glass-border));
   transform: translateX(4px);
 }
 
@@ -961,14 +1061,14 @@ html.dark .landing {
 .landing-form {
   position: relative;
   border-radius: 1.25rem;
-  border: 1px dashed rgba(201, 169, 98, 0.35);
+  border: 1px dashed color-mix(in srgb, var(--landing-gold) 40%, transparent);
   padding: 1.5rem;
   background: var(--landing-panel);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+  box-shadow: var(--landing-card-shadow);
 }
 
 .landing-form::before {
-  content: "BOARDING PASS";
+  content: "CARTE D'EMBARQUEMENT";
   position: absolute;
   top: 1rem;
   right: 1.25rem;
@@ -991,17 +1091,17 @@ html.dark .landing {
 .landing-field input,
 .landing-field textarea {
   border-radius: 0.75rem;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid var(--landing-input-border);
   padding: 0.7rem 0.9rem;
   font: inherit;
   color: var(--landing-on-dark);
-  background: rgba(5, 11, 24, 0.55);
+  background: var(--landing-input-bg);
   transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 .landing-field input::placeholder,
 .landing-field textarea::placeholder {
-  color: rgba(184, 212, 235, 0.55);
+  color: var(--input-placeholder);
 }
 
 .landing-field input:focus-visible,
@@ -1015,7 +1115,7 @@ html.dark .landing {
   position: relative;
   padding-block: clamp(3rem, 7vw, 5rem);
   background:
-    radial-gradient(ellipse 70% 60% at 50% 0%, rgba(61, 142, 245, 0.18), transparent 60%),
+    radial-gradient(ellipse 70% 60% at 50% 0%, color-mix(in srgb, var(--gold-500) 16%, transparent), transparent 60%),
     var(--landing-midnight);
   overflow: hidden;
 }
@@ -1026,12 +1126,9 @@ html.dark .landing {
   align-items: end;
   padding: clamp(1.5rem, 4vw, 2.5rem);
   border-radius: 1.5rem;
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.02));
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  box-shadow:
-    0 24px 64px rgba(0, 0, 0, 0.35),
-    inset 0 1px 0 rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(16px);
+  background: var(--landing-panel);
+  border: 1px solid var(--landing-glass-border);
+  box-shadow: var(--landing-card-shadow);
 }
 
 @media (min-width: 900px) {
@@ -1093,18 +1190,18 @@ html.dark .landing {
   min-width: 0;
   flex: 1;
   min-height: 3rem;
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  border: 1px solid var(--landing-input-border);
   border-radius: 9999px;
   padding: 0.85rem 1.25rem;
   color: var(--landing-on-dark);
-  background: rgba(5, 11, 24, 0.55);
+  background: var(--landing-input-bg);
   outline: 2px solid transparent;
   outline-offset: 2px;
   transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 .landing-newsletter-input::placeholder {
-  color: rgba(184, 212, 235, 0.5);
+  color: var(--input-placeholder);
 }
 
 .landing-newsletter-input:focus-visible {
@@ -1126,9 +1223,13 @@ html.dark .landing {
 
 /* --- Footer --- */
 .landing-footer {
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
-  background: #030712;
+  border-top: 1px solid var(--landing-glass-border);
+  background: var(--surface-2);
   padding-block: 2rem;
+}
+
+html.dark .landing-footer {
+  background: #030712;
 }
 
 .landing-footer-copy {
@@ -1137,25 +1238,23 @@ html.dark .landing {
   color: var(--landing-on-dark-muted);
 }
 
-/* --- Animations --- */
-.landing-anim-fade-up {
-  animation: landing-fade-up 0.85s ease both;
+.landing-footer-copy a {
+  color: var(--gold-500, #f5a623);
+  font-weight: 600;
+  text-decoration: none;
 }
 
-.landing-anim-fade-up-delay-1 {
-  animation: landing-fade-up 0.85s ease 0.12s both;
+.landing-footer-copy a:hover {
+  text-decoration: underline;
 }
 
-.landing-anim-fade-up-delay-2 {
-  animation: landing-fade-up 0.85s ease 0.24s both;
-}
-
-.landing-anim-fade-up-delay-3 {
-  animation: landing-fade-up 0.85s ease 0.36s both;
-}
-
+/* --- Animations (kept static — lighter feel) --- */
+.landing-anim-fade-up,
+.landing-anim-fade-up-delay-1,
+.landing-anim-fade-up-delay-2,
+.landing-anim-fade-up-delay-3,
 .landing-anim-float {
-  animation: landing-float 5s ease-in-out infinite;
+  animation: none;
 }
 
 @keyframes landing-fade-up {
@@ -1180,88 +1279,16 @@ html.dark .landing {
 }
 
 .landing-reveal {
-  opacity: 0;
-  transform: translateY(32px);
-  transition: opacity 0.65s ease, transform 0.65s ease;
+  opacity: 1;
+  transform: none;
 }
 
 .landing-reveal.is-visible {
   opacity: 1;
-  transform: translateY(0);
-}
-
-/* --- Custom airplane cursor + fog trail --- */
-html.landing-cursor-active .landing,
-html.landing-cursor-active .landing *,
-html.landing-cursor-active .auth-horizon,
-html.landing-cursor-active .auth-horizon * {
-  cursor: none !important;
-}
-
-html.landing-cursor-active .landing input,
-html.landing-cursor-active .landing textarea,
-html.landing-cursor-active .landing select,
-html.landing-cursor-active .auth-horizon input,
-html.landing-cursor-active .auth-horizon textarea,
-html.landing-cursor-active .auth-horizon select {
-  cursor: text !important;
-}
-
-.landing-cursor {
-  position: fixed;
-  inset: 0;
-  z-index: 9999;
-  pointer-events: none;
-  overflow: hidden;
-}
-
-.landing-cursor-fog-layer {
-  position: absolute;
-  inset: 0;
-}
-
-.landing-cursor-fog {
-  position: absolute;
-  top: 0;
-  left: 0;
-  border-radius: 50%;
-  background: radial-gradient(
-    circle,
-    rgba(232, 244, 255, 0.85) 0%,
-    rgba(126, 200, 255, 0.35) 35%,
-    rgba(201, 169, 98, 0.12) 60%,
-    transparent 75%
-  );
-  filter: blur(10px);
-  mix-blend-mode: screen;
-  will-change: transform, opacity;
-}
-
-.landing-cursor-plane {
-  position: absolute;
-  top: 0;
-  left: 0;
-  color: var(--landing-gold);
-  filter: drop-shadow(0 0 10px rgba(201, 169, 98, 0.55))
-    drop-shadow(0 2px 8px rgba(5, 11, 24, 0.45));
-  opacity: 0;
-  will-change: transform, opacity;
-  transition: opacity 0.2s ease;
-}
-
-.landing-cursor-plane svg {
-  display: block;
+  transform: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .landing-anim-fade-up,
-  .landing-anim-fade-up-delay-1,
-  .landing-anim-fade-up-delay-2,
-  .landing-anim-fade-up-delay-3,
-  .landing-anim-float {
-    animation: none;
-  }
-
   .landing-reveal {
     opacity: 1;
     transform: none;
@@ -1274,9 +1301,5 @@ html.landing-cursor-active .auth-horizon select {
 
   .landing-bento-card:hover {
     transform: none;
-  }
-
-  .landing-cursor {
-    display: none;
   }
 }

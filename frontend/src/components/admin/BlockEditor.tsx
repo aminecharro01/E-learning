@@ -264,7 +264,7 @@ export function BlockEditor({ lessonId, initialBlocks, onChange }: Props) {
       });
       emit([...blocks, block]);
     } catch {
-      setMessage("Upload / ajout de bloc impossible.");
+      setMessage("Ajout de bloc impossible.");
     } finally {
       setBusy(false);
     }
