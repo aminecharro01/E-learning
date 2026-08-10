@@ -51,7 +51,7 @@ export default function AdminSessionsPage() {
         setGroups(g);
         if (g[0]) setGroupId(g[0].id);
       })
-      .catch((err) => setError(err instanceof ApiClientError ? err.message : "Chargement impossible."))
+      .catch((err) => setError(err instanceof ApiClientError ? err.message : "Impossible de charger les sessions."))
       .finally(() => setLoading(false));
   }, [isAdmin]);
 

@@ -34,6 +34,11 @@ type Props<T extends { id: string }> = {
   /** Server-side pagination (omit for client-only tables). */
   pageMeta?: PageMeta | null;
   onPageChange?: (page: number) => void;
+  /** Opt-in bulk selection — omit both to keep existing tables unchanged. */
+  selectedIds?: string[];
+  onSelectionChange?: (ids: string[]) => void;
+  /** Rendered in the header bar in place of the title area once ≥1 row is selected. */
+  bulkActions?: ReactNode;
 };
 
 export function DataTable<T extends { id: string }>({
@@ -49,24 +54,55 @@ export function DataTable<T extends { id: string }>({
   searchPlaceholder = "Rechercher…",
   pageMeta,
   onPageChange,
+  selectedIds,
+  onSelectionChange,
+  bulkActions,
 }: Props<T>) {
-  const colCount = columns.length + (onEdit || onDelete ? 1 : 0);
+  const selectable = !!onSelectionChange;
+  const selected = selectedIds ?? [];
+  const colCount = columns.length + (onEdit || onDelete ? 1 : 0) + (selectable ? 1 : 0);
+  const allSelected = selectable && data.length > 0 && data.every((row) => selected.includes(row.id));
+
+  function toggleAll() {
+    if (!onSelectionChange) return;
+    onSelectionChange(allSelected ? [] : data.map((row) => row.id));
+  }
+
+  function toggleOne(id: string) {
+    if (!onSelectionChange) return;
+    onSelectionChange(selected.includes(id) ? selected.filter((x) => x !== id) : [...selected, id]);
+  }
 
   return (
     <div className="card-theme overflow-hidden rounded-2xl">
-      {onSearchChange && (
-        <div className="border-b border-theme p-4">
-          <input
-            type="search"
-            name="table-search"
-            value={search ?? ""}
-            onChange={(e) => onSearchChange(e.target.value)}
-            placeholder={searchPlaceholder}
-            aria-label={searchPlaceholder}
-            autoComplete="off"
-            spellCheck={false}
-            className={`${inputClass} max-w-sm`}
-          />
+      {(onSearchChange || (selectable && selected.length > 0)) && (
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-theme p-4">
+          {selectable && selected.length > 0 ? (
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="text-sm font-medium text-heading">
+                {selected.length} sélectionné{selected.length > 1 ? "s" : ""}
+              </span>
+              {bulkActions}
+              <button type="button" className="text-xs text-muted hover:underline" onClick={() => onSelectionChange?.([])}>
+                Annuler
+              </button>
+            </div>
+          ) : (
+            <span />
+          )}
+          {onSearchChange && (
+            <input
+              type="search"
+              name="table-search"
+              value={search ?? ""}
+              onChange={(e) => onSearchChange(e.target.value)}
+              placeholder={searchPlaceholder}
+              aria-label={searchPlaceholder}
+              autoComplete="off"
+              spellCheck={false}
+              className={`${inputClass} max-w-sm`}
+            />
+          )}
         </div>
       )}
 
@@ -74,6 +110,16 @@ export function DataTable<T extends { id: string }>({
         <table className="min-w-full divide-y divide-[var(--border)]">
           <thead className="bg-surface-2">
             <tr>
+              {selectable && (
+                <th className="w-10 px-4 py-3">
+                  <input
+                    type="checkbox"
+                    aria-label="Tout sélectionner"
+                    checked={allSelected}
+                    onChange={toggleAll}
+                  />
+                </th>
+              )}
               {columns.map((col) => (
                 <th
                   key={col.key}
@@ -109,7 +155,7 @@ export function DataTable<T extends { id: string }>({
                 <tr
                   key={row.id}
                   tabIndex={onRowClick ? 0 : undefined}
-                  className={`transition-colors hover:bg-surface-2 focus-visible:bg-surface-2 focus-visible:outline-2 focus-visible:outline-inset focus-visible:outline-[var(--ring)] ${onRowClick ? "cursor-pointer" : ""}`}
+                  className={`transition-colors hover:bg-surface-2 focus-visible:bg-surface-2 focus-visible:outline-2 focus-visible:outline-inset focus-visible:outline-[var(--ring)] ${onRowClick ? "cursor-pointer" : ""} ${selectable && selected.includes(row.id) ? "bg-surface-2" : ""}`}
                   onClick={() => onRowClick?.(row)}
                   onKeyDown={(event) => {
                     if (onRowClick && (event.key === "Enter" || event.key === " ")) {
@@ -118,6 +164,16 @@ export function DataTable<T extends { id: string }>({
                     }
                   }}
                 >
+                  {selectable && (
+                    <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
+                      <input
+                        type="checkbox"
+                        aria-label="Sélectionner la ligne"
+                        checked={selected.includes(row.id)}
+                        onChange={() => toggleOne(row.id)}
+                      />
+                    </td>
+                  )}
                   {columns.map((col) => (
                     <td
                       key={col.key}

@@ -8,6 +8,7 @@ import { useSidebar } from "@/context/SidebarContext";
 import { ThemeToggleButton } from "@/components/ThemeToggleButton";
 import { NotificationBell } from "@/components/ui/NotificationBell";
 import { btn } from "@/lib/ui";
+import { ROLE_LABEL } from "@/lib/roles";
 
 export function AdminHeader() {
   const { user, logout } = useAuth();
@@ -55,7 +56,9 @@ export function AdminHeader() {
               <p className="text-sm font-medium text-heading">
                 {user?.fullName || user?.email || "…"}
               </p>
-              <p className="text-xs uppercase tracking-wide text-muted">{user?.role}</p>
+              <p className="text-xs uppercase tracking-wide text-muted">
+                {user?.role ? ROLE_LABEL[user.role] : "…"}
+              </p>
             </div>
             <button
               type="button"

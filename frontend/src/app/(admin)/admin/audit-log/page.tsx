@@ -42,7 +42,7 @@ export default function AdminAuditLogPage() {
         totalPages: data.totalPages,
       });
     } catch (err) {
-      setError(err instanceof ApiClientError ? err.message : "Chargement impossible.");
+      setError(err instanceof ApiClientError ? err.message : "Impossible de charger le journal d'audit.");
     } finally {
       setLoading(false);
     }

@@ -90,7 +90,7 @@ export default function AdminSettingsPage() {
         quizForm.reset(quiz);
       })
       .catch((err) =>
-        setError(err instanceof ApiClientError ? err.message : "Chargement impossible.")
+        setError(err instanceof ApiClientError ? err.message : "Impossible de charger les paramètres.")
       )
       .finally(() => setLoading(false));
   }, [isAdmin, isSuperAdmin, appForm, quizForm]);
@@ -255,7 +255,7 @@ export default function AdminSettingsPage() {
                 />
               </FormField>
               <FormField
-                label="Mot de passe temporaire (reset étudiant)"
+                label="Mot de passe temporaire (reset apprenant)"
                 error={appForm.formState.errors.defaultResetPassword}
                 hint="Utilisé quand un admin réinitialise le mot de passe d’un apprenant"
               >

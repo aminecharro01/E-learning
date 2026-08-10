@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { getMyProgress, updateModule } from "@/lib/api";
 import { Modal } from "@/components/admin/Modal";
+import { Skeleton } from "@/components/ui/Skeleton";
 import { ModuleForm } from "@/components/admin/forms/ModuleForm";
 import type { ModuleFormValues } from "@/components/admin/forms/schemas";
 import {
@@ -102,7 +103,7 @@ export default function AdminModulesPage() {
     getMyProgress()
       .then((p) => setModules(p.modules))
       .catch((err) => {
-        setError(err instanceof ApiClientError ? err.message : "Chargement impossible.");
+        setError(err instanceof ApiClientError ? err.message : "Impossible de charger les modules.");
       })
       .finally(() => setLoading(false));
   }, []);
@@ -318,7 +319,11 @@ export default function AdminModulesPage() {
       {msg && <p className="alert alert-success">{msg}</p>}
 
       {loading ? (
-        <p className="text-sm text-muted">Chargement…</p>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          <Skeleton className="h-40 rounded-2xl" />
+          <Skeleton className="h-40 rounded-2xl" />
+          <Skeleton className="h-40 rounded-2xl" />
+        </div>
       ) : (
         <section>
           <div className="section-head">

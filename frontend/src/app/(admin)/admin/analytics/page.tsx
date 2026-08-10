@@ -39,7 +39,7 @@ export default function AdminAnalyticsPage() {
         setModules(p.modules);
         if (p.modules[0]) setModuleId(p.modules[0].id);
       })
-      .catch((err) => setError(err instanceof ApiClientError ? err.message : "Chargement impossible."))
+      .catch((err) => setError(err instanceof ApiClientError ? err.message : "Impossible de charger les données d'analytics."))
       .finally(() => setLoading(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAdmin]);

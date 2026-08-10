@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { useForm, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { moduleFormSchema, type ModuleFormValues } from "./schemas";
-import { FormField, inputClass } from "./FormField";
+import { FormField, FormSection, Toggle, fieldClass } from "./FormField";
 import { btn } from "@/lib/ui";
 
 type Props = {
@@ -44,6 +44,7 @@ export function ModuleForm({
     formState: { errors },
   } = useForm<ModuleFormValues>({
     resolver: zodResolver(moduleFormSchema) as Resolver<ModuleFormValues>,
+    mode: "onBlur",
     defaultValues: {
       title: "",
       description: "",
@@ -80,49 +81,63 @@ export function ModuleForm({
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-      <FormField label="Titre du module" error={errors.title}>
-        <input className={inputClass} {...register("title")} />
-      </FormField>
-      <FormField label="Description" error={errors.description}>
-        <textarea className={inputClass} rows={3} {...register("description")} />
-      </FormField>
-
-      <div className="grid gap-4 sm:grid-cols-2">
-        <FormField label="Année" error={errors.yearNumber}>
-          <select className={inputClass} {...register("yearNumber")}>
-            <option value={1}>1ère Année</option>
-            <option value={2}>2ème Année</option>
-          </select>
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+      <FormSection title="Informations générales">
+        <FormField label="Titre du module" error={errors.title} required>
+          <input autoFocus className={fieldClass(!!errors.title)} {...register("title")} />
         </FormField>
-        <FormField label="Unité de formation" error={errors.ufCode}>
-          <select
-            className={inputClass}
-            value={ufCode}
-            onChange={(e) => applyUfPreset(e.target.value)}
-          >
-            {ufPresets.map((u) => (
-              <option key={u.code} value={u.code}>
-                {u.code} — {u.title}
-              </option>
-            ))}
-          </select>
+        <FormField label="Description" error={errors.description}>
+          <textarea className={fieldClass(!!errors.description)} rows={3} {...register("description")} />
         </FormField>
-      </div>
+      </FormSection>
 
-      <FormField label="Titre UF (affichage)" error={errors.ufTitle}>
-        <input className={inputClass} {...register("ufTitle")} />
-      </FormField>
-      <input type="hidden" {...register("ufCode")} />
+      <FormSection
+        title="Positionnement dans le parcours"
+        description="Où ce module apparaît dans le programme de l'apprenant"
+      >
+        <div className="grid gap-4 sm:grid-cols-2">
+          <FormField label="Année" error={errors.yearNumber}>
+            <select className={fieldClass(!!errors.yearNumber)} {...register("yearNumber")}>
+              <option value={1}>1ère Année</option>
+              <option value={2}>2ème Année</option>
+            </select>
+          </FormField>
+          <FormField label="Unité de formation" error={errors.ufCode}>
+            <select
+              className={fieldClass(!!errors.ufCode)}
+              value={ufCode}
+              onChange={(e) => applyUfPreset(e.target.value)}
+            >
+              {ufPresets.map((u) => (
+                <option key={u.code} value={u.code}>
+                  {u.code} — {u.title}
+                </option>
+              ))}
+            </select>
+          </FormField>
+        </div>
 
-      <FormField label="Ordre dans le parcours" error={errors.orderIndex}>
-        <input type="number" className={inputClass} {...register("orderIndex")} />
-      </FormField>
-      <label className="flex items-center gap-2 text-sm text-body">
-        <input type="checkbox" {...register("published")} />
-        Publié
-      </label>
-      <div className="flex justify-end gap-2 pt-2">
+        <FormField label="Titre UF (affichage)" error={errors.ufTitle}>
+          <input className={fieldClass(!!errors.ufTitle)} {...register("ufTitle")} />
+        </FormField>
+        <input type="hidden" {...register("ufCode")} />
+
+        <FormField
+          label="Ordre dans le parcours"
+          error={errors.orderIndex}
+          hint="Généralement géré par glisser-déposer dans la liste des modules — à ajuster ici seulement si besoin."
+        >
+          <input type="number" className={fieldClass(!!errors.orderIndex)} {...register("orderIndex")} />
+        </FormField>
+      </FormSection>
+
+      <Toggle
+        label="Publié"
+        description="Visible par les apprenants dès l'enregistrement"
+        registration={register("published")}
+      />
+
+      <div className="flex justify-end gap-2 border-t border-theme pt-4">
         {onCancel && (
           <button type="button" onClick={onCancel} disabled={busy} className={btn.neutral}>
             Annuler

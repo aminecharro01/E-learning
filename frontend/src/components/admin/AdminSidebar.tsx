@@ -57,15 +57,14 @@ export const GROUPS: NavGroup[] = [
     label: "Suivi",
     items: [
       { name: "Apprenants", path: "/admin/learners", icon: <UsersIcon /> },
-      { name: "Groupes (présentiel)", path: "/admin/groups", icon: <UsersIcon />, adminOnly: true },
-      { name: "Forums", path: "/admin/forum", icon: <ChatIcon /> },
-      { name: "Devoirs & notes", path: "/admin/gradebook", icon: <ClipboardIcon /> },
-      { name: "Sessions live", path: "/admin/sessions", icon: <CalendarIcon /> },
-      { name: "Analytics", path: "/admin/analytics", icon: <ChartIcon /> },
       { name: "Contact & infolettre", path: "/admin/leads", icon: <MailIcon /> },
+      { name: "Devoirs & notes", path: "/admin/gradebook", icon: <ClipboardIcon /> },
+      { name: "Forums", path: "/admin/forum", icon: <ChatIcon /> },
+      { name: "Sessions live", path: "/admin/sessions", icon: <CalendarIcon /> },
+      { name: "Groupes (présentiel)", path: "/admin/groups", icon: <UsersIcon />, adminOnly: true },
+      { name: "Analytics", path: "/admin/analytics", icon: <ChartIcon /> },
       { name: "Campagnes email", path: "/admin/campaigns", icon: <MailIcon />, adminOnly: true },
       { name: "Diplômes", path: "/admin/diplomas", icon: <ChartIcon />, adminOnly: true },
-      { name: "Statistiques", path: "/admin/stats", icon: <ChartIcon /> },
     ],
   },
   {
@@ -99,6 +98,7 @@ export function AdminSidebar() {
   const { isAdmin, isSuperAdmin } = useAuth();
 
   const wide = isExpanded || isHovered || isMobileOpen;
+  const spaceLabel = isSuperAdmin ? "Espace Super Admin" : isAdmin ? "Espace Directeur" : "Espace formateur";
 
   return (
     <aside
@@ -113,7 +113,7 @@ export function AdminSidebar() {
         <BrandLogo href={null} size={wide ? "md" : "sm"} />
         {wide && (
           <span>
-            <span className="block text-sm font-semibold text-heading">Espace formateur</span>
+            <span className="block text-sm font-semibold text-heading">{spaceLabel}</span>
             <span className="block text-xs text-muted">Administration</span>
           </span>
         )}
@@ -170,7 +170,7 @@ export function AdminSidebar() {
       {wide && (
         <div className="app-sidebar-cta mt-auto rounded-2xl p-4">
           <p className="text-sm font-medium text-heading">Vue apprenant</p>
-          <p className="mt-1 text-xs text-muted">Prévisualisez le parcours tel que vu par l&apos;étudiant.</p>
+          <p className="mt-1 text-xs text-muted">Prévisualisez le parcours tel que vu par l&apos;apprenant.</p>
           <Link href="/app" className={`${btn.primarySm} mt-3 w-full`}>
             Ouvrir l&apos;espace apprenant
           </Link>

@@ -133,7 +133,7 @@ export default function AdminUsersPage() {
               );
           }}
         >
-          <option value="ETUDIANT">Étudiant</option>
+          <option value="ETUDIANT">Apprenant</option>
           <option value="FORMATEUR">Formateur</option>
           {(isSuperAdmin || u.role === "ADMIN") && <option value="ADMIN">Directeur</option>}
           {(isSuperAdmin || u.role === "SUPER_ADMIN") && (

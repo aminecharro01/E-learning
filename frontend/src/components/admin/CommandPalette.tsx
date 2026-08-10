@@ -108,7 +108,7 @@ export function CommandPalette() {
                 onSelect={() => go(item.link)}
                 className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-sm text-foreground data-[selected=true]:bg-surface-2"
               >
-                <span className="text-xs text-muted">{item.type === "MODULE" ? "Module" : "Leçon"}</span>
+                <span className="text-xs text-muted">{item.type === "MODULE" ? "Module" : "Section"}</span>
                 {item.title}
               </Command.Item>
             ))}

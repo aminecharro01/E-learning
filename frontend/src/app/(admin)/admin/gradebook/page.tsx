@@ -60,13 +60,13 @@ export default function AdminGradebookPage() {
         setModules(p.modules);
         if (p.modules[0]) setModuleId(p.modules[0].id);
       })
-      .catch((err) => setError(err instanceof ApiClientError ? err.message : "Chargement impossible."))
+      .catch((err) => setError(err instanceof ApiClientError ? err.message : "Impossible de charger les modules."))
       .finally(() => setLoading(false));
   }, [isAdmin]);
 
   useEffect(() => {
     if (!moduleId) return;
-    void reload(moduleId).catch((err) => setError(err instanceof ApiClientError ? err.message : "Chargement impossible."));
+    void reload(moduleId).catch((err) => setError(err instanceof ApiClientError ? err.message : "Impossible de charger le carnet de notes."));
   }, [moduleId, reload]);
 
   if (!isAdmin) {
@@ -109,7 +109,7 @@ export default function AdminGradebookPage() {
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold text-heading">Devoirs & carnet de notes</h1>
-          <p className="mt-1 text-sm text-muted">Étudiants × évaluations (quiz + devoirs), bonus manuel, export CSV.</p>
+          <p className="mt-1 text-sm text-muted">Apprenants × évaluations (quiz + devoirs), bonus manuel, export CSV.</p>
         </div>
         <select className={inputClass} value={moduleId} onChange={(e) => setModuleId(e.target.value)}>
           {modules.map((m) => (

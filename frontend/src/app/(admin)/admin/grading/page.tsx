@@ -29,7 +29,7 @@ export default function AdminGradingPage() {
     try {
       setAttempts(await getPendingReviewAttempts());
     } catch (err) {
-      setError(err instanceof ApiClientError ? err.message : "Chargement impossible.");
+      setError(err instanceof ApiClientError ? err.message : "Impossible de charger la file de correction.");
     } finally {
       setLoading(false);
     }

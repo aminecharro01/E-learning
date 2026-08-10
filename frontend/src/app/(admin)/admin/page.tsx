@@ -5,36 +5,30 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { getAdminStats, getMyProgress, listQuizzesPaged } from "@/lib/api";
+import { getAdminStats, getMyProgress, getPendingReviewAttempts } from "@/lib/api";
 import type { AdminStats, Module, ProgressResponse } from "@/types/domain";
 import { ApiClientError } from "@/lib/api-client";
 import { useAuth } from "@/hooks/useAuth";
 import { StatCard } from "@/components/admin/StatCard";
 import { ComponentCard } from "@/components/admin/ui/ComponentCard";
 import { Badge } from "@/components/admin/ui/Badge";
-import {
-  BookIcon,
-  CertIcon,
-  ChartIcon,
-  MailIcon,
-  QuizIcon,
-  UsersIcon,
-} from "@/components/admin/icons";
+import { CertIcon, ChartIcon, MailIcon, UsersIcon } from "@/components/admin/icons";
+import { Skeleton } from "@/components/ui/Skeleton";
 import { btn } from "@/lib/ui";
 
 export default function AdminDashboardPage() {
   const { user } = useAuth();
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [progress, setProgress] = useState<ProgressResponse | null>(null);
-  const [quizCount, setQuizCount] = useState<number | null>(null);
+  const [pendingGradingCount, setPendingGradingCount] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    Promise.all([getAdminStats(), getMyProgress(), listQuizzesPaged(0, 1)])
-      .then(([s, p, quizzes]) => {
+    Promise.all([getAdminStats(), getMyProgress(), getPendingReviewAttempts()])
+      .then(([s, p, pending]) => {
         setStats(s);
         setProgress(p);
-        setQuizCount(quizzes.totalElements);
+        setPendingGradingCount(pending.length);
       })
       .catch((err) => {
         setError(err instanceof ApiClientError ? err.message : "Impossible de charger le tableau de bord.");
@@ -42,9 +36,21 @@ export default function AdminDashboardPage() {
   }, []);
 
   const modules = progress?.modules ?? [];
-  const published = modules.filter((m) => m.published).length;
-  const draft = modules.length - published;
   const recent = modules.slice(0, 8);
+  const draftModulesCount = modules.filter((m) => !m.published).length;
+
+  const attentionLoaded = stats !== null && progress !== null && pendingGradingCount !== null;
+  const attentionItems = [
+    pendingGradingCount && pendingGradingCount > 0
+      ? { href: "/admin/grading", label: "Réponse(s) à corriger", count: pendingGradingCount }
+      : null,
+    stats && stats.newContactMessages > 0
+      ? { href: "/admin/leads", label: "Message(s) de contact non traité(s)", count: stats.newContactMessages }
+      : null,
+    draftModulesCount > 0
+      ? { href: "/admin/modules", label: "Module(s) en brouillon", count: draftModulesCount }
+      : null,
+  ].filter((item): item is { href: string; label: string; count: number } => item !== null);
 
   return (
     <div className="space-y-6">
@@ -54,7 +60,7 @@ export default function AdminDashboardPage() {
             Tableau de bord
           </h1>
           <p className="mt-1 text-sm text-muted">
-            Bonjour {user?.fullName?.split(" ")[0] || "formateur"} —{" "}
+            {user?.fullName?.split(" ")[0] ? `Bonjour ${user.fullName.split(" ")[0]}` : "Bonjour"} —{" "}
             {progress?.formationTitle ?? "IAT Academy"}
           </p>
         </div>
@@ -73,6 +79,22 @@ export default function AdminDashboardPage() {
           {error}
         </div>
       )}
+
+      {/* Task-oriented "what needs your attention" panel — surfaced above the passive
+          stats grid so the admin sees what to DO before what to read. */}
+      <ComponentCard title="À faire" desc="Ce qui a besoin de vous, en un coup d'œil">
+        {!attentionLoaded ? (
+          <Skeleton className="h-14 rounded-xl" />
+        ) : attentionItems.length === 0 ? (
+          <p className="text-sm text-muted">Tout est à jour — rien ne nécessite votre attention pour le moment.</p>
+        ) : (
+          <div className="grid gap-2 sm:grid-cols-3">
+            {attentionItems.map((item) => (
+              <AttentionItem key={item.href} {...item} />
+            ))}
+          </div>
+        )}
+      </ComponentCard>
 
       {/* TailAdmin metrics grid */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4 md:gap-6">
@@ -218,6 +240,20 @@ function ModuleRow({ module }: { module: Module }) {
         </Link>
       </td>
     </tr>
+  );
+}
+
+function AttentionItem({ href, label, count }: { href: string; label: string; count: number }) {
+  return (
+    <Link
+      href={href}
+      className="flex items-center justify-between gap-3 rounded-xl border border-theme bg-surface-2 px-4 py-3 transition-colors hover:border-[var(--primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ring)]"
+    >
+      <span className="text-sm font-medium text-heading">{label}</span>
+      <Badge color="warning" size="sm">
+        {count}
+      </Badge>
+    </Link>
   );
 }
 

@@ -6,7 +6,7 @@
 import { useForm, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { lessonFormSchema, type LessonFormValues } from "./schemas";
-import { FormField, inputClass } from "./FormField";
+import { FormField, Toggle, fieldClass } from "./FormField";
 import { btn } from "@/lib/ui";
 
 type Props = {
@@ -30,6 +30,7 @@ export function LessonForm({
     formState: { errors },
   } = useForm<LessonFormValues>({
     resolver: zodResolver(lessonFormSchema) as Resolver<LessonFormValues>,
+    mode: "onBlur",
     defaultValues: {
       title: "Nouvelle section",
       orderIndex: 0,
@@ -40,17 +41,22 @@ export function LessonForm({
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-      <FormField label="Titre de la section" error={errors.title}>
-        <input className={inputClass} {...register("title")} />
+      <FormField label="Titre de la section" error={errors.title} required>
+        <input autoFocus className={fieldClass(!!errors.title)} {...register("title")} />
       </FormField>
-      <FormField label="Ordre" error={errors.orderIndex}>
-        <input type="number" className={inputClass} {...register("orderIndex")} />
+      <FormField
+        label="Ordre"
+        error={errors.orderIndex}
+        hint="Généralement géré par glisser-déposer dans la liste des sections."
+      >
+        <input type="number" className={fieldClass(!!errors.orderIndex)} {...register("orderIndex")} />
       </FormField>
-      <label className="flex items-center gap-2 text-sm text-body">
-        <input type="checkbox" {...register("published")} />
-        Publiée
-      </label>
-      <div className="flex justify-end gap-2 pt-2">
+      <Toggle
+        label="Publiée"
+        description="Visible par les apprenants dès l'enregistrement"
+        registration={register("published")}
+      />
+      <div className="flex justify-end gap-2 border-t border-theme pt-4">
         {onCancel && (
           <button type="button" onClick={onCancel} disabled={busy} className={btn.neutral}>
             Annuler

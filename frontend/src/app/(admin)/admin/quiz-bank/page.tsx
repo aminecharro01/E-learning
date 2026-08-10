@@ -3,14 +3,28 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import { SortableContext, arrayMove, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import {
   deleteQuizQuestion,
+  duplicateQuiz,
+  duplicateQuizQuestion,
   addQuizQuestion,
   createQuiz,
   getMyProgress,
   getProctoringEvents,
+  importQuizQuestions,
   listQuizAttemptsForStaff,
   listQuizQuestions,
   listQuizzesPaged,
+  reorderQuizQuestions,
   updateQuizQuestion,
   type QuizAttemptAdmin,
 } from "@/lib/api";
@@ -19,10 +33,13 @@ import { QuizSettingsForm } from "@/components/admin/forms/QuizSettingsForm";
 import { QuestionForm } from "@/components/admin/forms/QuestionForm";
 import type { QuestionFormValues, QuizSettingsValues } from "@/components/admin/forms/schemas";
 import { Modal } from "@/components/admin/Modal";
+import { ConfirmDialog } from "@/components/admin/ConfirmDialog";
+import { Skeleton } from "@/components/ui/Skeleton";
 import type { Module, Question, Quiz } from "@/types/domain";
 import { ApiClientError } from "@/lib/api-client";
 import { moduleSelectGroups } from "@/lib/programme";
 import { btn } from "@/lib/ui";
+import { toast } from "@/lib/toast-store";
 
 export default function QuizBankPage() {
   const [modules, setModules] = useState<Module[]>([]);
@@ -37,6 +54,7 @@ export default function QuizBankPage() {
   const [selectedQuizId, setSelectedQuizId] = useState<string | null>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [editing, setEditing] = useState<Question | null>(null);
+  const [deleteQuestionTarget, setDeleteQuestionTarget] = useState<Question | null>(null);
   const [filterModuleId, setFilterModuleId] = useState("");
   const [createOpen, setCreateOpen] = useState(false);
   const [questionFormOpen, setQuestionFormOpen] = useState(false);
@@ -52,6 +70,71 @@ export default function QuizBankPage() {
   const [eventsLoading, setEventsLoading] = useState(false);
 
   const selectedQuiz = quizzes.find((q) => q.id === selectedQuizId) ?? null;
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
+
+  async function onDuplicateQuestion(q: Question) {
+    if (!selectedQuizId) return;
+    setBusy(true);
+    try {
+      await duplicateQuizQuestion(selectedQuizId, q.id);
+      await refreshQuestions(selectedQuizId);
+      toast.success("Question dupliquée.");
+    } catch (err) {
+      toast.error(err instanceof ApiClientError ? err.message : "Duplication impossible.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function onDuplicateQuiz() {
+    if (!selectedQuizId) return;
+    setBusy(true);
+    try {
+      const copy = await duplicateQuiz(selectedQuizId);
+      await refreshQuizzes(page, filterModuleId || undefined);
+      setSelectedQuizId(copy.id);
+      toast.success("Quiz dupliqué — pensez à le publier une fois relu.");
+    } catch (err) {
+      toast.error(err instanceof ApiClientError ? err.message : "Duplication impossible.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function onImportQuestions(file: File | undefined) {
+    if (!file || !selectedQuizId) return;
+    setBusy(true);
+    try {
+      const result = await importQuizQuestions(selectedQuizId, file);
+      await refreshQuestions(selectedQuizId);
+      await refreshQuizzes(page, filterModuleId || undefined);
+      if (result.errors.length === 0) {
+        toast.success(`${result.importedCount} question(s) importée(s).`);
+      } else {
+        toast.error(
+          `${result.importedCount} importée(s), ${result.errors.length} ligne(s) en erreur (ex. ligne ${result.errors[0].rowNumber} : ${result.errors[0].reason})`
+        );
+      }
+    } catch (err) {
+      toast.error(err instanceof ApiClientError ? err.message : "Import impossible.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function onDragEndQuestions(event: DragEndEvent) {
+    const { active, over } = event;
+    if (!over || active.id === over.id || !selectedQuizId) return;
+    const oldIndex = questions.findIndex((q) => q.id === active.id);
+    const newIndex = questions.findIndex((q) => q.id === over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+    const next = arrayMove(questions, oldIndex, newIndex);
+    setQuestions(next);
+    reorderQuizQuestions(selectedQuizId, next.map((q) => q.id)).catch(() => {
+      toast.error("Échec de l'enregistrement de l'ordre.");
+      void refreshQuestions(selectedQuizId);
+    });
+  }
 
   useEffect(() => {
     setAttemptsOpen(false);
@@ -240,8 +323,9 @@ export default function QuizBankPage() {
     }
   }
 
-  async function onDeleteQuestion(q: Question) {
-    if (!selectedQuizId) return;
+  async function confirmDeleteQuestion() {
+    const q = deleteQuestionTarget;
+    if (!q || !selectedQuizId) return;
     setBusy(true);
     try {
       await deleteQuizQuestion(selectedQuizId, q.id);
@@ -249,8 +333,9 @@ export default function QuizBankPage() {
       await refreshQuestions(selectedQuizId);
       await refreshQuizzes(page, filterModuleId || undefined);
       setMsg("Question supprimée.");
+      setDeleteQuestionTarget(null);
     } catch (err) {
-      setError(err instanceof ApiClientError ? err.message : "Suppression impossible.");
+      setError(err instanceof ApiClientError ? err.message : "Suppression de la question impossible.");
     } finally {
       setBusy(false);
     }
@@ -302,7 +387,13 @@ export default function QuizBankPage() {
           </div>
 
           <ul className="flex-1 overflow-y-auto p-2">
-            {loading && <li className="px-2 py-4 text-xs text-muted">Chargement…</li>}
+            {loading && (
+              <li className="space-y-2 p-2">
+                <Skeleton className="h-9 rounded-lg" />
+                <Skeleton className="h-9 rounded-lg" />
+                <Skeleton className="h-9 rounded-lg" />
+              </li>
+            )}
             {!loading &&
               quizzes.map((q) => {
                 const active = q.id === selectedQuizId;
@@ -394,6 +485,22 @@ export default function QuizBankPage() {
                   >
                     Aperçu apprenant
                   </Link>
+                  <button type="button" onClick={() => void onDuplicateQuiz()} className={btn.neutralSm} disabled={busy}>
+                    Dupliquer le quiz
+                  </button>
+                  <label className={`${btn.neutralSm} cursor-pointer`}>
+                    Importer (.xlsx)
+                    <input
+                      type="file"
+                      accept=".xlsx"
+                      className="hidden"
+                      disabled={busy}
+                      onChange={(e) => {
+                        void onImportQuestions(e.target.files?.[0]);
+                        e.target.value = "";
+                      }}
+                    />
+                  </label>
                   <button
                     type="button"
                     onClick={() => {
@@ -406,63 +513,38 @@ export default function QuizBankPage() {
                   </button>
                 </div>
               </div>
+              <p className="text-xs text-muted">
+                Import Excel : colonnes Énoncé | Type (SINGLE_CHOICE/MULTI_CHOICE/TRUE_FALSE) | Option1 | Correcte1
+                (OUI/VRAI/X) | Option2 | Correcte2 | Option3 | Correcte3 | Option4 | Correcte4, ligne d&apos;en-tête incluse.
+              </p>
 
-              <ul className="space-y-2">
-                {questions.map((q, i) => (
-                  <li key={q.id} className="card-theme rounded-xl px-4 py-3">
-                    <div className="flex flex-wrap items-start justify-between gap-2">
-                      <div className="min-w-0 flex-1">
-                        <p className="nav-group-label text-[11px] font-semibold uppercase tracking-wide">
-                          Q{i + 1} · {q.questionType}
-                        </p>
-                        <p className="mt-1 text-sm font-medium text-heading">{q.prompt}</p>
-                        {q.imageAssetId && (
-                          <p className="mt-1 text-[11px] text-muted">🖼 Image jointe</p>
-                        )}
-                        <ul className="mt-2 space-y-0.5">
-                          {q.options?.map((o) => (
-                            <li
-                              key={o.id ?? o.label}
-                              className={`text-xs ${
-                                o.correct
-                                  ? "font-medium text-[var(--alert-success-fg)]"
-                                  : "text-muted"
-                              }`}
-                            >
-                              {o.correct ? "✓ " : "○ "}
-                              {o.label}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                      <div className="flex gap-2">
-                        <button
-                          type="button"
-                          className="text-xs text-primary hover:underline"
-                          onClick={() => {
-                            setEditing(q);
-                            setQuestionFormOpen(true);
-                          }}
-                        >
-                          Modifier
-                        </button>
-                        <button
-                          type="button"
-                          className="text-xs text-[var(--danger)] hover:underline"
-                          onClick={() => void onDeleteQuestion(q)}
-                        >
-                          Supprimer
-                        </button>
-                      </div>
-                    </div>
-                  </li>
-                ))}
-                {questions.length === 0 && (
-                  <li className="rounded-xl border border-dashed border-theme px-4 py-10 text-center text-sm text-muted">
-                    Aucune question — ajoutez la première pour ce quiz.
-                  </li>
-                )}
-              </ul>
+              {questions.length > 1 && (
+                <p className="text-xs text-muted">Glissez-déposez (⋮⋮) pour réordonner les questions.</p>
+              )}
+              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEndQuestions}>
+                <SortableContext items={questions.map((q) => q.id)} strategy={verticalListSortingStrategy}>
+                  <ul className="space-y-2">
+                    {questions.map((q, i) => (
+                      <SortableQuestionItem
+                        key={q.id}
+                        question={q}
+                        index={i}
+                        onEdit={() => {
+                          setEditing(q);
+                          setQuestionFormOpen(true);
+                        }}
+                        onDelete={() => setDeleteQuestionTarget(q)}
+                        onDuplicate={() => void onDuplicateQuestion(q)}
+                      />
+                    ))}
+                    {questions.length === 0 && (
+                      <li className="rounded-xl border border-dashed border-theme px-4 py-10 text-center text-sm text-muted">
+                        Aucune question — ajoutez la première pour ce quiz.
+                      </li>
+                    )}
+                  </ul>
+                </SortableContext>
+              </DndContext>
 
               <div className="border-t border-theme pt-4">
                 <button type="button" className="text-sm font-medium text-primary hover:underline" onClick={() => void onToggleAttempts()}>
@@ -471,7 +553,7 @@ export default function QuizBankPage() {
                 {attemptsOpen && (
                   <div className="mt-3">
                     {attemptsLoading ? (
-                      <p className="text-sm text-muted">Chargement…</p>
+                      <Skeleton className="h-20 rounded-xl" />
                     ) : attempts.length === 0 ? (
                       <p className="text-sm text-muted">Aucune tentative pour ce quiz.</p>
                     ) : (
@@ -577,7 +659,7 @@ export default function QuizBankPage() {
         onClose={() => setEventsAttemptId(null)}
       >
         {eventsLoading ? (
-          <p className="text-sm text-muted">Chargement…</p>
+          <Skeleton className="h-16 rounded-xl" />
         ) : events.length === 0 ? (
           <p className="text-sm text-muted">Aucun évènement.</p>
         ) : (
@@ -595,6 +677,81 @@ export default function QuizBankPage() {
           </ul>
         )}
       </Modal>
+
+      <ConfirmDialog
+        open={!!deleteQuestionTarget}
+        title="Supprimer cette question ?"
+        description={`La question « ${deleteQuestionTarget?.prompt ?? ""} » sera définitivement supprimée.`}
+        danger
+        busy={busy}
+        confirmLabel="Supprimer"
+        onClose={() => setDeleteQuestionTarget(null)}
+        onConfirm={() => void confirmDeleteQuestion()}
+      />
     </div>
+  );
+}
+
+function SortableQuestionItem({
+  question: q,
+  index: i,
+  onEdit,
+  onDelete,
+  onDuplicate,
+}: {
+  question: Question;
+  index: number;
+  onEdit: () => void;
+  onDelete: () => void;
+  onDuplicate: () => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: q.id });
+  const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.6 : 1 };
+
+  return (
+    <li ref={setNodeRef} style={style} className="card-theme rounded-xl px-4 py-3">
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div className="flex min-w-0 flex-1 gap-2">
+          <button
+            type="button"
+            className={`${btn.neutralXs} h-fit cursor-grab touch-none`}
+            aria-label="Glisser pour réordonner"
+            {...attributes}
+            {...listeners}
+          >
+            ⋮⋮
+          </button>
+          <div className="min-w-0 flex-1">
+            <p className="nav-group-label text-[11px] font-semibold uppercase tracking-wide">
+              Q{i + 1} · {q.questionType}
+            </p>
+            <p className="mt-1 text-sm font-medium text-heading">{q.prompt}</p>
+            {q.imageAssetId && <p className="mt-1 text-[11px] text-muted">🖼 Image jointe</p>}
+            <ul className="mt-2 space-y-0.5">
+              {q.options?.map((o) => (
+                <li
+                  key={o.id ?? o.label}
+                  className={`text-xs ${o.correct ? "font-medium text-[var(--alert-success-fg)]" : "text-muted"}`}
+                >
+                  {o.correct ? "✓ " : "○ "}
+                  {o.label}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+        <div className="flex shrink-0 gap-2">
+          <button type="button" className="text-xs text-primary hover:underline" onClick={onEdit}>
+            Modifier
+          </button>
+          <button type="button" className="text-xs text-primary hover:underline" onClick={onDuplicate}>
+            Dupliquer
+          </button>
+          <button type="button" className="text-xs text-[var(--danger)] hover:underline" onClick={onDelete}>
+            Supprimer
+          </button>
+        </div>
+      </div>
+    </li>
   );
 }

@@ -33,7 +33,7 @@ export function LessonLockBanner({ lessonId }: Props) {
         }
       } catch (err) {
         if (err instanceof ApiClientError && err.status === 409) {
-          setBlockedBy(err.body?.message || "Leçon verrouillée par un autre formateur.");
+          setBlockedBy(err.body?.message || "Section verrouillée par un autre formateur.");
         }
       }
     }

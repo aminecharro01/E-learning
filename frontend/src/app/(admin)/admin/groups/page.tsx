@@ -27,6 +27,7 @@ import type {
 import { ApiClientError } from "@/lib/api-client";
 import { useAuth } from "@/hooks/useAuth";
 import { ComponentCard } from "@/components/admin/ui/ComponentCard";
+import { ConfirmDialog } from "@/components/admin/ConfirmDialog";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { toast } from "@/lib/toast-store";
 import { btn, inputClass } from "@/lib/ui";
@@ -57,6 +58,7 @@ export default function AdminGroupsPage() {
   const [detailLoading, setDetailLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [confirmDeleteGroup, setConfirmDeleteGroup] = useState(false);
 
   // Création / import
   const [newName, setNewName] = useState("");
@@ -120,7 +122,7 @@ export default function AdminGroupsPage() {
     if (!isAdmin) return;
     Promise.all([reloadGroups(), getMyProgress()])
       .then(([, progress]) => setModules(progress.modules))
-      .catch((err) => setError(err instanceof ApiClientError ? err.message : "Chargement impossible."))
+      .catch((err) => setError(err instanceof ApiClientError ? err.message : "Impossible de charger les groupes."))
       .finally(() => setLoading(false));
   }, [isAdmin, reloadGroups]);
 
@@ -132,7 +134,7 @@ export default function AdminGroupsPage() {
       return;
     }
     void reloadDetail(selectedId).catch((err) =>
-      setError(err instanceof ApiClientError ? err.message : "Chargement impossible.")
+      setError(err instanceof ApiClientError ? err.message : "Impossible de charger le détail du groupe.")
     );
   }, [selectedId, reloadDetail]);
 
@@ -353,14 +355,7 @@ export default function AdminGroupsPage() {
                   type="button"
                   className={btn.dangerSm}
                   disabled={busy}
-                  onClick={() =>
-                    void run(async () => {
-                      await deleteGroup(selected.id);
-                      setSelectedId(null);
-                      await reloadGroups();
-                      toast.success("Groupe supprimé. Les apprenants redeviennent 100 % en ligne.");
-                    })
-                  }
+                  onClick={() => setConfirmDeleteGroup(true)}
                 >
                   Supprimer le groupe
                 </button>
@@ -624,6 +619,26 @@ export default function AdminGroupsPage() {
           )}
         </div>
       </div>
+
+      <ConfirmDialog
+        open={confirmDeleteGroup}
+        title="Supprimer ce groupe ?"
+        description={`Le groupe « ${selected?.name ?? ""} » sera supprimé et ses apprenants redeviendront 100 % en ligne.`}
+        danger
+        busy={busy}
+        confirmLabel="Supprimer"
+        onClose={() => setConfirmDeleteGroup(false)}
+        onConfirm={() =>
+          void run(async () => {
+            if (!selected) return;
+            await deleteGroup(selected.id);
+            setSelectedId(null);
+            await reloadGroups();
+            toast.success("Groupe supprimé. Les apprenants redeviennent 100 % en ligne.");
+            setConfirmDeleteGroup(false);
+          })
+        }
+      />
     </div>
   );
 }

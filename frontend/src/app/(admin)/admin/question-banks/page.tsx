@@ -6,6 +6,7 @@ import {
   createQuestionBank,
   deleteBankQuestion,
   deleteQuestionBank,
+  importBankQuestions,
   listBankQuestions,
   listQuestionBanks,
   type QuestionBank,
@@ -14,6 +15,7 @@ import type { Question } from "@/types/domain";
 import { ApiClientError } from "@/lib/api-client";
 import { useAuth } from "@/hooks/useAuth";
 import { ComponentCard } from "@/components/admin/ui/ComponentCard";
+import { ConfirmDialog } from "@/components/admin/ConfirmDialog";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { toast } from "@/lib/toast-store";
 import { btn, inputClass } from "@/lib/ui";
@@ -32,6 +34,7 @@ export default function AdminQuestionBanksPage() {
   const [newName, setNewName] = useState("");
   const [newDesc, setNewDesc] = useState("");
   const [formOpen, setFormOpen] = useState(false);
+  const [confirmDeleteBank, setConfirmDeleteBank] = useState(false);
 
   const selected = banks.find((b) => b.id === selectedId) ?? null;
 
@@ -53,7 +56,7 @@ export default function AdminQuestionBanksPage() {
   useEffect(() => {
     if (!isAdmin) return;
     reloadBanks()
-      .catch((err) => setError(err instanceof ApiClientError ? err.message : "Chargement impossible."))
+      .catch((err) => setError(err instanceof ApiClientError ? err.message : "Impossible de charger les banques de questions."))
       .finally(() => setLoading(false));
   }, [isAdmin, reloadBanks]);
 
@@ -198,18 +201,37 @@ export default function AdminQuestionBanksPage() {
                   <button type="button" className={btn.primarySm} onClick={() => setFormOpen((v) => !v)}>
                     {formOpen ? "Annuler" : "+ Question"}
                   </button>
+                  <label className={`${btn.neutralSm} cursor-pointer`}>
+                    Importer (.xlsx)
+                    <input
+                      type="file"
+                      accept=".xlsx"
+                      className="hidden"
+                      disabled={busy}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        e.target.value = "";
+                        if (!file) return;
+                        void run(async () => {
+                          const result = await importBankQuestions(selected.id, file);
+                          await reloadQuestions(selected.id);
+                          await reloadBanks();
+                          if (result.errors.length === 0) {
+                            toast.success(`${result.importedCount} question(s) importée(s).`);
+                          } else {
+                            toast.error(
+                              `${result.importedCount} importée(s), ${result.errors.length} ligne(s) en erreur.`
+                            );
+                          }
+                        });
+                      }}
+                    />
+                  </label>
                   <button
                     type="button"
                     className={btn.dangerSm}
                     disabled={busy}
-                    onClick={() =>
-                      void run(async () => {
-                        await deleteQuestionBank(selected.id);
-                        setSelectedId(null);
-                        await reloadBanks();
-                        toast.success("Banque supprimée.");
-                      })
-                    }
+                    onClick={() => setConfirmDeleteBank(true)}
                   >
                     Supprimer la banque
                   </button>
@@ -261,6 +283,26 @@ export default function AdminQuestionBanksPage() {
           )}
         </div>
       </div>
+
+      <ConfirmDialog
+        open={confirmDeleteBank}
+        title="Supprimer cette banque de questions ?"
+        description={`La banque « ${selected?.name ?? ""} » et toutes ses questions seront définitivement supprimées.`}
+        danger
+        busy={busy}
+        confirmLabel="Supprimer"
+        onClose={() => setConfirmDeleteBank(false)}
+        onConfirm={() =>
+          void run(async () => {
+            if (!selected) return;
+            await deleteQuestionBank(selected.id);
+            setSelectedId(null);
+            await reloadBanks();
+            toast.success("Banque supprimée.");
+            setConfirmDeleteBank(false);
+          })
+        }
+      />
     </div>
   );
 }

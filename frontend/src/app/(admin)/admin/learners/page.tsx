@@ -38,7 +38,7 @@ export default function AdminLearnersPage() {
         totalPages: data.totalPages,
       });
     } catch (err) {
-      setError(err instanceof ApiClientError ? err.message : "Chargement impossible.");
+      setError(err instanceof ApiClientError ? err.message : "Impossible de charger les apprenants.");
     } finally {
       setLoading(false);
     }

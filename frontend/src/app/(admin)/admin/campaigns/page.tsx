@@ -6,6 +6,7 @@ import type { LearnerGroup } from "@/types/domain";
 import { ApiClientError } from "@/lib/api-client";
 import { useAuth } from "@/hooks/useAuth";
 import { ComponentCard } from "@/components/admin/ui/ComponentCard";
+import { ConfirmDialog } from "@/components/admin/ConfirmDialog";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { toast } from "@/lib/toast-store";
 import { btn, inputClass } from "@/lib/ui";
@@ -30,6 +31,7 @@ export default function AdminCampaignsPage() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [sendTarget, setSendTarget] = useState<Campaign | null>(null);
 
   const [subject, setSubject] = useState("");
   const [htmlBody, setHtmlBody] = useState("");
@@ -44,7 +46,7 @@ export default function AdminCampaignsPage() {
     if (!isAdmin) return;
     Promise.all([reload(), listGroups()])
       .then(([, g]) => setGroups(g))
-      .catch((err) => setError(err instanceof ApiClientError ? err.message : "Chargement impossible."))
+      .catch((err) => setError(err instanceof ApiClientError ? err.message : "Impossible de charger les campagnes."))
       .finally(() => setLoading(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAdmin]);
@@ -138,9 +140,18 @@ export default function AdminCampaignsPage() {
               <li key={c.id} className="rounded-xl border border-theme p-3">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div>
-                    <p className="font-medium text-heading">{c.subject}</p>
-                    <p className="text-xs text-muted">
-                      {AUDIENCE_LABEL[c.targetAudience]} — {STATUS_LABEL[c.status]}
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="font-medium text-heading">{c.subject}</p>
+                      <span
+                        className={`badge-inline ${
+                          c.status === "SENT" ? "badge-success" : c.status === "FAILED" ? "badge-alert" : "badge-gold"
+                        }`}
+                      >
+                        {STATUS_LABEL[c.status]}
+                      </span>
+                    </div>
+                    <p className="mt-1 text-xs text-muted">
+                      {AUDIENCE_LABEL[c.targetAudience]}
                       {c.recipientCount > 0 && ` — ${c.sentCount}/${c.recipientCount} envoyé(s)`}
                       {c.failedCount > 0 && `, ${c.failedCount} échec(s)`}
                     </p>
@@ -150,13 +161,7 @@ export default function AdminCampaignsPage() {
                       type="button"
                       className={btn.primarySm}
                       disabled={busy}
-                      onClick={() =>
-                        void run(async () => {
-                          await sendCampaign(c.id);
-                          await reload();
-                          toast.success("Envoi lancé.");
-                        })
-                      }
+                      onClick={() => setSendTarget(c)}
                     >
                       Envoyer
                     </button>
@@ -167,6 +172,27 @@ export default function AdminCampaignsPage() {
           </ul>
         )}
       </ComponentCard>
+
+      <ConfirmDialog
+        open={!!sendTarget}
+        title="Envoyer cette campagne ?"
+        description={`« ${sendTarget?.subject ?? ""} » sera envoyée immédiatement à : ${
+          sendTarget ? AUDIENCE_LABEL[sendTarget.targetAudience] : ""
+        }. Cette action est irréversible.`}
+        danger
+        busy={busy}
+        confirmLabel="Envoyer"
+        onClose={() => setSendTarget(null)}
+        onConfirm={() =>
+          void run(async () => {
+            if (!sendTarget) return;
+            await sendCampaign(sendTarget.id);
+            await reload();
+            toast.success("Envoi lancé.");
+            setSendTarget(null);
+          })
+        }
+      />
     </div>
   );
 }
