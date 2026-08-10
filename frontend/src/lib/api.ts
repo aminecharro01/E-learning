@@ -127,6 +127,21 @@ export async function getMe() {
   return data;
 }
 
+export type AssetSummary = {
+  id: string;
+  filename: string;
+  mimeType: string;
+  sizeBytes: number;
+  assetKind: string;
+  durationSec: number | null;
+  streamUrl: string;
+};
+
+export async function listAssets(kind: "IMAGE" | "VIDEO" | "PDF" | "SLIDE" = "IMAGE", page = 0, size = 24) {
+  const { data } = await apiClient.get<PageResponse<AssetSummary>>("/api/assets", { params: { kind, page, size } });
+  return data;
+}
+
 export async function updateMyProfile(payload: {
   fullName?: string;
   phone?: string;
@@ -319,6 +334,26 @@ export async function addQuizQuestion(quizId: string, payload: Record<string, un
   return data;
 }
 
+export type QuestionImportResult = { importedCount: number; errors: { rowNumber: number; reason: string }[] };
+
+export async function importQuizQuestions(quizId: string, file: File) {
+  const form = new FormData();
+  form.append("file", file);
+  const { data } = await apiClient.post<QuestionImportResult>(`/api/quiz/${quizId}/questions/import`, form, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return data;
+}
+
+export async function importBankQuestions(bankId: string, file: File) {
+  const form = new FormData();
+  form.append("file", file);
+  const { data } = await apiClient.post<QuestionImportResult>(`/api/question-banks/${bankId}/questions/import`, form, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return data;
+}
+
 export async function updateQuizQuestion(
   quizId: string,
   questionId: string,
@@ -333,6 +368,20 @@ export async function updateQuizQuestion(
 
 export async function deleteQuizQuestion(quizId: string, questionId: string) {
   await apiClient.delete(`/api/quiz/${quizId}/questions/${questionId}`);
+}
+
+export async function duplicateQuizQuestion(quizId: string, questionId: string) {
+  const { data } = await apiClient.post<Question>(`/api/quiz/${quizId}/questions/${questionId}/duplicate`);
+  return data;
+}
+
+export async function reorderQuizQuestions(quizId: string, questionIds: string[]) {
+  await apiClient.put(`/api/quiz/${quizId}/questions/reorder`, { questionIds });
+}
+
+export async function duplicateQuiz(quizId: string) {
+  const { data } = await apiClient.post<Quiz>(`/api/quiz/${quizId}/duplicate`);
+  return data;
 }
 
 export type QuestionBank = { id: string; name: string; description: string | null; questionCount: number };

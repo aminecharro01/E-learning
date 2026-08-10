@@ -86,7 +86,7 @@ export function LearnerSearch() {
                     className="flex flex-col gap-0.5 border-b border-theme px-4 py-2 text-sm last:border-b-0 hover:bg-surface-2"
                     onClick={() => setOpen(false)}
                   >
-                    <span className="text-[11px] text-muted">{item.type === "MODULE" ? "Module" : "Leçon"}</span>
+                    <span className="text-[11px] text-muted">{item.type === "MODULE" ? "Module" : "Section"}</span>
                     <span className="font-medium text-heading">{item.title}</span>
                   </Link>
                 ))

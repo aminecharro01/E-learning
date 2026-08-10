@@ -39,7 +39,7 @@ export default function AssignmentsPage() {
 
   useEffect(() => {
     reload()
-      .catch((err) => setError(err instanceof ApiClientError ? err.message : "Chargement impossible."))
+      .catch((err) => setError(err instanceof ApiClientError ? err.message : "Impossible de charger les devoirs."))
       .finally(() => setLoading(false));
   }, [reload]);
 
@@ -85,7 +85,17 @@ export default function AssignmentsPage() {
 
             {a.mySubmission ? (
               <div className="mt-3 rounded-xl bg-surface-2 p-3 text-sm">
-                <p className="font-medium text-heading">{STATUS_LABEL[a.mySubmission.status] || a.mySubmission.status}</p>
+                <span
+                  className={`badge-inline ${
+                    a.mySubmission.status === "GRADED"
+                      ? "badge-success"
+                      : a.mySubmission.status === "LATE"
+                        ? "badge-alert"
+                        : "badge-gold"
+                  }`}
+                >
+                  {STATUS_LABEL[a.mySubmission.status] || a.mySubmission.status}
+                </span>
                 {a.mySubmission.status === "GRADED" && (
                   <p className="mt-1">
                     Note : <strong>{a.mySubmission.grade}</strong> / {a.maxScore}

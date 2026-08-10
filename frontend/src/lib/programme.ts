@@ -9,16 +9,16 @@ export type UfGroup = {
 /** Group modules by UF (preserves first-seen UF order). */
 export function groupUfs(modules: Module[]): UfGroup[] {
   const ufMap = new Map<string, UfGroup>();
-  for (const module of modules) {
-    const ufKey = module.ufCode ?? "UF";
+  for (const mod of modules) {
+    const ufKey = mod.ufCode ?? "UF";
     if (!ufMap.has(ufKey)) {
       ufMap.set(ufKey, {
         ufCode: ufKey,
-        ufTitle: module.ufTitle ?? ufKey,
+        ufTitle: mod.ufTitle ?? ufKey,
         modules: [],
       });
     }
-    ufMap.get(ufKey)!.modules.push(module);
+    ufMap.get(ufKey)!.modules.push(mod);
   }
   return [...ufMap.values()].map((uf) => ({
     ...uf,

@@ -11,6 +11,7 @@ import {
 import { ApiClientError } from "@/lib/api-client";
 import { btn } from "@/lib/ui";
 import { Stepper, Step, type StepStatus } from "@/components/ui/Stepper";
+import { ConfirmDialog } from "@/components/admin/ConfirmDialog";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
@@ -24,6 +25,8 @@ export function StageDossierPanel({ dossier, mode, onChanged }: Props) {
   const [busyType, setBusyType] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<LearnerDossier["documents"][number] | null>(null);
+  const [deleteBusy, setDeleteBusy] = useState(false);
 
   const canUpload = (owner: string) =>
     mode === "staff" || (mode === "learner" && owner === "LEARNER");
@@ -46,14 +49,19 @@ export function StageDossierPanel({ dossier, mode, onChanged }: Props) {
     }
   }
 
-  async function onDelete(documentId: string) {
+  async function confirmDelete() {
+    if (!deleteTarget) return;
+    setDeleteBusy(true);
     setError(null);
     try {
-      await deleteStageDocument(documentId);
+      await deleteStageDocument(deleteTarget.id);
       setMsg("Document supprimé.");
       onChanged();
+      setDeleteTarget(null);
     } catch (err) {
-      setError(err instanceof ApiClientError ? err.message : "Suppression impossible.");
+      setError(err instanceof ApiClientError ? err.message : "Suppression du document impossible.");
+    } finally {
+      setDeleteBusy(false);
     }
   }
 
@@ -120,7 +128,7 @@ export function StageDossierPanel({ dossier, mode, onChanged }: Props) {
                     doc.docType === "CONVENTION_ENTREPRISE" ||
                     doc.docType === "RAPPORT_STAGE" ||
                     doc.docType === "PRESENTATION_SOUTENANCE") && (
-                    <button type="button" className={btn.dangerXs} onClick={() => void onDelete(doc.id)}>
+                    <button type="button" className={btn.dangerXs} onClick={() => setDeleteTarget(doc)}>
                       Supprimer
                     </button>
                   )}
@@ -130,6 +138,17 @@ export function StageDossierPanel({ dossier, mode, onChanged }: Props) {
           </ul>
         )}
       </div>
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        title="Supprimer ce document ?"
+        description={`« ${deleteTarget?.filename ?? ""} » sera définitivement supprimé du dossier.`}
+        danger
+        busy={deleteBusy}
+        confirmLabel="Supprimer"
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={() => void confirmDelete()}
+      />
     </div>
   );
 

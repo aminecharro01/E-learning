@@ -10,6 +10,7 @@ import { LessonQA } from "@/components/learner/LessonQA";
 import type { Lesson } from "@/types/domain";
 import { ApiClientError } from "@/lib/api-client";
 import { IconBadge, IconCompass, IconPlane } from "@/components/brand/IatIcons";
+import { Skeleton } from "@/components/ui/Skeleton";
 import { btn } from "@/lib/ui";
 
 function titleWithGrad(text: string) {
@@ -152,15 +153,16 @@ function SectionContent() {
             </div>
           </div>
 
-          <LessonQA lessonId={lesson.id} />
-          {params.moduleId && (
-            <LessonQA moduleId={params.moduleId} title="Forum du module" />
-          )}
+          {params.moduleId && <LessonQA lessonId={lesson.id} moduleId={params.moduleId} />}
         </>
       )}
 
       {!lesson && !error && (
-        <p className="mt-6 text-sm text-muted">Chargement du contenu…</p>
+        <div className="mt-6 space-y-3">
+          <Skeleton className="h-48 rounded-2xl" />
+          <Skeleton className="h-5 w-2/3 rounded-lg" />
+          <Skeleton className="h-5 w-1/2 rounded-lg" />
+        </div>
       )}
     </div>
   );

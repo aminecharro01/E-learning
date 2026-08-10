@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
+  getMe,
   getOrCreateDirectConversation,
   listConversationMessages,
   listConversations,
@@ -11,20 +12,17 @@ import {
   type Conversation,
 } from "@/lib/api";
 import type { User } from "@/types/domain";
-import { useAuth } from "@/hooks/useAuth";
 import { LearnerAppHeader } from "@/components/learner/LearnerAppHeader";
 import { btn, inputClass } from "@/lib/ui";
 import { ApiClientError } from "@/lib/api-client";
-
-
 
 function formatTime(iso: string) {
   return new Intl.DateTimeFormat("fr-FR", { hour: "2-digit", minute: "2-digit" }).format(new Date(iso));
 }
 
 export default function MessagesPage() {
-  const { isAdmin, isFormateur } = useAuth();
-  const isStaff = isAdmin || isFormateur;
+  const [me, setMe] = useState<User | null>(null);
+  const isStaff = me?.role === "ADMIN" || me?.role === "SUPER_ADMIN" || me?.role === "FORMATEUR";
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -39,7 +37,13 @@ export default function MessagesPage() {
   }, []);
 
   useEffect(() => {
-    void reloadConversations().catch((err) => setError(err instanceof ApiClientError ? err.message : "Chargement impossible."));
+    getMe()
+      .then(setMe)
+      .catch(() => undefined);
+  }, []);
+
+  useEffect(() => {
+    void reloadConversations().catch((err) => setError(err instanceof ApiClientError ? err.message : "Impossible de charger les conversations."));
     const interval = setInterval(() => void reloadConversations().catch(() => undefined), 15_000);
     return () => clearInterval(interval);
   }, [reloadConversations]);
@@ -108,14 +112,14 @@ export default function MessagesPage() {
       <LearnerAppHeader showParcoursLink />
       <div className="mt-4">
         <h1 className="text-2xl font-semibold text-heading">Messagerie</h1>
-        <p className="mt-1 text-sm text-muted">Élève ↔ formateur, et le salon de votre cohorte.</p>
+        <p className="mt-1 text-sm text-muted">Apprenant ↔ formateur, et le salon de votre cohorte.</p>
       </div>
 
       {error && <p className="alert alert-warning mt-3">{error}</p>}
 
       <div className="mt-4 grid gap-4 lg:grid-cols-[280px_1fr]">
         <div className="space-y-3">
-          {isAdmin || isFormateur && (
+          {isStaff && (
             <div>
               <input
                 className={inputClass}
@@ -161,7 +165,7 @@ export default function MessagesPage() {
           </ul>
         </div>
 
-        <div className="card-theme flex h-[60vh] flex-col rounded-2xl p-4">
+        <div className="card-theme flex h-[60dvh] flex-col rounded-2xl p-4">
           {!selectedId ? (
             <p className="m-auto text-sm text-muted">Sélectionnez une conversation.</p>
           ) : (

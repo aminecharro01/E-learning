@@ -25,10 +25,18 @@ function formatDate(iso: string): string {
   }).format(new Date(iso));
 }
 
-type Props = { lessonId?: string; moduleId?: string; title?: string };
+type Scope = "lesson" | "module";
 
-/** Forum de discussion — par leçon (Q&A) si `lessonId`, par module (général) si `moduleId`. */
-export function LessonQA({ lessonId, moduleId, title = "Questions & réponses" }: Props) {
+type Props = { lessonId: string; moduleId: string };
+
+/**
+ * Forum de discussion unique par leçon, avec bascule "Cette section / Tout le
+ * module" — inspiré de Coursera, qui ne duplique jamais un widget de
+ * commentaires identique sous chaque leçon : la portée générale (module) vit
+ * à côté de la portée spécifique (leçon), pas empilée en double.
+ */
+export function LessonQA({ lessonId, moduleId }: Props) {
+  const [scope, setScope] = useState<Scope>("lesson");
   const [staff, setStaff] = useState(false);
   const [comments, setComments] = useState<LessonComment[] | null>(null);
   const [body, setBody] = useState("");
@@ -46,14 +54,15 @@ export function LessonQA({ lessonId, moduleId, title = "Questions & réponses" }
   }, []);
 
   function load() {
-    const fetcher = lessonId ? getLessonComments(lessonId) : getModuleComments(moduleId!);
+    const fetcher = scope === "lesson" ? getLessonComments(lessonId) : getModuleComments(moduleId);
     fetcher.then(setComments).catch(() => setComments([]));
   }
 
   useEffect(() => {
+    setComments(null);
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lessonId, moduleId]);
+  }, [scope, lessonId, moduleId]);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
@@ -62,8 +71,8 @@ export function LessonQA({ lessonId, moduleId, title = "Questions & réponses" }
     setPosting(true);
     setError(null);
     try {
-      if (lessonId) await createLessonComment(lessonId, trimmed);
-      else await createModuleComment(moduleId!, trimmed);
+      if (scope === "lesson") await createLessonComment(lessonId, trimmed);
+      else await createModuleComment(moduleId, trimmed);
       setBody("");
       load();
     } catch (err) {
@@ -79,8 +88,8 @@ export function LessonQA({ lessonId, moduleId, title = "Questions & réponses" }
     setPosting(true);
     setError(null);
     try {
-      if (lessonId) await createLessonComment(lessonId, trimmed, parentId);
-      else await createModuleComment(moduleId!, trimmed, parentId);
+      if (scope === "lesson") await createLessonComment(lessonId, trimmed, parentId);
+      else await createModuleComment(moduleId, trimmed, parentId);
       setReplyBody("");
       setReplyTo(null);
       load();
@@ -103,7 +112,29 @@ export function LessonQA({ lessonId, moduleId, title = "Questions & réponses" }
 
   return (
     <div className="mt-8 border-t border-theme pt-6">
-      <h2 className="text-lg font-bold text-heading">{title}</h2>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 className="text-lg font-bold text-heading">Discussion</h2>
+        <div className="inline-flex rounded-lg border border-theme p-0.5">
+          <button
+            type="button"
+            onClick={() => setScope("lesson")}
+            className={`rounded-md px-3 py-1 text-xs font-semibold transition ${
+              scope === "lesson" ? "bg-primary text-[var(--primary-fg)]" : "text-muted hover:text-body"
+            }`}
+          >
+            Cette section
+          </button>
+          <button
+            type="button"
+            onClick={() => setScope("module")}
+            className={`rounded-md px-3 py-1 text-xs font-semibold transition ${
+              scope === "module" ? "bg-primary text-[var(--primary-fg)]" : "text-muted hover:text-body"
+            }`}
+          >
+            Tout le module
+          </button>
+        </div>
+      </div>
 
       <form onSubmit={onSubmit} className="mt-3 flex flex-col gap-2 sm:flex-row">
         <input
