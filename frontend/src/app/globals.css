@@ -307,6 +307,55 @@ body {
   color: var(--alert-info-fg);
 }
 
+/* =============================================================================
+   Status badges — global (unscoped) version of the .iat-board pill in
+   boarding.css. Same tokens, same look, but usable outside the learner
+   "boarding pass" shell (admin tables, gradebook, forum moderation…) where
+   .iat-board isn't present and the scoped rule never matched (#UI-audit).
+   ============================================================================= */
+.badge-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 0.2rem 0.55rem;
+  border-radius: 8px;
+  border: 1.8px solid;
+  background: transparent;
+  white-space: nowrap;
+}
+
+.badge-success {
+  border-color: var(--success);
+  color: var(--success);
+}
+
+.badge-gold {
+  border-color: var(--gold-600);
+  color: var(--gold-700);
+}
+
+html.dark .badge-gold {
+  color: var(--gold-400);
+  border-color: var(--gold-500);
+}
+
+.badge-navy {
+  border-color: var(--navy);
+  color: var(--navy);
+}
+
+html.dark .badge-navy {
+  border-color: var(--muted);
+  color: var(--foreground);
+}
+
+.badge-alert {
+  border-color: var(--warning);
+  color: var(--warning);
+}
+
 .input-theme {
   width: 100%;
   min-height: 2.75rem;
@@ -326,6 +375,56 @@ body {
 .input-theme:focus-visible {
   border-color: var(--ring);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--ring) 25%, transparent);
+}
+
+.input-theme.input-error {
+  border-color: var(--alert-error-fg);
+}
+
+.input-theme.input-error:focus-visible {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--alert-error-fg) 25%, transparent);
+}
+
+/* Toggle switch — used for boolean form settings instead of native checkboxes,
+   which get hard to scan on/off at a glance once there are several in a row.
+   Driven purely by :has() against the real (visually hidden) checkbox, so it
+   keeps full native checkbox semantics/keyboard behavior with no JS wiring. */
+.toggle-switch {
+  position: relative;
+  display: inline-flex;
+  height: 1.5rem;
+  width: 2.75rem;
+  flex-shrink: 0;
+  border-radius: 999px;
+  border: 1px solid var(--input-border);
+  background: var(--surface-2);
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.toggle-row:has(input:checked) .toggle-switch {
+  background: var(--primary);
+  border-color: var(--primary);
+}
+
+.toggle-switch-thumb {
+  position: absolute;
+  top: 1px;
+  left: 1px;
+  height: 1.25rem;
+  width: 1.25rem;
+  border-radius: 999px;
+  background: var(--surface);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+  transition: transform 0.15s ease;
+}
+
+.toggle-row:has(input:checked) .toggle-switch-thumb {
+  transform: translateX(1.25rem);
+}
+
+.toggle-row:has(input:focus-visible) .toggle-switch {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
 }
 
 /* =============================================================================
@@ -461,6 +560,34 @@ html.dark .btn-secondary:hover:not(:disabled):not([aria-disabled="true"]) {
 
 .btn-block {
   width: 100%;
+}
+
+/* Touch targets: the dense admin surface intentionally uses small buttons (btn-xs,
+   btn-icon.btn-sm) for desktop/mouse density — but on a touch/coarse pointer device
+   (phone, tablet) those fall under the 44x44px minimum. Widen the hit area only
+   there, via a transparent padding trick, so visual density on desktop is
+   untouched. (hover:none)+(pointer:coarse) targets touch capability specifically,
+   not just narrow viewports — a resized desktop window stays at the dense size. */
+@media (hover: none) and (pointer: coarse) {
+  .btn-xs,
+  .btn-icon.btn-sm {
+    position: relative;
+  }
+
+  .btn-xs::after,
+  .btn-icon.btn-sm::after {
+    content: "";
+    position: absolute;
+    inset: 50% auto auto 50%;
+    transform: translate(-50%, -50%);
+    width: max(100%, 44px);
+    height: max(100%, 44px);
+  }
+
+  input[type="checkbox"] {
+    width: 1.15rem;
+    height: 1.15rem;
+  }
 }
 
 .select-theme {
@@ -632,4 +759,95 @@ html.dark .btn-secondary:hover:not(:disabled):not([aria-disabled="true"]) {
   margin: 0.75rem 0;
   border-radius: 0.5rem;
   background: #0f172a;
+}
+
+/* Floating selection toolbar (Medium/Notion-style bubble menu) */
+.tiptap-bubble-menu {
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 0.125rem;
+  padding: 0.25rem;
+  border-radius: 0.6rem;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  box-shadow: 0 8px 24px -8px rgba(0, 0, 0, 0.35), 0 2px 6px -2px rgba(0, 0, 0, 0.2);
+  animation: tiptap-bubble-in 0.12s ease-out;
+}
+
+@keyframes tiptap-bubble-in {
+  from {
+    opacity: 0;
+    transform: translateY(2px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Slash "/" command menu (Notion-style block inserter) */
+.slash-menu {
+  z-index: 40;
+  width: 17rem;
+  max-height: 20rem;
+  overflow-y: auto;
+  padding: 0.35rem;
+  border-radius: 0.6rem;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  box-shadow: 0 12px 32px -8px rgba(0, 0, 0, 0.4), 0 2px 6px -2px rgba(0, 0, 0, 0.2);
+}
+
+.slash-menu-empty {
+  padding: 0.5rem 0.6rem;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.slash-menu-item {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 0.6rem;
+  border-radius: 0.4rem;
+  padding: 0.4rem 0.5rem;
+  text-align: left;
+  color: var(--foreground);
+  transition: background 0.1s ease;
+}
+
+.slash-menu-item.is-selected,
+.slash-menu-item:hover {
+  background: var(--surface-2);
+}
+
+.slash-menu-icon {
+  display: flex;
+  height: 1.75rem;
+  width: 1.75rem;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.35rem;
+  border: 1px solid var(--border);
+  background: var(--input-bg);
+  font-size: 0.65rem;
+  font-weight: 700;
+}
+
+.slash-menu-copy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+}
+
+.slash-menu-title {
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.slash-menu-desc {
+  font-size: 0.68rem;
+  color: var(--muted);
 }

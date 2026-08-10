@@ -2,12 +2,32 @@
 
 import { useEffect, useReducer, type ReactNode } from "react";
 import type { Editor } from "@tiptap/react";
+import {
+  Undo2,
+  Redo2,
+  Bold,
+  Italic,
+  Underline as UnderlineIcon,
+  Strikethrough,
+  Code,
+  List,
+  ListOrdered,
+  Quote,
+  Minus,
+  AlignLeft,
+  AlignCenter,
+  AlignRight,
+  Link2,
+  Image as ImageIcon,
+  Video,
+  Eraser,
+} from "lucide-react";
 
 type Props = {
   editor: Editor | null;
 };
 
-function ToolBtn({
+export function ToolBtn({
   label,
   active,
   disabled,
@@ -41,8 +61,50 @@ function ToolBtn({
   );
 }
 
-function Sep() {
+export function Sep() {
   return <span className="mx-1 h-5 w-px shrink-0 bg-[var(--border)]" aria-hidden />;
+}
+
+const STYLE_OPTIONS = [
+  { value: "paragraph", label: "Paragraphe" },
+  { value: "h1", label: "Titre 1" },
+  { value: "h2", label: "Titre 2" },
+  { value: "h3", label: "Titre 3" },
+] as const;
+
+function StyleDropdown({ editor }: { editor: Editor }) {
+  const current = editor.isActive("heading", { level: 1 })
+    ? "h1"
+    : editor.isActive("heading", { level: 2 })
+      ? "h2"
+      : editor.isActive("heading", { level: 3 })
+        ? "h3"
+        : "paragraph";
+
+  return (
+    <select
+      aria-label="Style de bloc"
+      title="Style de bloc"
+      value={current}
+      onMouseDown={(e) => e.stopPropagation()}
+      onChange={(e) => {
+        const value = e.target.value;
+        if (value === "paragraph") {
+          editor.chain().focus().setParagraph().run();
+        } else {
+          const level = Number(value.slice(1)) as 1 | 2 | 3;
+          editor.chain().focus().toggleHeading({ level }).run();
+        }
+      }}
+      className="h-8 min-w-[8.5rem] rounded-md border border-theme bg-[var(--surface)] px-2 text-xs font-semibold text-body outline-none focus:ring-2 focus:ring-[var(--ring)]"
+    >
+      {STYLE_OPTIONS.map((opt) => (
+        <option key={opt.value} value={opt.value}>
+          {opt.label}
+        </option>
+      ))}
+    </select>
+  );
 }
 
 /**
@@ -78,46 +140,19 @@ export function TipTapToolbar({ editor }: Props) {
         disabled={!editor.can().chain().focus().undo().run()}
         onClick={() => editor.chain().focus().undo().run()}
       >
-        ↶
+        <Undo2 className="h-4 w-4" />
       </ToolBtn>
       <ToolBtn
         label="Rétablir (Ctrl+Y)"
         disabled={!editor.can().chain().focus().redo().run()}
         onClick={() => editor.chain().focus().redo().run()}
       >
-        ↷
+        <Redo2 className="h-4 w-4" />
       </ToolBtn>
 
       <Sep />
 
-      <ToolBtn
-        label="Paragraphe"
-        active={editor.isActive("paragraph") && !editor.isActive("heading")}
-        onClick={() => editor.chain().focus().setParagraph().run()}
-      >
-        P
-      </ToolBtn>
-      <ToolBtn
-        label="Titre 1 (Ctrl+Alt+1)"
-        active={editor.isActive("heading", { level: 1 })}
-        onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
-      >
-        H1
-      </ToolBtn>
-      <ToolBtn
-        label="Titre 2 (Ctrl+Alt+2)"
-        active={editor.isActive("heading", { level: 2 })}
-        onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
-      >
-        H2
-      </ToolBtn>
-      <ToolBtn
-        label="Titre 3 (Ctrl+Alt+3)"
-        active={editor.isActive("heading", { level: 3 })}
-        onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
-      >
-        H3
-      </ToolBtn>
+      <StyleDropdown editor={editor} />
 
       <Sep />
 
@@ -127,7 +162,7 @@ export function TipTapToolbar({ editor }: Props) {
         disabled={!editor.can().chain().focus().toggleBold().run()}
         onClick={() => editor.chain().focus().toggleBold().run()}
       >
-        <strong>B</strong>
+        <Bold className="h-4 w-4" />
       </ToolBtn>
       <ToolBtn
         label="Italique (Ctrl+I)"
@@ -135,7 +170,7 @@ export function TipTapToolbar({ editor }: Props) {
         disabled={!editor.can().chain().focus().toggleItalic().run()}
         onClick={() => editor.chain().focus().toggleItalic().run()}
       >
-        <em>I</em>
+        <Italic className="h-4 w-4" />
       </ToolBtn>
       <ToolBtn
         label="Souligné (Ctrl+U)"
@@ -143,7 +178,7 @@ export function TipTapToolbar({ editor }: Props) {
         disabled={!editor.can().chain().focus().toggleUnderline().run()}
         onClick={() => editor.chain().focus().toggleUnderline().run()}
       >
-        <span className="underline">U</span>
+        <UnderlineIcon className="h-4 w-4" />
       </ToolBtn>
       <ToolBtn
         label="Barré"
@@ -151,7 +186,7 @@ export function TipTapToolbar({ editor }: Props) {
         disabled={!editor.can().chain().focus().toggleStrike().run()}
         onClick={() => editor.chain().focus().toggleStrike().run()}
       >
-        <span className="line-through">S</span>
+        <Strikethrough className="h-4 w-4" />
       </ToolBtn>
       <ToolBtn
         label="Code"
@@ -159,7 +194,7 @@ export function TipTapToolbar({ editor }: Props) {
         disabled={!editor.can().chain().focus().toggleCode().run()}
         onClick={() => editor.chain().focus().toggleCode().run()}
       >
-        {"</>"}
+        <Code className="h-4 w-4" />
       </ToolBtn>
 
       <Sep />
@@ -169,29 +204,28 @@ export function TipTapToolbar({ editor }: Props) {
         active={editor.isActive("bulletList")}
         onClick={() => editor.chain().focus().toggleBulletList().run()}
       >
-        ••
+        <List className="h-4 w-4" />
       </ToolBtn>
       <ToolBtn
         label="Liste numérotée"
         active={editor.isActive("orderedList")}
         onClick={() => editor.chain().focus().toggleOrderedList().run()}
       >
-        1.
+        <ListOrdered className="h-4 w-4" />
       </ToolBtn>
       <ToolBtn
         label="Citation"
         active={editor.isActive("blockquote")}
         onClick={() => editor.chain().focus().toggleBlockquote().run()}
       >
-        “”
+        <Quote className="h-4 w-4" />
       </ToolBtn>
       <ToolBtn
         label="Ligne horizontale"
         onClick={() => editor.chain().focus().setHorizontalRule().run()}
       >
-        ―
+        <Minus className="h-4 w-4" />
       </ToolBtn>
-
       <Sep />
 
       <ToolBtn
@@ -199,21 +233,21 @@ export function TipTapToolbar({ editor }: Props) {
         active={editor.isActive({ textAlign: "left" })}
         onClick={() => editor.chain().focus().setTextAlign("left").run()}
       >
-        G
+        <AlignLeft className="h-4 w-4" />
       </ToolBtn>
       <ToolBtn
         label="Centrer"
         active={editor.isActive({ textAlign: "center" })}
         onClick={() => editor.chain().focus().setTextAlign("center").run()}
       >
-        C
+        <AlignCenter className="h-4 w-4" />
       </ToolBtn>
       <ToolBtn
         label="Aligner à droite"
         active={editor.isActive({ textAlign: "right" })}
         onClick={() => editor.chain().focus().setTextAlign("right").run()}
       >
-        D
+        <AlignRight className="h-4 w-4" />
       </ToolBtn>
 
       <Sep />
@@ -236,7 +270,7 @@ export function TipTapToolbar({ editor }: Props) {
           editor.chain().focus().extendMarkRange("link").setLink({ href: url }).run();
         }}
       >
-        Lien
+        <Link2 className="h-4 w-4" />
       </ToolBtn>
 
       <Sep />
@@ -245,7 +279,7 @@ export function TipTapToolbar({ editor }: Props) {
         className="toolbar-label"
         title="Insérer une image"
       >
-        Image
+        <ImageIcon className="h-4 w-4" />
         <input
           type="file"
           accept="image/*"
@@ -277,7 +311,7 @@ export function TipTapToolbar({ editor }: Props) {
         className="toolbar-label"
         title="Insérer une vidéo"
       >
-        Vidéo
+        <Video className="h-4 w-4" />
         <input
           type="file"
           accept="video/*,.m3u8"
@@ -313,7 +347,7 @@ export function TipTapToolbar({ editor }: Props) {
         label="Effacer le formatage"
         onClick={() => editor.chain().focus().unsetAllMarks().clearNodes().run()}
       >
-        Effacer
+        <Eraser className="h-4 w-4" />
       </ToolBtn>
     </div>
   );

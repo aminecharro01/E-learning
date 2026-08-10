@@ -8,6 +8,7 @@ import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
 import TextAlign from "@tiptap/extension-text-align";
 import Image from "@tiptap/extension-image";
+import CharacterCount from "@tiptap/extension-character-count";
 import {
   DndContext,
   closestCenter,
@@ -23,12 +24,27 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import apiClient from "@/lib/api-client";
 import { TipTapToolbar } from "@/components/admin/TipTapToolbar";
 import { VideoEmbed } from "@/components/admin/tiptap/VideoEmbed";
+import { SlashCommand } from "@/components/admin/tiptap/SlashCommand";
+import { BubbleFormatMenu } from "@/components/admin/tiptap/BubbleFormatMenu";
 import { useResolveMediaAssets } from "@/lib/media";
+import { VideoPlayer } from "@/components/VideoPlayer";
+import { PdfViewer } from "@/components/PdfViewer";
+import { AssetImage } from "@/components/AssetImage";
 import { btn } from "@/lib/ui";
+
+// Must be a stable reference: a fresh object literal passed to `useEditor`'s
+// `editorProps` on every render makes Tiptap's internal `compareOptions` check
+// fail every time (combined with `shouldRerenderOnTransaction`, this forced a
+// repeated `editor.setOptions()` call that triggered infinite re-renders).
+const textEditorProps = {
+  attributes: {
+    class: "tiptap tiptap-editor min-h-[160px] px-3 py-3 focus:outline-none",
+  },
+};
 
 export type BlockItem = {
   id: string;
@@ -53,10 +69,12 @@ function TextBlockEditor({
   const initialHtml = String(block.content.body ?? block.content.text ?? "<p></p>");
   const wrapRef = useRef<HTMLDivElement>(null);
 
-  const editor = useEditor({
-    immediatelyRender: false,
-    shouldRerenderOnTransaction: true,
-    extensions: [
+  // Must be memoized: TipTap's useEditor compares extension instances by
+  // reference on every render (see textEditorProps comment above for the
+  // full failure mode) — a fresh array of freshly `.configure()`d extensions
+  // every render defeats that check just as badly as a fresh editorProps object.
+  const extensions = useMemo(
+    () => [
       StarterKit.configure({
         heading: {
           levels: [1, 2, 3],
@@ -72,7 +90,7 @@ function TextBlockEditor({
         },
       }),
       Placeholder.configure({
-        placeholder: "Saisissez le contenu… Image / Vidéo via la barre d’outils.",
+        placeholder: "Saisissez le contenu… tapez « / » pour insérer un bloc.",
       }),
       TextAlign.configure({
         types: ["heading", "paragraph"],
@@ -98,13 +116,18 @@ function TextBlockEditor({
         },
       }),
       VideoEmbed,
+      CharacterCount,
+      SlashCommand,
     ],
+    []
+  );
+
+  const editor = useEditor({
+    immediatelyRender: false,
+    shouldRerenderOnTransaction: true,
+    extensions,
     content: initialHtml,
-    editorProps: {
-      attributes: {
-        class: "tiptap tiptap-editor min-h-[160px] px-3 py-3 focus:outline-none",
-      },
-    },
+    editorProps: textEditorProps,
     onBlur: ({ editor: ed }) => {
       onUpdateText(block.id, ed.getHTML());
     },
@@ -112,12 +135,19 @@ function TextBlockEditor({
 
   useResolveMediaAssets(wrapRef, initialHtml);
 
+  const words = editor?.storage.characterCount?.words() ?? 0;
+  const characters = editor?.storage.characterCount?.characters() ?? 0;
+
   return (
     <div ref={wrapRef} className="editor-panel">
       <TipTapToolbar editor={editor} />
+      {editor && <BubbleFormatMenu editor={editor} />}
       <EditorContent editor={editor} />
-      <p className="border-t border-theme px-3 py-1.5 text-[11px] text-muted">
-        TipTap — texte, image, vidéo · sauvegarde au blur
+      <p className="flex items-center justify-between border-t border-theme px-3 py-1.5 text-[11px] text-muted">
+        <span>« / » pour insérer un bloc · sauvegarde au blur</span>
+        <span>
+          {words} mot{words > 1 ? "s" : ""} · {characters} caractères
+        </span>
       </p>
     </div>
   );
@@ -163,21 +193,31 @@ function SortableBlock({
       {block.blockType === "TEXT" && (
         <TextBlockEditor block={block} onUpdateText={onUpdateText} />
       )}
-      {block.blockType === "VIDEO" && (
-        <p className="text-sm text-body">
-          Vidéo asset: {String(block.content.assetId ?? "—")} — {String(block.content.title ?? "")}
-        </p>
-      )}
-      {block.blockType === "PDF" && (
-        <p className="text-sm text-body">
-          PDF asset: {String(block.content.assetId ?? "—")}
-        </p>
-      )}
-      {block.blockType === "IMAGE" && (
-        <p className="text-sm text-body">
-          Image asset: {String(block.content.assetId ?? "—")} — {String(block.content.alt ?? "")}
-        </p>
-      )}
+      {block.blockType === "VIDEO" &&
+        (block.content.assetId ? (
+          <VideoPlayer
+            assetId={String(block.content.assetId)}
+            title={String(block.content.title ?? "")}
+          />
+        ) : (
+          <p className="text-sm text-muted">Aucune vidéo.</p>
+        ))}
+      {block.blockType === "PDF" &&
+        (block.content.assetId ? (
+          <PdfViewer assetId={String(block.content.assetId)} title={String(block.content.title ?? "")} />
+        ) : (
+          <p className="text-sm text-muted">Aucun document.</p>
+        ))}
+      {block.blockType === "IMAGE" &&
+        (block.content.assetId ? (
+          <AssetImage
+            assetId={String(block.content.assetId)}
+            alt={String(block.content.alt ?? "")}
+            className="max-h-80 w-auto rounded-lg border border-theme"
+          />
+        ) : (
+          <p className="text-sm text-muted">Aucune image.</p>
+        ))}
     </div>
   );
 }
