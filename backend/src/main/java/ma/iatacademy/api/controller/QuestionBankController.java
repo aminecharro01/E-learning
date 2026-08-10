@@ -7,13 +7,17 @@ import ma.iatacademy.api.dto.quiz.CreateQuestionBankRequest;
 import ma.iatacademy.api.dto.quiz.CreateQuestionRequest;
 import ma.iatacademy.api.dto.quiz.QuestionAdminResponse;
 import ma.iatacademy.api.dto.quiz.QuestionBankResponse;
+import ma.iatacademy.api.dto.quiz.QuestionImportResponse;
 import ma.iatacademy.api.security.UserPrincipal;
 import ma.iatacademy.api.service.QuestionBankService;
+import ma.iatacademy.api.service.QuestionImportService;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.UUID;
@@ -25,6 +29,7 @@ import java.util.UUID;
 public class QuestionBankController {
 
     private final QuestionBankService questionBankService;
+    private final QuestionImportService questionImportService;
 
     @GetMapping
     public ResponseEntity<List<QuestionBankResponse>> list() {
@@ -56,6 +61,14 @@ public class QuestionBankController {
             @Valid @RequestBody CreateQuestionRequest request
     ) {
         return ResponseEntity.status(HttpStatus.CREATED).body(questionBankService.addQuestion(bankId, request));
+    }
+
+    @PostMapping(value = "/{bankId}/questions/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<QuestionImportResponse> importQuestions(
+            @PathVariable UUID bankId,
+            @RequestParam("file") MultipartFile file
+    ) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(questionImportService.importIntoBank(bankId, file));
     }
 
     @DeleteMapping("/{bankId}/questions/{questionId}")

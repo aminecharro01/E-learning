@@ -796,6 +796,92 @@ public class QuizService {
         questionRepository.delete(question);
     }
 
+    /** Duplique une question dans le même quiz — pratique pour partir d'une question proche. */
+    @Transactional
+    public QuestionAdminResponse duplicateQuestion(UUID quizId, UUID questionId) {
+        Question source = questionRepository.findById(questionId)
+                .orElseThrow(() -> new NotFoundException("Question introuvable."));
+        if (!quizId.equals(source.getQuiz() != null ? source.getQuiz().getId() : null)) {
+            throw new ApiException("La question n'appartient pas à ce quiz.");
+        }
+        int nextOrder = questionRepository.findByQuizIdOrderByOrderIndexAsc(quizId).size();
+        Question copy = cloneQuestion(source, nextOrder);
+        copy.setQuiz(source.getQuiz());
+        questionRepository.save(copy);
+        return toQuestionAdmin(copy);
+    }
+
+    /** Duplique le quiz entier (réglages + questions) — la copie est dépubliée, à relire avant activation. */
+    @Transactional
+    public QuizAdminResponse duplicateQuiz(UUID quizId) {
+        Quiz source = quizRepository.findById(quizId)
+                .orElseThrow(() -> new NotFoundException("Quiz introuvable."));
+        Quiz copy = Quiz.builder()
+                .title(source.getTitle() + " (copie)")
+                .quizType(source.getQuizType())
+                .lesson(source.getLesson())
+                .module(source.getModule())
+                .passingScore(source.getPassingScore())
+                .maxAttempts(source.getMaxAttempts())
+                .timeLimitSeconds(source.getTimeLimitSeconds())
+                .randomizeQuestions(source.isRandomizeQuestions())
+                .randomizeOptions(source.isRandomizeOptions())
+                .retryDelayHours(source.getRetryDelayHours())
+                .blocking(source.isBlocking())
+                .published(false)
+                .proctoringEnabled(source.isProctoringEnabled())
+                .focusLossDetection(source.isFocusLossDetection())
+                .copyProtection(source.isCopyProtection())
+                .lockdownMode(source.isLockdownMode())
+                .build();
+        quizRepository.save(copy);
+
+        int idx = 0;
+        for (Question q : questionRepository.findByQuizIdOrderByOrderIndexAsc(quizId)) {
+            Question clone = cloneQuestion(q, idx++);
+            clone.setQuiz(copy);
+            questionRepository.save(clone);
+        }
+        return toAdmin(copy);
+    }
+
+    /** Copie profonde d'une question (métadonnées + options), sans rattachement quiz/banque — l'appelant fixe la cible. */
+    private Question cloneQuestion(Question source, int orderIndex) {
+        Question copy = Question.builder()
+                .prompt(source.getPrompt())
+                .questionType(source.getQuestionType())
+                .orderIndex(orderIndex)
+                .explanation(source.getExplanation())
+                .imageAssetId(source.getImageAssetId())
+                .metadata(source.getMetadata())
+                .build();
+        for (AnswerOption o : source.getOptions()) {
+            copy.getOptions().add(AnswerOption.builder()
+                    .question(copy)
+                    .label(o.getLabel())
+                    .correct(o.isCorrect())
+                    .orderIndex(o.getOrderIndex())
+                    .build());
+        }
+        return copy;
+    }
+
+    /** Fixe un nouvel ordre pour les questions d'un quiz (glisser-déposer côté admin). */
+    @Transactional
+    public void reorderQuestions(UUID quizId, List<UUID> orderedQuestionIds) {
+        Map<UUID, Question> byId = questionRepository.findByQuizIdOrderByOrderIndexAsc(quizId).stream()
+                .collect(Collectors.toMap(Question::getId, q -> q));
+        if (byId.size() != orderedQuestionIds.size() || !byId.keySet().containsAll(orderedQuestionIds)) {
+            throw new ApiException("La liste fournie ne correspond pas exactement aux questions de ce quiz.");
+        }
+        int idx = 0;
+        for (UUID id : orderedQuestionIds) {
+            Question q = byId.get(id);
+            q.setOrderIndex(idx++);
+            questionRepository.save(q);
+        }
+    }
+
     @Transactional(readOnly = true)
     public PageResponse<QuizAdminResponse> listQuizzesPaged(UUID moduleId, int page, int size) {
         Pageable pageable = PageRequest.of(Math.max(page, 0), Math.min(Math.max(size, 1), 100),

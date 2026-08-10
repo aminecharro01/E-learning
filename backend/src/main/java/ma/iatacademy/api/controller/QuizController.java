@@ -7,13 +7,16 @@ import ma.iatacademy.api.dto.proctoring.ProctoringEventRequest;
 import ma.iatacademy.api.dto.proctoring.ProctoringEventResponse;
 import ma.iatacademy.api.dto.MessageResponse;
 import ma.iatacademy.api.dto.quiz.*;
+import ma.iatacademy.api.service.QuestionImportService;
 import ma.iatacademy.api.security.UserPrincipal;
 import ma.iatacademy.api.service.QuizService;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.UUID;
@@ -24,6 +27,7 @@ import java.util.UUID;
 public class QuizController {
 
     private final QuizService quizService;
+    private final QuestionImportService questionImportService;
 
     @PostMapping("/{id}/start")
     public ResponseEntity<QuizStartResponse> start(
@@ -89,6 +93,40 @@ public class QuizController {
     ) {
         quizService.deleteQuestion(id, questionId);
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/{id}/questions/{questionId}/duplicate")
+    @PreAuthorize("hasAnyRole('ADMIN','FORMATEUR')")
+    public ResponseEntity<QuestionAdminResponse> duplicateQuestion(
+            @PathVariable UUID id,
+            @PathVariable UUID questionId
+    ) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(quizService.duplicateQuestion(id, questionId));
+    }
+
+    @PutMapping("/{id}/questions/reorder")
+    @PreAuthorize("hasAnyRole('ADMIN','FORMATEUR')")
+    public ResponseEntity<MessageResponse> reorderQuestions(
+            @PathVariable UUID id,
+            @Valid @RequestBody ReorderQuestionsRequest request
+    ) {
+        quizService.reorderQuestions(id, request.questionIds());
+        return ResponseEntity.ok(new MessageResponse("Ordre mis à jour."));
+    }
+
+    @PostMapping("/{id}/duplicate")
+    @PreAuthorize("hasAnyRole('ADMIN','FORMATEUR')")
+    public ResponseEntity<QuizAdminResponse> duplicateQuiz(@PathVariable UUID id) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(quizService.duplicateQuiz(id));
+    }
+
+    @PostMapping(value = "/{id}/questions/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasAnyRole('ADMIN','FORMATEUR')")
+    public ResponseEntity<QuestionImportResponse> importQuestions(
+            @PathVariable UUID id,
+            @RequestParam("file") MultipartFile file
+    ) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(questionImportService.importIntoQuiz(id, file));
     }
 
     @GetMapping

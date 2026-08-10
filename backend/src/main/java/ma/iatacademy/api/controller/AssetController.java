@@ -2,6 +2,7 @@ package ma.iatacademy.api.controller;
 
 import lombok.RequiredArgsConstructor;
 import ma.iatacademy.api.domain.entity.Asset;
+import ma.iatacademy.api.dto.common.PageResponse;
 import ma.iatacademy.api.dto.media.AssetResponse;
 import ma.iatacademy.api.dto.media.SignedStreamResponse;
 import ma.iatacademy.api.security.UserPrincipal;
@@ -31,6 +32,17 @@ public class AssetController {
             @RequestParam(value = "kind", required = false) String kind
     ) {
         return ResponseEntity.ok(mediaService.upload(file, kind));
+    }
+
+    /** Bibliothèque de médias partagés (contenu pédagogique uniquement, jamais de documents privés) — pour réutiliser un asset au lieu de le re-uploader. */
+    @GetMapping
+    @PreAuthorize("hasAnyRole('ADMIN','FORMATEUR')")
+    public ResponseEntity<PageResponse<AssetResponse>> list(
+            @RequestParam(required = false) String kind,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "24") int size
+    ) {
+        return ResponseEntity.ok(mediaService.list(kind, page, size));
     }
 
     @GetMapping("/{id}/stream")
