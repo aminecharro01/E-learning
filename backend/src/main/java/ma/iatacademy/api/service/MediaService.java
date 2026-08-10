@@ -1,9 +1,11 @@
 package ma.iatacademy.api.service;
 
 import lombok.RequiredArgsConstructor;
+import ma.iatacademy.api.config.BunnyStreamProperties;
 import ma.iatacademy.api.config.JwtProperties;
 import ma.iatacademy.api.config.MediaProperties;
 import ma.iatacademy.api.domain.entity.Asset;
+import ma.iatacademy.api.dto.common.PageResponse;
 import ma.iatacademy.api.dto.media.AssetResponse;
 import ma.iatacademy.api.dto.media.SignedStreamResponse;
 import ma.iatacademy.api.domain.enums.Role;
@@ -14,6 +16,7 @@ import ma.iatacademy.api.repository.AssetRepository;
 import ma.iatacademy.api.security.UserPrincipal;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -74,9 +77,14 @@ public class MediaService {
             Map.entry("odp", "application/vnd.oasis.opendocument.presentation")
     );
 
+    private static final Set<String> BUNNY_UPLOADABLE_EXT = Set.of("mp4", "webm");
+    private static final String BUNNY_STORAGE_PREFIX = "bunny:";
+
     private final AssetRepository assetRepository;
     private final MediaProperties mediaProperties;
     private final JwtProperties jwtProperties;
+    private final BunnyStreamProperties bunnyStreamProperties;
+    private final BunnyStreamClient bunnyStreamClient;
 
     @Transactional
     public AssetResponse upload(MultipartFile file, String kindHint) {
@@ -99,6 +107,12 @@ public class MediaService {
             throw new ApiException("Type de fichier non autorisé.");
         }
         String kind = resolveKind(kindHint, ext);
+        assertWithinSizeLimit(kind, file.getSize());
+
+        if (kind.equals("VIDEO") && bunnyStreamProperties.isEnabled() && BUNNY_UPLOADABLE_EXT.contains(ext)) {
+            return uploadToBunny(file, original, ext, ownerId);
+        }
+
         String folder = switch (kind) {
             case "VIDEO" -> "videos";
             case "SLIDE" -> "slides";
@@ -141,6 +155,34 @@ public class MediaService {
         return toResponse(asset);
     }
 
+    /**
+     * Bunny Stream path: register + upload the video to Bunny instead of writing it to
+     * local disk. storagePath is set to "bunny:{guid}" so signStream() knows to hand back
+     * Bunny's own HLS URL instead of our local file-serving one — see signStream() below.
+     */
+    private AssetResponse uploadToBunny(MultipartFile file, String original, String ext, UUID ownerId) {
+        byte[] bytes;
+        try {
+            bytes = file.getBytes();
+        } catch (IOException e) {
+            throw new ApiException("Impossible de lire le fichier vidéo : " + e.getMessage());
+        }
+
+        String guid = bunnyStreamClient.createVideo(original);
+        bunnyStreamClient.uploadVideoBytes(guid, bytes);
+
+        Asset asset = Asset.builder()
+                .filename(original)
+                .storagePath(BUNNY_STORAGE_PREFIX + guid)
+                .mimeType(EXT_TO_MIME.getOrDefault(ext, "application/octet-stream"))
+                .sizeBytes(file.getSize())
+                .assetKind("VIDEO")
+                .ownerId(ownerId)
+                .build();
+        asset = assetRepository.save(asset);
+        return toResponse(asset);
+    }
+
     @Transactional(readOnly = true)
     public SignedStreamResponse createSignedStream(UUID assetId, UserPrincipal requester) {
         Asset asset = assetRepository.findById(assetId)
@@ -164,6 +206,13 @@ public class MediaService {
 
     private SignedStreamResponse signStream(Asset asset) {
         long expires = System.currentTimeMillis() / 1000L + mediaProperties.getSignedUrlTtlSeconds();
+        if (asset.getStoragePath().startsWith(BUNNY_STORAGE_PREFIX)) {
+            // Bunny serves and access-controls this itself — hand back its own hosted
+            // player (embedUrl) instead of proxying playback through our own /file
+            // endpoint or rendering a bare <video> tag against the raw HLS URL.
+            String guid = asset.getStoragePath().substring(BUNNY_STORAGE_PREFIX.length());
+            return new SignedStreamResponse(bunnyStreamClient.embedUrl(guid), expires);
+        }
         String sig = sign(asset.getId(), expires);
         String url = "/api/assets/" + asset.getId() + "/file?expires=" + expires + "&sig=" + sig;
         return new SignedStreamResponse(url, expires);
@@ -214,6 +263,21 @@ public class MediaService {
             throw new NotFoundException("Fichier média manquant sur le disque.");
         }
         return new FileSystemResource(path);
+    }
+
+    /**
+     * Bibliothèque de médias réutilisables pour la création de contenu (question,
+     * bloc de leçon…) — ownerId IS NULL uniquement : jamais un document privé
+     * (avatar, pièce de dossier de stage) dans ce picker partagé.
+     */
+    @Transactional(readOnly = true)
+    public PageResponse<AssetResponse> list(String kind, int page, int size) {
+        String normalizedKind = kind != null && VALID_KINDS.contains(kind.toUpperCase(Locale.ROOT))
+                ? kind.toUpperCase(Locale.ROOT)
+                : "IMAGE";
+        var result = assetRepository.findByAssetKindAndOwnerIdIsNullOrderByCreatedAtDesc(
+                normalizedKind, PageRequest.of(Math.max(page, 0), Math.min(Math.max(size, 1), 100)));
+        return PageResponse.from(result.map(this::toResponse));
     }
 
     @Transactional(readOnly = true)
@@ -270,6 +334,19 @@ public class MediaService {
             return "DOCUMENT";
         }
         return "IMAGE";
+    }
+
+    private void assertWithinSizeLimit(String kind, long sizeBytes) {
+        long limit = switch (kind) {
+            case "VIDEO" -> mediaProperties.getMaxVideoSizeBytes();
+            case "IMAGE" -> mediaProperties.getMaxImageSizeBytes();
+            default -> mediaProperties.getMaxDocumentSizeBytes(); // PDF, DOCUMENT, SLIDE
+        };
+        if (sizeBytes > limit) {
+            throw new ApiException(
+                    "Fichier trop volumineux : %.1f Mo (max %.0f Mo pour ce type de fichier)."
+                            .formatted(sizeBytes / 1_048_576.0, limit / 1_048_576.0));
+        }
     }
 
     private String extension(String filename) {

@@ -72,6 +72,17 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
                 .cors(Customizer.withDefaults())
+                // Spring Security sends X-Frame-Options: DENY by default, which blocks the
+                // PDF viewer's <iframe src="/api/assets/{id}/file?..."> outright — the
+                // frontend (localhost:3000) and API (localhost:8080) are different origins,
+                // so even SAMEORIGIN wouldn't help. Replace it with a CSP frame-ancestors
+                // allow-list scoped to our own known frontend origins instead of an open door.
+                .headers(headers -> headers
+                        .frameOptions(frame -> frame.disable())
+                        .contentSecurityPolicy(csp -> csp.policyDirectives(
+                                "frame-ancestors 'self' " + String.join(" ", corsProperties.getAllowedOrigins())
+                        ))
+                )
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(publicPaths.toArray(new String[0])).permitAll()

@@ -89,11 +89,19 @@ public class LessonService {
     public BlockResponse createBlock(UUID lessonId, CreateBlockRequest request, UUID editorId) {
         Lesson lesson = findLesson(lessonId);
         lessonLockService.assertOwnedBy(lessonId, editorId);
+        // Never trust the client-computed orderIndex (it's derived from local React state
+        // and goes stale under quick successive adds, e.g. clicking "+ Texte" then
+        // "+ Vidéo" before the first request resolves) — both would compute the same
+        // "next" index and the second insert would violate the (lesson_id, order_index)
+        // unique constraint. Always append after the current highest index instead.
+        int nextIndex = lessonBlockRepository.findTopByLessonIdOrderByOrderIndexDesc(lessonId)
+                .map(b -> b.getOrderIndex() + 1)
+                .orElse(0);
         LessonBlock block = LessonBlock.builder()
                 .lesson(lesson)
                 .blockType(request.blockType())
                 .content(request.content() != null ? request.content() : Map.of())
-                .orderIndex(request.orderIndex())
+                .orderIndex(nextIndex)
                 .build();
         lessonBlockRepository.save(block);
         return toBlock(block);

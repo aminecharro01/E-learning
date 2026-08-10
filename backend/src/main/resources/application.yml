@@ -58,6 +58,17 @@ app:
     root-path: ${MEDIA_ROOT:../data/media}
     signed-url-ttl-seconds: ${MEDIA_SIGNED_TTL:3600}
     signing-secret: ${MEDIA_SIGNING_SECRET:}
+    max-image-size-bytes: ${MEDIA_MAX_IMAGE_BYTES:5242880}
+    max-document-size-bytes: ${MEDIA_MAX_DOCUMENT_BYTES:15728640}
+    max-video-size-bytes: ${MEDIA_MAX_VIDEO_BYTES:209715200}
+  bunny:
+    # Off by default — video keeps going to local disk (app.media.root-path) until
+    # this is explicitly turned on with real credentials from the Bunny dashboard
+    # (Stream > your library > API tab).
+    enabled: ${BUNNY_STREAM_ENABLED:false}
+    library-id: ${BUNNY_LIBRARY_ID:}
+    api-key: ${BUNNY_API_KEY:}
+    pull-zone-hostname: ${BUNNY_PULL_ZONE_HOSTNAME:}
   platform:
     name: ${APP_PLATFORM_NAME:IAT Academy}
     support-email: ${APP_SUPPORT_EMAIL:support@iat-academy.local}

@@ -14,6 +14,7 @@ const csp = [
   `media-src 'self' blob: ${API_URL}`,
   `connect-src 'self' ${API_URL}`,
   "font-src 'self' data:",
+  "frame-src 'self' https://iframe.mediadelivery.net",
   "frame-ancestors 'none'",
   "base-uri 'self'",
   "form-action 'self'",

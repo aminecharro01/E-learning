@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import Hls from "hls.js";
 import { api } from "@/lib/api";
 
@@ -12,40 +12,49 @@ type Props = {
 };
 
 /**
- * HLS / progressive video player.
+ * HLS / progressive video player — or Bunny Stream's own hosted player when the
+ * resolved URL is a Bunny iframe embed (see MediaService#signStream on the backend).
  * If assetId is provided, fetches a signed stream URL from the API.
  */
 export function VideoPlayer({ assetId, src, title, onProgress }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const [resolvedUrl, setResolvedUrl] = useState<string | null>(src ?? null);
 
   useEffect(() => {
+    if (!assetId) {
+      setResolvedUrl(src ?? null);
+      return;
+    }
+    let cancelled = false;
+    api
+      .get<{ url: string }>(`/api/assets/${assetId}/stream`)
+      .then(({ data }) => {
+        if (cancelled) return;
+        const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+        setResolvedUrl(data.url.startsWith("http") ? data.url : `${apiBase}${data.url}`);
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [assetId, src]);
+
+  const isBunnyEmbed = resolvedUrl?.includes("iframe.mediadelivery.net") ?? false;
+
+  useEffect(() => {
+    if (isBunnyEmbed || !resolvedUrl) return;
     const video = videoRef.current;
     if (!video) return;
 
     let hls: Hls | null = null;
-    let cancelled = false;
 
-    async function attach() {
-      let url = src;
-      if (assetId) {
-        const { data } = await api.get<{ url: string }>(`/api/assets/${assetId}/stream`);
-        const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
-        url = data.url.startsWith("http") ? data.url : `${apiBase}${data.url}`;
-      }
-      if (!url || cancelled || !video) return;
-
-      if (url.includes(".m3u8") && Hls.isSupported()) {
-        hls = new Hls();
-        hls.loadSource(url);
-        hls.attachMedia(video);
-      } else if (url.includes(".m3u8") && video.canPlayType("application/vnd.apple.mpegurl")) {
-        video.src = url;
-      } else {
-        video.src = url;
-      }
+    if (resolvedUrl.includes(".m3u8") && Hls.isSupported()) {
+      hls = new Hls();
+      hls.loadSource(resolvedUrl);
+      hls.attachMedia(video);
+    } else {
+      video.src = resolvedUrl;
     }
-
-    attach().catch(() => undefined);
 
     const onTimeUpdate = () => {
       if (!video.duration || !onProgress) return;
@@ -54,16 +63,25 @@ export function VideoPlayer({ assetId, src, title, onProgress }: Props) {
     video.addEventListener("timeupdate", onTimeUpdate);
 
     return () => {
-      cancelled = true;
       video.removeEventListener("timeupdate", onTimeUpdate);
       hls?.destroy();
     };
-  }, [assetId, src, onProgress]);
+  }, [resolvedUrl, isBunnyEmbed, onProgress]);
 
   return (
     <div className="media-viewer overflow-hidden bg-black">
       {title && <p className="media-viewer-title">{title}</p>}
-      <video ref={videoRef} controls playsInline className="aspect-video w-full" />
+      {isBunnyEmbed ? (
+        <iframe
+          src={resolvedUrl ?? undefined}
+          title={title || "Vidéo"}
+          className="aspect-video w-full"
+          allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
+          allowFullScreen
+        />
+      ) : (
+        <video ref={videoRef} controls playsInline className="aspect-video w-full" />
+      )}
     </div>
   );
 }

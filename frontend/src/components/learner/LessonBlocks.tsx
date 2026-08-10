@@ -64,13 +64,20 @@ export function LessonBlocks({ blocks, lessonId, onVideoProgress }: Props) {
 
 function ImageBlock({ assetId, alt }: { assetId: string; alt: string }) {
   const [url, setUrl] = useState<string | null>(null);
+  const [error, setError] = useState(false);
   useEffect(() => {
+    setUrl(null);
+    setError(false);
     const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
-    api.get<{ url: string }>(`/api/assets/${assetId}/stream`).then((res) => {
-      setUrl(res.data.url.startsWith("http") ? res.data.url : `${apiBase}${res.data.url}`);
-    });
+    api
+      .get<{ url: string }>(`/api/assets/${assetId}/stream`)
+      .then((res) => {
+        setUrl(res.data.url.startsWith("http") ? res.data.url : `${apiBase}${res.data.url}`);
+      })
+      .catch(() => setError(true));
   }, [assetId]);
+  if (error) return <p className="alert alert-error">Impossible de charger l&apos;image.</p>;
   if (!url) return <p className="text-sm text-muted">Chargement image…</p>;
   // eslint-disable-next-line @next/next/no-img-element
-  return <img src={url} alt={alt} className="max-h-[520px] w-auto rounded-lg" />;
+  return <img src={url} alt={alt} className="max-h-[520px] w-auto rounded-lg" onError={() => setError(true)} />;
 }
