@@ -8,12 +8,12 @@ import { browseMedia, moveAsset, type FolderSummary, type BreadcrumbEntry } from
 
 type Props = {
   open: boolean;
-  assetId: string | null;
+  assetIds: string[];
   onClose: () => void;
   onMoved: () => void;
 };
 
-export function MoveToDialog({ open, assetId, onClose, onMoved }: Props) {
+export function MoveToDialog({ open, assetIds, onClose, onMoved }: Props) {
   const [folderId, setFolderId] = useState<string | null>(null);
   const [breadcrumbs, setBreadcrumbs] = useState<BreadcrumbEntry[]>([]);
   const [childFolders, setChildFolders] = useState<FolderSummary[]>([]);
@@ -36,11 +36,13 @@ export function MoveToDialog({ open, assetId, onClose, onMoved }: Props) {
   }, [open, folderId]);
 
   async function confirmMove() {
-    if (!assetId) return;
+    if (assetIds.length === 0) return;
     setBusy(true);
     setError(null);
     try {
-      await moveAsset(assetId, folderId);
+      for (const id of assetIds) {
+        await moveAsset(id, folderId);
+      }
       onMoved();
       onClose();
     } catch {
@@ -51,7 +53,11 @@ export function MoveToDialog({ open, assetId, onClose, onMoved }: Props) {
   }
 
   return (
-    <Modal open={open} title="Déplacer vers…" onClose={onClose}>
+    <Modal
+      open={open}
+      title={assetIds.length > 1 ? `Déplacer ${assetIds.length} fichiers vers…` : "Déplacer vers…"}
+      onClose={onClose}
+    >
       <div className="space-y-3">
         <div className="flex flex-wrap items-center gap-1 text-sm text-muted">
           <button type="button" className="flex items-center gap-1 hover:underline" onClick={() => setFolderId(null)}>

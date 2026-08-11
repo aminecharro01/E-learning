@@ -6,19 +6,21 @@ import { deleteAsset, type AssetSummary } from "@/lib/api";
 
 type Props = {
   open: boolean;
-  asset: AssetSummary | null;
+  assets: AssetSummary[];
   onClose: () => void;
   onDeleted: () => void;
 };
 
-export function DeleteAssetConfirm({ open, asset, onClose, onDeleted }: Props) {
+export function DeleteAssetConfirm({ open, assets, onClose, onDeleted }: Props) {
   const [busy, setBusy] = useState(false);
 
   async function confirmDelete() {
-    if (!asset) return;
+    if (assets.length === 0) return;
     setBusy(true);
     try {
-      await deleteAsset(asset.id);
+      for (const asset of assets) {
+        await deleteAsset(asset.id);
+      }
       onDeleted();
       onClose();
     } finally {
@@ -26,11 +28,18 @@ export function DeleteAssetConfirm({ open, asset, onClose, onDeleted }: Props) {
     }
   }
 
+  const title =
+    assets.length > 1 ? `Supprimer ${assets.length} fichiers ?` : `Supprimer « ${assets[0]?.filename ?? ""} » ?`;
+  const description =
+    assets.length > 1
+      ? `Ces ${assets.length} fichiers seront supprimés définitivement (y compris sur Bunny Stream pour les vidéos). S'ils sont utilisés dans des leçons, ils deviendront inaccessibles.`
+      : "Ce fichier sera supprimé définitivement (y compris sur Bunny Stream s'il s'agit d'une vidéo). Si ce fichier est utilisé dans une leçon, il deviendra inaccessible.";
+
   return (
     <ConfirmDialog
       open={open}
-      title={`Supprimer « ${asset?.filename ?? ""} » ?`}
-      description="Ce fichier sera supprimé définitivement (y compris sur Bunny Stream s'il s'agit d'une vidéo). Si ce fichier est utilisé dans une leçon, il deviendra inaccessible."
+      title={title}
+      description={description}
       confirmLabel="Supprimer définitivement"
       danger
       busy={busy}
