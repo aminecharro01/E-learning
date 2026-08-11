@@ -41,15 +41,15 @@ export function Modal({ open, title, onClose, children, size = "md" }: Props) {
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className={`card-theme relative w-full ${width} rounded-2xl p-6 shadow-xl`}
+        className={`card-theme relative flex max-h-[85vh] w-full ${width} flex-col rounded-2xl p-6 shadow-xl`}
       >
-        <div className="mb-4 flex items-start justify-between gap-3">
+        <div className="mb-4 flex shrink-0 items-start justify-between gap-3">
           <h2 className="text-lg font-semibold text-heading">{title}</h2>
           <button type="button" onClick={onClose} aria-label="Fermer" className={btn.neutralSm}>
             <X size={16} aria-hidden />
           </button>
         </div>
-        {children}
+        <div className="min-h-0 flex-1 overflow-y-auto">{children}</div>
       </div>
     </div>
   );

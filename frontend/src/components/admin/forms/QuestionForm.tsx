@@ -308,7 +308,8 @@ export function QuestionForm({
           </details>
 
           <p className="text-xs text-muted">
-            Seule la première zone dessinée sert de cible pour la correction automatique.
+            Le clic de l&apos;apprenant est considéré correct s&apos;il tombe dans l&apos;une de ces zones — vous pouvez en
+            dessiner plusieurs si plusieurs endroits sont valides.
           </p>
         </div>
       )}
@@ -443,7 +444,7 @@ function HotspotZoneDrawer({
             style={{ left: `${z.x}%`, top: `${z.y}%`, width: `${z.width}%`, height: `${z.height}%` }}
           >
             <span className="absolute -top-5 left-0 rounded bg-[var(--gold-600)] px-1 text-[10px] font-semibold text-white">
-              {i === 0 ? "Cible" : `Zone ${i + 1}`}
+              Cible {i + 1}
             </span>
             <button
               type="button"

@@ -541,24 +541,33 @@ public class QuizService {
     }
 
     /** Simplification assumée : une seule zone cible par question (zones[0]), coordonnées en pourcentage. */
+    /** Correct if the click falls in ANY drawn zone — real hotspot exercises commonly
+     *  accept several valid target regions, not just a single one. */
     private boolean isHotspotCorrect(Question question, Object submittedRaw) {
         if (!(submittedRaw instanceof Map<?, ?> submitted) || question.getMetadata() == null) {
             return false;
         }
         Object zonesRaw = question.getMetadata().get("zones");
-        if (!(zonesRaw instanceof List<?> zones) || zones.isEmpty() || !(zones.get(0) instanceof Map<?, ?> zone)) {
+        if (!(zonesRaw instanceof List<?> zones) || zones.isEmpty()) {
             return false;
         }
         Double x = toDouble(submitted.get("x"));
         Double y = toDouble(submitted.get("y"));
-        Double zx = toDouble(zone.get("x"));
-        Double zy = toDouble(zone.get("y"));
-        Double zw = toDouble(zone.get("width"));
-        Double zh = toDouble(zone.get("height"));
-        if (x == null || y == null || zx == null || zy == null || zw == null || zh == null) {
+        if (x == null || y == null) {
             return false;
         }
-        return x >= zx && x <= zx + zw && y >= zy && y <= zy + zh;
+        for (Object zoneRaw : zones) {
+            if (!(zoneRaw instanceof Map<?, ?> zone)) continue;
+            Double zx = toDouble(zone.get("x"));
+            Double zy = toDouble(zone.get("y"));
+            Double zw = toDouble(zone.get("width"));
+            Double zh = toDouble(zone.get("height"));
+            if (zx == null || zy == null || zw == null || zh == null) continue;
+            if (x >= zx && x <= zx + zw && y >= zy && y <= zy + zh) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private Double toDouble(Object o) {

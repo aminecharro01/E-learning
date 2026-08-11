@@ -111,6 +111,11 @@ function QuizBody({ moduleId, quizId }: { moduleId: string; quizId: string }) {
   const [result, setResult] = useState<SubmitResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [armedLeft, setArmedLeft] = useState<number | null>(null);
+
+  useEffect(() => {
+    setArmedLeft(null);
+  }, [current]);
 
   useEffect(() => {
     setLoading(true);
@@ -397,34 +402,78 @@ function QuizBody({ moduleId, quizId }: { moduleId: string; quizId: string }) {
             </ul>
           )}
 
-          {q.questionType === "MATCHING" && (
-            <div className="mt-5 space-y-2.5">
-              {((q.metadata?.lefts as string[]) || []).map((left, i) => {
-                const rights = (q.metadata?.rights as string[]) || [];
-                const chosen = ((structuredAnswers[q.id] as Record<string, string>) || {})[String(i)] || "";
-                return (
-                  <div key={i} className="flex items-center gap-3">
-                    <span className="learn-option flex-1 !cursor-default">{left}</span>
-                    <span className="text-muted">
-                      <ArrowRight size={16} aria-hidden />
-                    </span>
-                    <select
-                      className="learn-option flex-1"
-                      value={chosen}
-                      onChange={(e) => setMatchingAnswer(q.id, i, e.target.value)}
-                    >
-                      <option value="">— Choisir —</option>
-                      {rights.map((r, j) => (
-                        <option key={j} value={r}>
-                          {r}
-                        </option>
-                      ))}
-                    </select>
+          {q.questionType === "MATCHING" &&
+            (() => {
+              const lefts = (q.metadata?.lefts as string[]) || [];
+              const rights = (q.metadata?.rights as string[]) || [];
+              const chosen = (structuredAnswers[q.id] as Record<string, string>) || {};
+              const usedRights = new Set(Object.values(chosen).filter(Boolean));
+
+              function pickLeft(i: number) {
+                if (chosen[String(i)]) {
+                  setMatchingAnswer(q.id, i, "");
+                  setArmedLeft(null);
+                  return;
+                }
+                setArmedLeft((prev) => (prev === i ? null : i));
+              }
+
+              function pickRight(value: string) {
+                if (armedLeft === null || usedRights.has(value)) return;
+                setMatchingAnswer(q.id, armedLeft, value);
+                setArmedLeft(null);
+              }
+
+              return (
+                <div className="mt-5 space-y-2">
+                  <p className="text-xs text-muted">
+                    Cliquez un élément à gauche, puis son équivalent à droite pour les associer.
+                  </p>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="space-y-2">
+                      {lefts.map((left, i) => {
+                        const pairedWith = chosen[String(i)];
+                        return (
+                          <button
+                            key={i}
+                            type="button"
+                            onClick={() => pickLeft(i)}
+                            className={`learn-option flex w-full items-center justify-between gap-2 ${
+                              pairedWith ? "is-paired" : armedLeft === i ? "is-armed" : ""
+                            }`}
+                          >
+                            <span>{left}</span>
+                            {pairedWith && (
+                              <span className="flex items-center gap-1 text-xs text-muted">
+                                <ArrowRight size={12} aria-hidden /> {pairedWith}
+                              </span>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <div className="space-y-2">
+                      {rights.map((r, j) => {
+                        const used = usedRights.has(r);
+                        return (
+                          <button
+                            key={j}
+                            type="button"
+                            disabled={used}
+                            onClick={() => pickRight(r)}
+                            className={`learn-option w-full ${
+                              used ? "is-paired is-disabled" : armedLeft !== null ? "is-armed" : ""
+                            }`}
+                          >
+                            {r}
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
-                );
-              })}
-            </div>
-          )}
+                </div>
+              );
+            })()}
 
           {q.questionType === "HOTSPOT" && !!q.metadata?.imageAssetId && (
             <HotspotClickImage
@@ -434,18 +483,26 @@ function QuizBody({ moduleId, quizId }: { moduleId: string; quizId: string }) {
             />
           )}
 
-          {q.questionType === "FILL_BLANK" && (
-            <div className="mt-5 space-y-2.5">
-              <p className="text-sm text-body">{String(q.metadata?.template ?? "")}</p>
-              <input
-                type="text"
-                className="learn-option w-full"
-                placeholder="Votre réponse…"
-                value={freeTextAnswers[q.id] || ""}
-                onChange={(e) => setFreeText(q.id, e.target.value)}
-              />
-            </div>
-          )}
+          {q.questionType === "FILL_BLANK" &&
+            (() => {
+              const template = String(q.metadata?.template ?? "");
+              const blankIndex = template.indexOf("___");
+              const before = blankIndex === -1 ? template : template.slice(0, blankIndex);
+              const after = blankIndex === -1 ? "" : template.slice(blankIndex + 3);
+              return (
+                <p className="mt-5 flex flex-wrap items-center gap-2 text-base leading-relaxed text-body">
+                  {before && <span>{before}</span>}
+                  <input
+                    type="text"
+                    className="learn-blank-input"
+                    placeholder="…"
+                    value={freeTextAnswers[q.id] || ""}
+                    onChange={(e) => setFreeText(q.id, e.target.value)}
+                  />
+                  {after && <span>{after}</span>}
+                </p>
+              );
+            })()}
 
           {q.questionType === "ESSAY" && (
             <textarea
