@@ -13,7 +13,10 @@ import ma.iatacademy.api.exception.ApiException;
 import ma.iatacademy.api.exception.ForbiddenException;
 import ma.iatacademy.api.exception.NotFoundException;
 import ma.iatacademy.api.repository.AssetRepository;
+import ma.iatacademy.api.repository.MediaFolderRepository;
 import ma.iatacademy.api.security.UserPrincipal;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.data.domain.PageRequest;
@@ -37,6 +40,8 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 public class MediaService {
+
+    private static final Logger log = LoggerFactory.getLogger(MediaService.class);
 
     private static final Set<String> VIDEO_EXT = Set.of("mp4", "webm", "m3u8", "ts");
     private static final Set<String> PDF_EXT = Set.of("pdf");
@@ -81,6 +86,7 @@ public class MediaService {
     private static final String BUNNY_STORAGE_PREFIX = "bunny:";
 
     private final AssetRepository assetRepository;
+    private final MediaFolderRepository mediaFolderRepository;
     private final MediaProperties mediaProperties;
     private final JwtProperties jwtProperties;
     private final BunnyStreamProperties bunnyStreamProperties;
@@ -88,7 +94,7 @@ public class MediaService {
 
     @Transactional
     public AssetResponse upload(MultipartFile file, String kindHint) {
-        return upload(file, kindHint, null);
+        return upload(file, kindHint, null, null);
     }
 
     /**
@@ -98,6 +104,12 @@ public class MediaService {
      */
     @Transactional
     public AssetResponse upload(MultipartFile file, String kindHint, UUID ownerId) {
+        return upload(file, kindHint, ownerId, null);
+    }
+
+    /** @param folderId media file-manager folder to file this asset under; null = root/unfiled. */
+    @Transactional
+    public AssetResponse upload(MultipartFile file, String kindHint, UUID ownerId, UUID folderId) {
         if (file == null || file.isEmpty()) {
             throw new ApiException("Fichier vide.");
         }
@@ -110,7 +122,7 @@ public class MediaService {
         assertWithinSizeLimit(kind, file.getSize());
 
         if (kind.equals("VIDEO") && bunnyStreamProperties.isEnabled() && BUNNY_UPLOADABLE_EXT.contains(ext)) {
-            return uploadToBunny(file, original, ext, ownerId);
+            return uploadToBunny(file, original, ext, ownerId, folderId);
         }
 
         String folder = switch (kind) {
@@ -139,6 +151,7 @@ public class MediaService {
                 .sizeBytes(file.getSize())
                 .assetKind(kind)
                 .ownerId(ownerId)
+                .folderId(folderId)
                 .build();
         asset = assetRepository.save(asset);
 
@@ -160,7 +173,7 @@ public class MediaService {
      * local disk. storagePath is set to "bunny:{guid}" so signStream() knows to hand back
      * Bunny's own HLS URL instead of our local file-serving one — see signStream() below.
      */
-    private AssetResponse uploadToBunny(MultipartFile file, String original, String ext, UUID ownerId) {
+    private AssetResponse uploadToBunny(MultipartFile file, String original, String ext, UUID ownerId, UUID folderId) {
         byte[] bytes;
         try {
             bytes = file.getBytes();
@@ -178,6 +191,7 @@ public class MediaService {
                 .sizeBytes(file.getSize())
                 .assetKind("VIDEO")
                 .ownerId(ownerId)
+                .folderId(folderId)
                 .build();
         asset = assetRepository.save(asset);
         return toResponse(asset);
@@ -272,11 +286,45 @@ public class MediaService {
      */
     @Transactional(readOnly = true)
     public PageResponse<AssetResponse> list(String kind, int page, int size) {
+        return list(kind, page, size, null);
+    }
+
+    /** @param folderId scopes results to one media-manager folder; null keeps the exact
+     *                   behavior of the 3-arg overload above (needed so AssetPicker and any
+     *                   other existing caller that never sends a folder stays unaffected). */
+    @Transactional(readOnly = true)
+    public PageResponse<AssetResponse> list(String kind, int page, int size, UUID folderId) {
         String normalizedKind = kind != null && VALID_KINDS.contains(kind.toUpperCase(Locale.ROOT))
                 ? kind.toUpperCase(Locale.ROOT)
                 : "IMAGE";
-        var result = assetRepository.findByAssetKindAndOwnerIdIsNullOrderByCreatedAtDesc(
-                normalizedKind, PageRequest.of(Math.max(page, 0), Math.min(Math.max(size, 1), 100)));
+        PageRequest pageable = PageRequest.of(Math.max(page, 0), Math.min(Math.max(size, 1), 100));
+        var result = folderId == null
+                ? assetRepository.findByAssetKindAndOwnerIdIsNullOrderByCreatedAtDesc(normalizedKind, pageable)
+                : assetRepository.findByAssetKindAndOwnerIdIsNullAndFolderIdOrderByCreatedAtDesc(normalizedKind, folderId, pageable);
+        return PageResponse.from(result.map(this::toResponse));
+    }
+
+    /** Root-level (unfiled) browsing for the media file manager — distinct from the 4-arg
+     *  list() above, which requires a non-null folderId to apply any folder filtering at all. */
+    @Transactional(readOnly = true)
+    public PageResponse<AssetResponse> listUnfiled(String kind, int page, int size) {
+        String normalizedKind = kind != null && VALID_KINDS.contains(kind.toUpperCase(Locale.ROOT))
+                ? kind.toUpperCase(Locale.ROOT)
+                : "IMAGE";
+        PageRequest pageable = PageRequest.of(Math.max(page, 0), Math.min(Math.max(size, 1), 100));
+        var result = assetRepository.findByAssetKindAndOwnerIdIsNullAndFolderIdIsNullOrderByCreatedAtDesc(normalizedKind, pageable);
+        return PageResponse.from(result.map(this::toResponse));
+    }
+
+    /** Kind-agnostic browsing (the media file manager's "all types" view) — see the
+     *  AssetRepository method comments for why this must not reuse the kind-defaulting
+     *  query paths above. */
+    @Transactional(readOnly = true)
+    public PageResponse<AssetResponse> listAllKinds(int page, int size, UUID folderId) {
+        PageRequest pageable = PageRequest.of(Math.max(page, 0), Math.min(Math.max(size, 1), 100));
+        var result = folderId == null
+                ? assetRepository.findByOwnerIdIsNullAndFolderIdIsNullOrderByCreatedAtDesc(pageable)
+                : assetRepository.findByOwnerIdIsNullAndFolderIdOrderByCreatedAtDesc(folderId, pageable);
         return PageResponse.from(result.map(this::toResponse));
     }
 
@@ -284,6 +332,40 @@ public class MediaService {
     public Asset getAsset(UUID id) {
         return assetRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Média introuvable."));
+    }
+
+    /** Deletes an asset's physical storage (Bunny video or local disk file, best-effort —
+     *  a stale/already-gone remote video shouldn't block cleanup of our own DB row) then
+     *  the DB row itself. Used by the media file manager's delete/recursive-folder-delete. */
+    @Transactional
+    public void deleteAsset(UUID id) {
+        Asset asset = getAsset(id);
+        if (asset.getStoragePath().startsWith(BUNNY_STORAGE_PREFIX)) {
+            String guid = asset.getStoragePath().substring(BUNNY_STORAGE_PREFIX.length());
+            try {
+                bunnyStreamClient.deleteVideo(guid);
+            } catch (ApiException e) {
+                log.warn("Bunny delete failed for asset {} (guid {}): {}", id, guid, e.getMessage());
+            }
+        } else {
+            try {
+                Files.deleteIfExists(Path.of(asset.getStoragePath()));
+            } catch (IOException e) {
+                log.warn("Local file delete failed for asset {}: {}", id, e.getMessage());
+            }
+        }
+        assetRepository.delete(asset);
+    }
+
+    /** Moves an asset into another media-manager folder; folderId null = move to root. */
+    @Transactional
+    public AssetResponse moveAsset(UUID assetId, UUID folderId) {
+        Asset asset = getAsset(assetId);
+        if (folderId != null && !mediaFolderRepository.existsById(folderId)) {
+            throw new NotFoundException("Dossier introuvable.");
+        }
+        asset.setFolderId(folderId);
+        return toResponse(assetRepository.save(asset));
     }
 
     private AssetResponse toResponse(Asset asset) {
@@ -294,7 +376,8 @@ public class MediaService {
                 asset.getSizeBytes(),
                 asset.getAssetKind(),
                 asset.getDurationSec(),
-                "/api/assets/" + asset.getId() + "/stream"
+                "/api/assets/" + asset.getId() + "/stream",
+                asset.getFolderId()
         );
     }
 

@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import ma.iatacademy.api.domain.entity.Asset;
 import ma.iatacademy.api.dto.common.PageResponse;
 import ma.iatacademy.api.dto.media.AssetResponse;
+import ma.iatacademy.api.dto.media.MoveAssetRequest;
 import ma.iatacademy.api.dto.media.SignedStreamResponse;
 import ma.iatacademy.api.security.UserPrincipal;
 import ma.iatacademy.api.service.MediaService;
@@ -29,9 +30,10 @@ public class AssetController {
     @PreAuthorize("hasAnyRole('ADMIN','FORMATEUR','ETUDIANT')")
     public ResponseEntity<AssetResponse> upload(
             @RequestParam("file") MultipartFile file,
-            @RequestParam(value = "kind", required = false) String kind
+            @RequestParam(value = "kind", required = false) String kind,
+            @RequestParam(value = "folderId", required = false) UUID folderId
     ) {
-        return ResponseEntity.ok(mediaService.upload(file, kind));
+        return ResponseEntity.ok(mediaService.upload(file, kind, null, folderId));
     }
 
     /** Bibliothèque de médias partagés (contenu pédagogique uniquement, jamais de documents privés) — pour réutiliser un asset au lieu de le re-uploader. */
@@ -40,9 +42,25 @@ public class AssetController {
     public ResponseEntity<PageResponse<AssetResponse>> list(
             @RequestParam(required = false) String kind,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "24") int size
+            @RequestParam(defaultValue = "24") int size,
+            @RequestParam(required = false) UUID folderId
     ) {
-        return ResponseEntity.ok(mediaService.list(kind, page, size));
+        return ResponseEntity.ok(mediaService.list(kind, page, size, folderId));
+    }
+
+    /** Media file manager only — permanently deletes the asset's physical storage too. */
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> delete(@PathVariable UUID id) {
+        mediaService.deleteAsset(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    /** Media file manager only — moves an asset between folders (folderId null = root). */
+    @PatchMapping("/{id}/move")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<AssetResponse> move(@PathVariable UUID id, @RequestBody MoveAssetRequest body) {
+        return ResponseEntity.ok(mediaService.moveAsset(id, body.folderId()));
     }
 
     @GetMapping("/{id}/stream")

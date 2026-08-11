@@ -41,4 +41,9 @@ public class Asset extends AuditableEntity {
     // documents, avatars) so access can be restricted to the owner + staff.
     @Column(name = "owner_id")
     private UUID ownerId;
+
+    // Null means unfiled/root in the admin media file manager. Plain UUID, no JPA
+    // relation — same pattern as ownerId above.
+    @Column(name = "folder_id")
+    private UUID folderId;
 }

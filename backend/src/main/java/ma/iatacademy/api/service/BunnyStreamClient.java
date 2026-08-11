@@ -70,4 +70,17 @@ public class BunnyStreamClient {
     public String embedUrl(String guid) {
         return "https://iframe.mediadelivery.net/embed/" + properties.getLibraryId() + "/" + guid;
     }
+
+    /** Permanently deletes a video from the library — used by the media file manager. */
+    public void deleteVideo(String guid) {
+        try {
+            restClient.delete()
+                    .uri("https://video.bunnycdn.com/library/{libraryId}/videos/{guid}", properties.getLibraryId(), guid)
+                    .header("AccessKey", properties.getApiKey())
+                    .retrieve()
+                    .toBodilessEntity();
+        } catch (RestClientException e) {
+            throw new ApiException("Échec de la suppression de la vidéo sur Bunny Stream : " + e.getMessage());
+        }
+    }
 }

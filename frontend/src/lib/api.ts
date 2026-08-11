@@ -135,10 +135,80 @@ export type AssetSummary = {
   assetKind: string;
   durationSec: number | null;
   streamUrl: string;
+  folderId?: string | null;
 };
 
 export async function listAssets(kind: "IMAGE" | "VIDEO" | "PDF" | "SLIDE" = "IMAGE", page = 0, size = 24) {
   const { data } = await apiClient.get<PageResponse<AssetSummary>>("/api/assets", { params: { kind, page, size } });
+  return data;
+}
+
+/** Admin media file manager — folders + Bunny/local-disk assets in one browsable tree. */
+export type FolderSummary = { id: string; name: string; parentId: string | null };
+export type BreadcrumbEntry = { id: string; name: string };
+export type MediaBrowseResponse = {
+  currentFolder: FolderSummary | null;
+  breadcrumbs: BreadcrumbEntry[];
+  childFolders: FolderSummary[];
+  assets: PageResponse<AssetSummary>;
+};
+
+export async function browseMedia(folderId?: string, kind?: string, page = 0, size = 24) {
+  const { data } = await apiClient.get<MediaBrowseResponse>("/api/media-folders/browse", {
+    params: { folderId, kind, page, size },
+  });
+  return data;
+}
+
+export async function createMediaFolder(name: string, parentId?: string) {
+  const { data } = await apiClient.post<FolderSummary>("/api/media-folders", { name, parentId });
+  return data;
+}
+
+export async function renameMediaFolder(id: string, name: string) {
+  const { data } = await apiClient.patch<FolderSummary>(`/api/media-folders/${id}`, { name });
+  return data;
+}
+
+export async function previewDeleteMediaFolder(id: string) {
+  const { data } = await apiClient.get<{ folderCount: number; assetCount: number }>(
+    `/api/media-folders/${id}/delete-preview`
+  );
+  return data;
+}
+
+export async function deleteMediaFolder(id: string) {
+  await apiClient.delete(`/api/media-folders/${id}`);
+}
+
+export async function deleteAsset(id: string) {
+  await apiClient.delete(`/api/assets/${id}`);
+}
+
+export async function moveAsset(id: string, folderId: string | null) {
+  const { data } = await apiClient.patch<AssetSummary>(`/api/assets/${id}/move`, { folderId });
+  return data;
+}
+
+export async function uploadAssetToFolder(
+  file: File,
+  kind: string,
+  folderId: string | null,
+  onProgress?: (percent: number) => void
+) {
+  const form = new FormData();
+  form.append("file", file);
+  form.append("kind", kind);
+  if (folderId) form.append("folderId", folderId);
+  const { data } = await apiClient.post<AssetSummary>("/api/assets/upload", form, {
+    headers: { "Content-Type": "multipart/form-data" },
+    onUploadProgress: onProgress
+      ? (evt) => {
+          if (!evt.total) return;
+          onProgress(Math.round((evt.loaded / evt.total) * 100));
+        }
+      : undefined,
+  });
   return data;
 }
 

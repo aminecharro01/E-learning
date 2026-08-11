@@ -9,6 +9,7 @@ public record AssetResponse(
         long sizeBytes,
         String assetKind,
         Integer durationSec,
-        String streamPath
+        String streamPath,
+        UUID folderId
 ) {
 }
