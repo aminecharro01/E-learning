@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { CheckCircle2, Circle } from "lucide-react";
 import {
   createStageSignoffInvite,
   getStageDossier,
@@ -135,9 +136,19 @@ export default function AdminStagePage() {
                   >
                     <span className="block font-medium">{item.learnerName}</span>
                     <span className="block text-xs opacity-80">{item.learnerEmail}</span>
-                    <span className="mt-1 block text-[11px]">
-                      Stage {item.stageComplete ? "✓" : "…"} · Soutenance{" "}
-                      {item.soutenanceComplete ? "✓" : "…"}
+                    <span className="mt-1 flex flex-wrap items-center gap-1 text-[11px]">
+                      Stage{" "}
+                      {item.stageComplete ? (
+                        <CheckCircle2 size={12} aria-hidden />
+                      ) : (
+                        <Circle size={12} aria-hidden />
+                      )}{" "}
+                      · Soutenance{" "}
+                      {item.soutenanceComplete ? (
+                        <CheckCircle2 size={12} aria-hidden />
+                      ) : (
+                        <Circle size={12} aria-hidden />
+                      )}
                     </span>
                   </button>
                 </li>

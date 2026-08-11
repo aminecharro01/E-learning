@@ -3,6 +3,7 @@
 // Adapted from TailAdmin (MIT License) - https://github.com/TailAdmin/free-nextjs-admin-dashboard
 // Modified: reconnected to Spring Boot API, removed mock data, added role-based rendering
 
+import { Pencil, Eye, Trash2, Blocks, CheckCircle2, CircleMinus } from "lucide-react";
 import { btn } from "@/lib/ui";
 
 type IconButtonProps = {
@@ -34,74 +35,21 @@ export function IconButton({ label, onClick, tone = "default", children }: IconB
 }
 
 export function IconEdit() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <path
-        d="M4 20h4l10.5-10.5a2.121 2.121 0 0 0-3-3L5 17v3z"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path d="M13.5 6.5l3 3" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-    </svg>
-  );
+  return <Pencil size={16} aria-hidden />;
 }
 
 export function IconEye() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <path
-        d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"
-        stroke="currentColor"
-        strokeWidth="1.8"
-      />
-      <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.8" />
-    </svg>
-  );
+  return <Eye size={16} aria-hidden />;
 }
 
 export function IconTrash() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <path d="M3 6h18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-      <path
-        d="M8 6V4h8v2M19 6l-1 14H6L5 6"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
+  return <Trash2 size={16} aria-hidden />;
 }
 
 export function IconBlocks() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <rect x="3" y="3" width="8" height="8" rx="1.5" stroke="currentColor" strokeWidth="1.8" />
-      <rect x="13" y="3" width="8" height="8" rx="1.5" stroke="currentColor" strokeWidth="1.8" />
-      <rect x="3" y="13" width="8" height="8" rx="1.5" stroke="currentColor" strokeWidth="1.8" />
-      <rect x="13" y="13" width="8" height="8" rx="1.5" stroke="currentColor" strokeWidth="1.8" />
-    </svg>
-  );
+  return <Blocks size={16} aria-hidden />;
 }
 
 export function IconPublish({ on }: { on: boolean }) {
-  return on ? (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <path
-        d="M20 7L9 18l-5-5"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  ) : (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <circle cx="12" cy="12" r="8" stroke="currentColor" strokeWidth="1.8" />
-      <path d="M8 12h8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-    </svg>
-  );
+  return on ? <CheckCircle2 size={16} aria-hidden /> : <CircleMinus size={16} aria-hidden />;
 }

@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { Check } from "lucide-react";
 
 export type StepStatus = "done" | "current" | "pending";
 
@@ -34,7 +35,7 @@ export function Step({ status, title, isLast = false, children }: StepProps) {
         className={`relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold ${dotClass}`}
         aria-hidden
       >
-        {status === "done" ? "✓" : ""}
+        {status === "done" ? <Check size={14} aria-hidden /> : ""}
       </span>
       <div className="min-w-0 flex-1 pt-0.5">
         {title}

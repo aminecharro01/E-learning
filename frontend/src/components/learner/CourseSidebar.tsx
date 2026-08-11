@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { Lock } from "lucide-react";
 import type { Lesson, ModuleDetail, ModuleLearnerStatus, ModuleQuizItem } from "@/types/domain";
 import { IconBadge, IconCheck, IconCompass, IconPlane, IconTower } from "@/components/brand/IatIcons";
 import { btn } from "@/lib/ui";
@@ -220,9 +221,7 @@ export function CourseSidebar({
                     aria-label={open ? "Replier le module" : "Déplier le module"}
                   >
                     {mod.locked ? (
-                      <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-                        <path d="M17 8h-1V6a4 4 0 0 0-8 0v2H7a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V10a2 2 0 0 0-2-2zm-7-2a2 2 0 0 1 4 0v2h-4V6zm7 14H7V10h10v10z" />
-                      </svg>
+                      <Lock size={11} aria-hidden />
                     ) : mod.learnerStatus === "COMPLETED" ? (
                       <IconCheck size={12} />
                     ) : (

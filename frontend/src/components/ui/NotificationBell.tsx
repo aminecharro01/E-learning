@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Bell } from "lucide-react";
 import { getMyNotifications, markNotificationRead } from "@/lib/api";
 import type { AppNotification } from "@/types/domain";
 import { toast } from "@/lib/toast-store";
@@ -82,7 +83,7 @@ export function NotificationBell() {
         title="Notifications"
         onClick={() => setOpen((v) => !v)}
       >
-        🔔
+        <Bell size={18} aria-hidden />
         {unreadCount > 0 && (
           <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-[var(--danger)] px-1 text-[10px] font-semibold text-[var(--danger-fg)]">
             {unreadCount > 9 ? "9+" : unreadCount}

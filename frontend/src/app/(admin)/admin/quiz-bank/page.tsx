@@ -12,6 +12,7 @@ import {
 } from "@dnd-kit/core";
 import { SortableContext, arrayMove, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { ArrowLeft, ArrowRight, GripVertical, CheckCircle2, Circle, Image as ImageIcon } from "lucide-react";
 import {
   deleteQuizQuestion,
   duplicateQuiz,
@@ -440,7 +441,7 @@ export default function QuizBankPage() {
                   void refreshQuizzes(p, filterModuleId || undefined);
                 }}
               >
-                ←
+                <ArrowLeft size={14} aria-hidden />
               </button>
               <button
                 type="button"
@@ -452,7 +453,7 @@ export default function QuizBankPage() {
                   void refreshQuizzes(p, filterModuleId || undefined);
                 }}
               >
-                →
+                <ArrowRight size={14} aria-hidden />
               </button>
             </div>
           )}
@@ -519,7 +520,7 @@ export default function QuizBankPage() {
               </p>
 
               {questions.length > 1 && (
-                <p className="text-xs text-muted">Glissez-déposez (⋮⋮) pour réordonner les questions.</p>
+                <p className="text-xs text-muted">Glissez-déposez pour réordonner les questions.</p>
               )}
               <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEndQuestions}>
                 <SortableContext items={questions.map((q) => q.id)} strategy={verticalListSortingStrategy}>
@@ -719,21 +720,25 @@ function SortableQuestionItem({
             {...attributes}
             {...listeners}
           >
-            ⋮⋮
+            <GripVertical size={14} aria-hidden />
           </button>
           <div className="min-w-0 flex-1">
             <p className="nav-group-label text-[11px] font-semibold uppercase tracking-wide">
               Q{i + 1} · {q.questionType}
             </p>
             <p className="mt-1 text-sm font-medium text-heading">{q.prompt}</p>
-            {q.imageAssetId && <p className="mt-1 text-[11px] text-muted">🖼 Image jointe</p>}
+            {q.imageAssetId && (
+              <p className="mt-1 flex items-center gap-1 text-[11px] text-muted">
+                <ImageIcon size={12} aria-hidden /> Image jointe
+              </p>
+            )}
             <ul className="mt-2 space-y-0.5">
               {q.options?.map((o) => (
                 <li
                   key={o.id ?? o.label}
-                  className={`text-xs ${o.correct ? "font-medium text-[var(--alert-success-fg)]" : "text-muted"}`}
+                  className={`flex items-center gap-1 text-xs ${o.correct ? "font-medium text-[var(--alert-success-fg)]" : "text-muted"}`}
                 >
-                  {o.correct ? "✓ " : "○ "}
+                  {o.correct ? <CheckCircle2 size={12} aria-hidden /> : <Circle size={12} aria-hidden />}
                   {o.label}
                 </li>
               ))}

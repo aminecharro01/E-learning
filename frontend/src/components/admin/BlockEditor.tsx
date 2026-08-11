@@ -25,6 +25,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { useEffect, useMemo, useState, useRef } from "react";
+import { GripVertical } from "lucide-react";
 import apiClient from "@/lib/api-client";
 import { TipTapToolbar } from "@/components/admin/TipTapToolbar";
 import { VideoEmbed } from "@/components/admin/tiptap/VideoEmbed";
@@ -179,7 +180,7 @@ function SortableBlock({
           {...attributes}
           {...listeners}
         >
-          ⋮⋮ {block.blockType}
+          <GripVertical size={14} aria-hidden /> {block.blockType}
         </button>
         <button
           type="button"

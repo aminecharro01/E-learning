@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { CheckCircle2, Circle } from "lucide-react";
 import {
   getLearnerProgress,
   listLearners,
@@ -150,7 +151,7 @@ export default function AdminLearnersPage() {
                                 : "opacity-60"
                             }
                           >
-                            {l.completed ? "✓" : "○"}
+                            {l.completed ? <CheckCircle2 size={14} aria-hidden /> : <Circle size={14} aria-hidden />}
                           </span>
                         </li>
                       ))}

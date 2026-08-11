@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 import { iat } from "./content";
 import { Reveal } from "./Reveal";
 
@@ -80,7 +81,7 @@ export function LandingExpertise() {
                 onClick={prev}
                 aria-label="Formation précédente"
               >
-                ←
+                <ArrowLeft size={18} aria-hidden />
               </button>
               <button
                 type="button"
@@ -88,7 +89,7 @@ export function LandingExpertise() {
                 onClick={next}
                 aria-label="Formation suivante"
               >
-                →
+                <ArrowRight size={18} aria-hidden />
               </button>
             </div>
           </div>

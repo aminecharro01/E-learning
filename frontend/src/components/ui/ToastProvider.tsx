@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { X } from "lucide-react";
 import { subscribeToasts, toast, type ToastItem } from "@/lib/toast-store";
 
 const VARIANT_ALERT_CLASS: Record<ToastItem["variant"], string> = {
@@ -37,7 +38,7 @@ export function ToastProvider() {
             aria-label="Fermer la notification"
             className="shrink-0 opacity-70 hover:opacity-100"
           >
-            ✕
+            <X size={16} aria-hidden />
           </button>
         </div>
       ))}

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { ArrowRight } from "lucide-react";
 import { getMyProgress, updateModule } from "@/lib/api";
 import { Modal } from "@/components/admin/Modal";
 import { Skeleton } from "@/components/ui/Skeleton";
@@ -73,8 +74,8 @@ function AdminModuleCard({
           <Link href={`/app/learn/${module.id}`} className={btn.neutralXs}>
             Aperçu
           </Link>
-          <Link href={`/admin/modules/${module.id}`} className={btn.primaryXs}>
-            Éditer →
+          <Link href={`/admin/modules/${module.id}`} className={`${btn.primaryXs} inline-flex items-center gap-1`}>
+            Éditer <ArrowRight size={12} aria-hidden />
           </Link>
         </div>
       </div>

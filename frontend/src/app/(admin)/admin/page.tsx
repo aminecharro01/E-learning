@@ -5,6 +5,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { ChevronRight } from "lucide-react";
 import { getAdminStats, getMyProgress, getPendingReviewAttempts } from "@/lib/api";
 import type { AdminStats, Module, ProgressResponse } from "@/types/domain";
 import { ApiClientError } from "@/lib/api-client";
@@ -265,7 +266,9 @@ function Shortcut({ href, label }: { href: string; label: string }) {
         className="flex min-h-11 items-center justify-between rounded-lg px-3 py-2.5 text-sm text-body transition-colors hover:bg-surface-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ring)]"
       >
         <span>{label}</span>
-        <span className="text-muted" aria-hidden="true">→</span>
+        <span className="text-muted" aria-hidden="true">
+          <ChevronRight size={16} />
+        </span>
       </Link>
     </li>
   );

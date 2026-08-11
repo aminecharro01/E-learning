@@ -3,7 +3,7 @@
 import { useEffect, useState, type MouseEvent as ReactMouseEvent, type TouchEvent as ReactTouchEvent } from "react";
 import { useFieldArray, useForm, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Plus, X } from "lucide-react";
+import { Plus, X, ArrowRight } from "lucide-react";
 import { questionFormSchema, type QuestionFormValues } from "./schemas";
 import { FormField, FormSection, fieldClass } from "./FormField";
 import { resolveAssetUrl, uploadMedia } from "@/lib/media";
@@ -245,7 +245,7 @@ export function QuestionForm({
             <div key={field.id} className="flex items-center gap-2">
               <input className={fieldClass()} placeholder="Élément" {...register(`matchingPairs.${index}.left`)} />
               <span className="text-muted" aria-hidden>
-                →
+                <ArrowRight size={16} />
               </span>
               <input className={fieldClass()} placeholder="Correspond à" {...register(`matchingPairs.${index}.right`)} />
               {matching.fields.length > 2 && (
@@ -454,7 +454,7 @@ function HotspotZoneDrawer({
               }}
               aria-label="Retirer cette zone"
             >
-              ✕
+              <X size={10} aria-hidden />
             </button>
           </div>
         ))}

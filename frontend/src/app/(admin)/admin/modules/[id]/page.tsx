@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import { ArrowLeft } from "lucide-react";
 import {
   createLesson,
   deleteLesson,
@@ -258,8 +259,8 @@ export default function AdminModuleStudioPage() {
     return (
       <div className="space-y-3">
         <p className="alert alert-error">{error || "Module introuvable."}</p>
-        <Link href="/admin/modules" className="text-sm text-primary hover:underline">
-          ← Retour aux modules
+        <Link href="/admin/modules" className="inline-flex items-center gap-1 text-sm text-primary hover:underline">
+          <ArrowLeft size={14} aria-hidden /> Retour aux modules
         </Link>
       </div>
     );
@@ -271,9 +272,9 @@ export default function AdminModuleStudioPage() {
     <div className="iat-board -m-2 flex min-h-[calc(100vh-7rem)] flex-col gap-3 lg:-m-4">
       <section className="boarding-pass mx-2 mt-2 !mb-0 lg:mx-4" aria-label="Atelier du module">
         <div className="bp-main">
-          <Link href="/admin/modules" className="bp-eyebrow !mb-2 inline-flex">
+          <Link href="/admin/modules" className="bp-eyebrow !mb-2 inline-flex items-center gap-1">
             <IconPlane size={14} />
-            ← Catalogue
+            <ArrowLeft size={14} aria-hidden /> Catalogue
           </Link>
           <p className="learn-mod-meta mb-1">
             {yearLabel(module.yearNumber ?? 1)}

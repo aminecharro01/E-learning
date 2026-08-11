@@ -4,6 +4,7 @@
 // Modified: reconnected to Spring Boot API, removed mock data, added role-based rendering
 
 import { useEffect, type ReactNode } from "react";
+import { X } from "lucide-react";
 import { btn } from "@/lib/ui";
 
 type Props = {
@@ -45,7 +46,7 @@ export function Modal({ open, title, onClose, children, size = "md" }: Props) {
         <div className="mb-4 flex items-start justify-between gap-3">
           <h2 className="text-lg font-semibold text-heading">{title}</h2>
           <button type="button" onClick={onClose} aria-label="Fermer" className={btn.neutralSm}>
-            ✕
+            <X size={16} aria-hidden />
           </button>
         </div>
         {children}

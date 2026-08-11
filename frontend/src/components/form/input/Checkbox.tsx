@@ -1,4 +1,5 @@
 import type React from "react";
+import { Check } from "lucide-react";
 
 /** Adapted from TailAdmin (MIT) */
 interface CheckboxProps {
@@ -34,22 +35,11 @@ const Checkbox: React.FC<CheckboxProps> = ({
           disabled={disabled}
         />
         {checked && (
-          <svg
-            className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 transform"
-            xmlns="http://www.w3.org/2000/svg"
-            width="14"
-            height="14"
-            viewBox="0 0 14 14"
-            fill="none"
-          >
-            <path
-              d="M11.6666 3.5L5.24992 9.91667L2.33325 7"
-              stroke="white"
-              strokeWidth="1.94437"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
+          <Check
+            className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 transform text-white"
+            size={14}
+            strokeWidth={2.5}
+          />
         )}
       </div>
       {label && (

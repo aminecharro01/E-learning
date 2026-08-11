@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { X } from "lucide-react";
 import { iat } from "./content";
 import { BrandLogo } from "@/components/brand/BrandLogo";
 import { ThemeToggleButton } from "@/components/ThemeToggleButton";
@@ -90,10 +91,10 @@ export function LandingHeader() {
               <button
                 type="button"
                 onClick={() => setOpen(false)}
-                className="flex h-11 w-11 items-center justify-center rounded-full text-2xl leading-none"
+                className="flex h-11 w-11 items-center justify-center rounded-full"
                 aria-label="Fermer le menu"
               >
-                ×
+                <X size={22} aria-hidden />
               </button>
             </div>
             <nav className="flex flex-col gap-3">

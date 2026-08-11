@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 import { getLesson, markLessonComplete, sendLessonHeartbeat } from "@/lib/api";
 import { useCourse } from "@/components/learner/CourseProvider";
 import { LessonBlocks } from "@/components/learner/LessonBlocks";
@@ -120,8 +121,11 @@ function SectionContent() {
 
           <div className="mt-8 flex flex-wrap items-center justify-between gap-3 border-t border-theme pt-6">
             {prev ? (
-              <Link href={`/app/learn/${params.moduleId}/s/${prev.id}`} className={btn.secondary}>
-                ← {prev.title}
+              <Link
+                href={`/app/learn/${params.moduleId}/s/${prev.id}`}
+                className={`${btn.secondary} inline-flex items-center gap-1`}
+              >
+                <ArrowLeft size={16} aria-hidden /> {prev.title}
               </Link>
             ) : (
               <span />
@@ -137,8 +141,8 @@ function SectionContent() {
                 {busy ? "…" : next || moduleQuiz ? "Terminer et continuer" : "Marquer terminé"}
               </button>
               {next && (
-                <button type="button" onClick={goNext} className={btn.neutral}>
-                  Suivant →
+                <button type="button" onClick={goNext} className={`${btn.neutral} inline-flex items-center gap-1`}>
+                  Suivant <ArrowRight size={16} aria-hidden />
                 </button>
               )}
               {!next && moduleQuiz && (

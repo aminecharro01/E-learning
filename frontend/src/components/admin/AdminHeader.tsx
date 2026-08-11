@@ -3,6 +3,7 @@
 // Adapted from TailAdmin (MIT License) - https://github.com/TailAdmin/free-nextjs-admin-dashboard
 
 import { useRouter } from "next/navigation";
+import { X, Menu } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useSidebar } from "@/context/SidebarContext";
 import { ThemeToggleButton } from "@/components/ThemeToggleButton";
@@ -31,7 +32,7 @@ export function AdminHeader() {
               }
             }}
           >
-            {isMobileOpen ? "✕" : "☰"}
+            {isMobileOpen ? <X size={20} aria-hidden /> : <Menu size={20} aria-hidden />}
           </button>
 
           <div className="hidden lg:block">

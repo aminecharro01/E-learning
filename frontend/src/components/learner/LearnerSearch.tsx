@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { Search } from "lucide-react";
 import { searchCatalog } from "@/lib/api";
 import type { SearchResultItem } from "@/types/domain";
 import { btn } from "@/lib/ui";
@@ -56,7 +57,7 @@ export function LearnerSearch() {
         title="Rechercher"
         onClick={() => setOpen((v) => !v)}
       >
-        🔍
+        <Search size={18} aria-hidden />
       </button>
 
       {open && (

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import { ArrowRight } from "lucide-react";
 import { api } from "@/lib/api";
 import { QuizTimer } from "@/components/QuizTimer";
 import { useCourse } from "@/components/learner/CourseProvider";
@@ -404,7 +405,9 @@ function QuizBody({ moduleId, quizId }: { moduleId: string; quizId: string }) {
                 return (
                   <div key={i} className="flex items-center gap-3">
                     <span className="learn-option flex-1 !cursor-default">{left}</span>
-                    <span className="text-muted">→</span>
+                    <span className="text-muted">
+                      <ArrowRight size={16} aria-hidden />
+                    </span>
                     <select
                       className="learn-option flex-1"
                       value={chosen}
