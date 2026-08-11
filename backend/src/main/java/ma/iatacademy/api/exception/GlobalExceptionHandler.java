@@ -1,5 +1,8 @@
 package ma.iatacademy.api.exception;
 
+import org.apache.catalina.connector.ClientAbortException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
@@ -14,6 +17,22 @@ import java.util.Map;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
+    /**
+     * Thrown by Tomcat when a client disconnects mid-download — routine for large media
+     * streams (a browser cancelling a video/PDF/image request when the user navigates away
+     * or scrubs playback). Falling through to handleGeneric() below tried to write a JSON
+     * error body onto a response whose headers were already committed with the asset's own
+     * Content-Type (e.g. video/mp4), which Jackson can't do — logged as a confusing
+     * secondary "No converter for HashMap" failure that masked what actually happened.
+     * void + no body write here: the client is already gone, there's nothing to send.
+     */
+    @ExceptionHandler(ClientAbortException.class)
+    public void handleClientAbort(ClientAbortException ex) {
+        log.debug("Client disconnected mid-response (likely a cancelled media download): {}", ex.getMessage());
+    }
 
     @ExceptionHandler(ApiException.class)
     public ResponseEntity<Map<String, Object>> handleApi(ApiException ex) {
