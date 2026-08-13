@@ -489,106 +489,13 @@ public class QuizService {
         return switch (question.getQuestionType()) {
             case SINGLE_CHOICE, MULTI_CHOICE, TRUE_FALSE ->
                     isAnswerCorrect(question, choiceAnswers == null ? List.of() : choiceAnswers.getOrDefault(qid, List.of()));
-            case FILL_BLANK -> isFillBlankCorrect(question, freeTextAnswers == null ? null : freeTextAnswers.get(qid));
-            case MATCHING -> isMatchingCorrect(question, structuredAnswers == null ? null : structuredAnswers.get(qid));
-            case HOTSPOT -> isHotspotCorrect(question, structuredAnswers == null ? null : structuredAnswers.get(qid));
             case ESSAY -> false;
         };
     }
 
-    private boolean isFillBlankCorrect(Question question, String submitted) {
-        if (submitted == null || submitted.isBlank() || question.getMetadata() == null) {
-            return false;
-        }
-        Object acceptedRaw = question.getMetadata().get("acceptedAnswers");
-        if (!(acceptedRaw instanceof List<?> accepted)) {
-            return false;
-        }
-        String normalizedSubmitted = normalizeAnswer(submitted);
-        return accepted.stream()
-                .filter(Objects::nonNull)
-                .map(Object::toString)
-                .map(this::normalizeAnswer)
-                .anyMatch(a -> a.equals(normalizedSubmitted));
-    }
-
-    /** Insensible à la casse, aux espaces superflus et aux accents. */
-    private String normalizeAnswer(String s) {
-        String stripped = java.text.Normalizer.normalize(s.trim().toLowerCase(Locale.ROOT), java.text.Normalizer.Form.NFD)
-                .replaceAll("\\p{M}", "");
-        return stripped.replaceAll("\\s+", " ");
-    }
-
-    private boolean isMatchingCorrect(Question question, Object submittedRaw) {
-        if (!(submittedRaw instanceof Map<?, ?> submitted) || question.getMetadata() == null) {
-            return false;
-        }
-        Object pairsRaw = question.getMetadata().get("pairs");
-        if (!(pairsRaw instanceof List<?> pairs) || pairs.isEmpty()) {
-            return false;
-        }
-        for (int i = 0; i < pairs.size(); i++) {
-            if (!(pairs.get(i) instanceof Map<?, ?> pair)) {
-                return false;
-            }
-            Object expectedRight = pair.get("right");
-            Object submittedRight = submitted.get(String.valueOf(i));
-            if (expectedRight == null || submittedRight == null || !expectedRight.toString().equals(submittedRight.toString())) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    /** Simplification assumée : une seule zone cible par question (zones[0]), coordonnées en pourcentage. */
-    /** Correct if the click falls in ANY drawn zone — real hotspot exercises commonly
-     *  accept several valid target regions, not just a single one. */
-    private boolean isHotspotCorrect(Question question, Object submittedRaw) {
-        if (!(submittedRaw instanceof Map<?, ?> submitted) || question.getMetadata() == null) {
-            return false;
-        }
-        Object zonesRaw = question.getMetadata().get("zones");
-        if (!(zonesRaw instanceof List<?> zones) || zones.isEmpty()) {
-            return false;
-        }
-        Double x = toDouble(submitted.get("x"));
-        Double y = toDouble(submitted.get("y"));
-        if (x == null || y == null) {
-            return false;
-        }
-        for (Object zoneRaw : zones) {
-            if (!(zoneRaw instanceof Map<?, ?> zone)) continue;
-            Double zx = toDouble(zone.get("x"));
-            Double zy = toDouble(zone.get("y"));
-            Double zw = toDouble(zone.get("width"));
-            Double zh = toDouble(zone.get("height"));
-            if (zx == null || zy == null || zw == null || zh == null) continue;
-            if (x >= zx && x <= zx + zw && y >= zy && y <= zy + zh) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private Double toDouble(Object o) {
-        if (o instanceof Number n) {
-            return n.doubleValue();
-        }
-        if (o instanceof String s) {
-            try {
-                return Double.parseDouble(s);
-            } catch (NumberFormatException e) {
-                return null;
-            }
-        }
-        return null;
-    }
-
     /**
-     * Ne renvoie jamais la réponse attendue au client pendant la tentative : les paires
-     * correctes (MATCHING), les zones (HOTSPOT) et les réponses acceptées (FILL_BLANK)
-     * sont retirées ; seul ce qui sert à afficher la question (image, gauche du
-     * matching…) est conservé.
+     * Ne renvoie jamais la réponse attendue au client pendant la tentative — seul ce qui
+     * sert à afficher la question (image, longueur max pour ESSAY…) est conservé.
      */
     private Map<String, Object> redactMetadata(Question question) {
         if (question.getMetadata() == null) {
@@ -596,28 +503,6 @@ public class QuizService {
         }
         Map<String, Object> metadata = question.getMetadata();
         return switch (question.getQuestionType()) {
-            case MATCHING -> {
-                Object pairsRaw = metadata.get("pairs");
-                if (!(pairsRaw instanceof List<?> pairs)) yield Map.of();
-                List<Object> lefts = pairs.stream()
-                        .filter(p -> p instanceof Map<?, ?>)
-                        .map(p -> ((Map<?, ?>) p).get("left"))
-                        .collect(Collectors.toList());
-                List<Object> rights = pairs.stream()
-                        .filter(p -> p instanceof Map<?, ?>)
-                        .map(p -> ((Map<?, ?>) p).get("right"))
-                        .collect(Collectors.toList());
-                Collections.shuffle(rights);
-                yield Map.of("lefts", lefts, "rights", rights);
-            }
-            case HOTSPOT -> {
-                Object imageAssetId = metadata.get("imageAssetId");
-                yield imageAssetId != null ? Map.of("imageAssetId", imageAssetId) : Map.of();
-            }
-            case FILL_BLANK -> {
-                Object template = metadata.get("template");
-                yield template != null ? Map.of("template", template) : Map.of();
-            }
             case ESSAY -> {
                 Object maxLength = metadata.get("maxLength");
                 yield maxLength != null ? Map.of("maxLength", maxLength) : Map.of();
@@ -744,11 +629,12 @@ public class QuizService {
 
         validateQuestionOptions(request);
 
+        int nextOrder = questionRepository.findByQuizIdOrderByOrderIndexAsc(quizId).size();
         Question question = Question.builder()
                 .quiz(quiz)
                 .prompt(request.prompt().trim())
                 .questionType(request.questionType())
-                .orderIndex(request.orderIndex())
+                .orderIndex(nextOrder)
                 .explanation(request.explanation())
                 .imageAssetId(request.imageAssetId())
                 .metadata(request.metadata())
@@ -778,7 +664,6 @@ public class QuizService {
 
         question.setPrompt(request.prompt().trim());
         question.setQuestionType(request.questionType());
-        question.setOrderIndex(request.orderIndex());
         question.setExplanation(request.explanation());
         question.setImageAssetId(request.imageAssetId());
         question.setMetadata(request.metadata());
@@ -852,6 +737,14 @@ public class QuizService {
             questionRepository.save(clone);
         }
         return toAdmin(copy);
+    }
+
+    /** Supprime le quiz et tout ce qui en dépend (questions, options, tentatives) — cascade DB. */
+    @Transactional
+    public void deleteQuiz(UUID quizId) {
+        Quiz quiz = quizRepository.findById(quizId)
+                .orElseThrow(() -> new NotFoundException("Quiz introuvable."));
+        quizRepository.delete(quiz);
     }
 
     /** Copie profonde d'une question (métadonnées + options), sans rattachement quiz/banque — l'appelant fixe la cible. */
@@ -948,25 +841,7 @@ public class QuizService {
     }
 
     private void validateNewTypeMetadata(CreateQuestionRequest request) {
-        Map<String, Object> metadata = request.metadata();
         switch (request.questionType()) {
-            case MATCHING -> {
-                if (metadata == null || !(metadata.get("pairs") instanceof List<?> pairs) || pairs.size() < 2) {
-                    throw new ApiException("Le matching nécessite au moins 2 paires (gauche/droite).");
-                }
-            }
-            case HOTSPOT -> {
-                if (metadata == null || metadata.get("imageAssetId") == null
-                        || !(metadata.get("zones") instanceof List<?> zones) || zones.isEmpty()) {
-                    throw new ApiException("Le hotspot nécessite une image et au moins une zone cible.");
-                }
-            }
-            case FILL_BLANK -> {
-                if (metadata == null || metadata.get("template") == null
-                        || !(metadata.get("acceptedAnswers") instanceof List<?> accepted) || accepted.isEmpty()) {
-                    throw new ApiException("Le texte à trous nécessite un modèle de phrase et au moins une réponse acceptée.");
-                }
-            }
             case ESSAY -> {
                 // Aucune métadonnée obligatoire — maxLength est optionnel.
             }

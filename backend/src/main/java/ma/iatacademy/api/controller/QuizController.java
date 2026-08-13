@@ -120,6 +120,13 @@ public class QuizController {
         return ResponseEntity.status(HttpStatus.CREATED).body(quizService.duplicateQuiz(id));
     }
 
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN','FORMATEUR')")
+    public ResponseEntity<Void> deleteQuiz(@PathVariable UUID id) {
+        quizService.deleteQuiz(id);
+        return ResponseEntity.noContent().build();
+    }
+
     @PostMapping(value = "/{id}/questions/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasAnyRole('ADMIN','FORMATEUR')")
     public ResponseEntity<QuestionImportResponse> importQuestions(

@@ -31,9 +31,9 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * Import Excel des questions à choix (SINGLE_CHOICE/MULTI_CHOICE/TRUE_FALSE) — les
- * types plus riches (matching/hotspot/fill-blank/essay) restent créés à la main, un
- * tableur générique pour ceux-là serait plus confus qu'utile. Colonnes attendues
+ * Import Excel des questions à choix (SINGLE_CHOICE/MULTI_CHOICE/TRUE_FALSE) — ESSAY
+ * reste créée à la main, un tableur générique pour ce type serait plus confus qu'utile.
+ * Colonnes attendues
  * (avec ligne d'en-tête) : Énoncé | Type | Option1 | Correcte1 | Option2 | Correcte2 |
  * Option3 | Correcte3 | Option4 | Correcte4. Même pattern de lecture que
  * GroupImportService (POI déjà en dépendance, pas de tout-ou-rien sur erreur de ligne).

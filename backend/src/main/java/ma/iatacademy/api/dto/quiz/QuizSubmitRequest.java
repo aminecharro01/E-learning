@@ -8,8 +8,7 @@ import java.util.UUID;
 
 /**
  * answers: questionId -> selected optionIds (SINGLE_CHOICE/MULTI_CHOICE/TRUE_FALSE).
- * freeTextAnswers: questionId -> texte libre (FILL_BLANK/ESSAY).
- * structuredAnswers: questionId -> structure de réponse (MATCHING: paires soumises ; HOTSPOT: point cliqué).
+ * freeTextAnswers: questionId -> texte libre (ESSAY).
  */
 public record QuizSubmitRequest(
         @NotNull UUID attemptId,

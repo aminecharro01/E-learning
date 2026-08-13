@@ -55,10 +55,8 @@ public class Question extends AuditableEntity {
     private UUID imageAssetId;
 
     /**
-     * Configuration spécifique au type : MATCHING → {@code {pairs:[{left,right}]}},
-     * HOTSPOT → {@code {imageAssetId, zones:[{x,y,width,height}]}} (pourcentages),
-     * FILL_BLANK → {@code {acceptedAnswers:[...]}} (un seul trou par question),
-     * ESSAY → {@code {maxLength}} (optionnel). Null pour les types à choix existants.
+     * Configuration spécifique au type : ESSAY → {@code {maxLength}} (optionnel).
+     * Null pour les types à choix (SINGLE_CHOICE/MULTI_CHOICE/TRUE_FALSE).
      */
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb")

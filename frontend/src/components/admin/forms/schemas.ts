@@ -85,38 +85,13 @@ export const questionOptionSchema = z.object({
   orderIndex: intField(0),
 });
 
-export const matchingPairSchema = z.object({
-  left: z.string().trim().min(1, "Élément gauche vide"),
-  right: z.string().trim().min(1, "Élément droit vide"),
-});
-
-export const hotspotZoneSchema = z.object({
-  x: intField(0, 100),
-  y: intField(0, 100),
-  width: intField(1, 100),
-  height: intField(1, 100),
-});
-
 export const questionFormSchema = z
   .object({
     prompt: z.string().trim().min(3, "Énoncé trop court"),
-    questionType: z.enum([
-      "SINGLE_CHOICE",
-      "MULTI_CHOICE",
-      "TRUE_FALSE",
-      "MATCHING",
-      "HOTSPOT",
-      "FILL_BLANK",
-      "ESSAY",
-    ]),
-    orderIndex: intField(0),
+    questionType: z.enum(["SINGLE_CHOICE", "MULTI_CHOICE", "TRUE_FALSE", "ESSAY"]),
     explanation: z.string().trim().optional().or(z.literal("")),
     imageAssetId: z.string().uuid().optional().nullable().or(z.literal("")),
     options: z.array(questionOptionSchema),
-    matchingPairs: z.array(matchingPairSchema),
-    hotspotZones: z.array(hotspotZoneSchema),
-    fillBlankTemplate: z.string().trim().optional().or(z.literal("")),
-    fillBlankAcceptedAnswers: z.string().trim().optional().or(z.literal("")),
     essayMaxLength: intField(0).optional(),
   })
   .superRefine((data, ctx) => {
@@ -136,25 +111,6 @@ export const questionFormSchema = z
         message: "Exactement une bonne réponse requise",
         path: ["options"],
       });
-    }
-    if (data.questionType === "MATCHING" && data.matchingPairs.length < 2) {
-      ctx.addIssue({ code: "custom", message: "Au moins 2 paires", path: ["matchingPairs"] });
-    }
-    if (data.questionType === "HOTSPOT") {
-      if (!data.imageAssetId) {
-        ctx.addIssue({ code: "custom", message: "Image requise pour le hotspot", path: ["imageAssetId"] });
-      }
-      if (data.hotspotZones.length < 1) {
-        ctx.addIssue({ code: "custom", message: "Au moins une zone cible", path: ["hotspotZones"] });
-      }
-    }
-    if (data.questionType === "FILL_BLANK") {
-      if (!data.fillBlankTemplate) {
-        ctx.addIssue({ code: "custom", message: "Modèle de phrase requis", path: ["fillBlankTemplate"] });
-      }
-      if (!data.fillBlankAcceptedAnswers) {
-        ctx.addIssue({ code: "custom", message: "Au moins une réponse acceptée", path: ["fillBlankAcceptedAnswers"] });
-      }
     }
   });
 

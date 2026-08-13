@@ -12,8 +12,9 @@ import {
 } from "@dnd-kit/core";
 import { SortableContext, arrayMove, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { ArrowLeft, ArrowRight, GripVertical, CheckCircle2, Circle, Image as ImageIcon } from "lucide-react";
+import { ArrowLeft, ArrowRight, GripVertical, CheckCircle2, Circle, Image as ImageIcon, Trash2 } from "lucide-react";
 import {
+  deleteQuiz,
   deleteQuizQuestion,
   duplicateQuiz,
   duplicateQuizQuestion,
@@ -56,6 +57,7 @@ export default function QuizBankPage() {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [editing, setEditing] = useState<Question | null>(null);
   const [deleteQuestionTarget, setDeleteQuestionTarget] = useState<Question | null>(null);
+  const [deleteQuizConfirmOpen, setDeleteQuizConfirmOpen] = useState(false);
   const [filterModuleId, setFilterModuleId] = useState("");
   const [createOpen, setCreateOpen] = useState(false);
   const [questionFormOpen, setQuestionFormOpen] = useState(false);
@@ -97,6 +99,22 @@ export default function QuizBankPage() {
       toast.success("Quiz dupliqué — pensez à le publier une fois relu.");
     } catch (err) {
       toast.error(err instanceof ApiClientError ? err.message : "Duplication impossible.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function confirmDeleteQuiz() {
+    if (!selectedQuizId) return;
+    setBusy(true);
+    try {
+      await deleteQuiz(selectedQuizId);
+      setSelectedQuizId(null);
+      setDeleteQuizConfirmOpen(false);
+      await refreshQuizzes(page, filterModuleId || undefined);
+      toast.success("Quiz supprimé.");
+    } catch (err) {
+      toast.error(err instanceof ApiClientError ? err.message : "Suppression du quiz impossible.");
     } finally {
       setBusy(false);
     }
@@ -263,30 +281,12 @@ export default function QuizBankPage() {
       values.questionType === "MULTI_CHOICE" ||
       values.questionType === "TRUE_FALSE";
 
-    let metadata: Record<string, unknown> | null = null;
-    if (values.questionType === "MATCHING") {
-      metadata = { pairs: values.matchingPairs.map((p) => ({ left: p.left, right: p.right })) };
-    } else if (values.questionType === "HOTSPOT") {
-      metadata = {
-        imageAssetId: values.imageAssetId || null,
-        zones: values.hotspotZones.map((z) => ({ x: z.x, y: z.y, width: z.width, height: z.height })),
-      };
-    } else if (values.questionType === "FILL_BLANK") {
-      metadata = {
-        template: values.fillBlankTemplate,
-        acceptedAnswers: (values.fillBlankAcceptedAnswers || "")
-          .split(",")
-          .map((s) => s.trim())
-          .filter(Boolean),
-      };
-    } else if (values.questionType === "ESSAY") {
-      metadata = values.essayMaxLength ? { maxLength: values.essayMaxLength } : {};
-    }
+    const metadata: Record<string, unknown> | null =
+      values.questionType === "ESSAY" ? (values.essayMaxLength ? { maxLength: values.essayMaxLength } : {}) : null;
 
     return {
       prompt: values.prompt,
       questionType: values.questionType,
-      orderIndex: values.orderIndex,
       explanation: values.explanation || null,
       imageAssetId: values.imageAssetId ? values.imageAssetId : null,
       options: isChoiceType
@@ -489,6 +489,16 @@ export default function QuizBankPage() {
                   <button type="button" onClick={() => void onDuplicateQuiz()} className={btn.neutralSm} disabled={busy}>
                     Dupliquer le quiz
                   </button>
+                  <button
+                    type="button"
+                    onClick={() => setDeleteQuizConfirmOpen(true)}
+                    className={btn.icon}
+                    disabled={busy}
+                    aria-label="Supprimer le quiz"
+                    title="Supprimer le quiz"
+                  >
+                    <Trash2 size={16} aria-hidden />
+                  </button>
                   <label className={`${btn.neutralSm} cursor-pointer`}>
                     Importer (.xlsx)
                     <input
@@ -628,7 +638,6 @@ export default function QuizBankPage() {
                   ? {
                       prompt: editing.prompt,
                       questionType: editing.questionType,
-                      orderIndex: editing.orderIndex,
                       explanation: editing.explanation || "",
                       imageAssetId: editing.imageAssetId || "",
                       options: editing.options.map((o, i) => ({
@@ -637,7 +646,7 @@ export default function QuizBankPage() {
                         orderIndex: i,
                       })),
                     }
-                  : { orderIndex: questions.length, imageAssetId: "" }
+                  : { imageAssetId: "" }
               }
               onSubmit={onAddQuestion}
             />
@@ -688,6 +697,17 @@ export default function QuizBankPage() {
         confirmLabel="Supprimer"
         onClose={() => setDeleteQuestionTarget(null)}
         onConfirm={() => void confirmDeleteQuestion()}
+      />
+
+      <ConfirmDialog
+        open={deleteQuizConfirmOpen}
+        title="Supprimer ce quiz ?"
+        description={`Le quiz « ${selectedQuiz?.title ?? ""} » et toutes ses questions et tentatives seront définitivement supprimés.`}
+        danger
+        busy={busy}
+        confirmLabel="Supprimer"
+        onClose={() => setDeleteQuizConfirmOpen(false)}
+        onConfirm={() => void confirmDeleteQuiz()}
       />
     </div>
   );

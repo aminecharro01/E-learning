@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { ArrowRight } from "lucide-react";
 import { api } from "@/lib/api";
 import { QuizTimer } from "@/components/QuizTimer";
 import { useCourse } from "@/components/learner/CourseProvider";
@@ -11,58 +10,6 @@ import { AssetImage } from "@/components/AssetImage";
 import { ApiClientError } from "@/lib/api-client";
 import { IconBadge, IconCheck, IconCompass, IconPlane, IconWing } from "@/components/brand/IatIcons";
 import { btn } from "@/lib/ui";
-import { resolveAssetUrl } from "@/lib/media";
-
-function HotspotClickImage({
-  assetId,
-  point,
-  onPick,
-}: {
-  assetId: string;
-  point?: { x: number; y: number };
-  onPick: (x: number, y: number) => void;
-}) {
-  const [url, setUrl] = useState<string | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    resolveAssetUrl(assetId)
-      .then((u) => {
-        if (!cancelled) setUrl(u);
-      })
-      .catch(() => {
-        if (!cancelled) setUrl(null);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [assetId]);
-
-  if (!url) return <p className="mt-4 text-xs text-muted">Chargement image…</p>;
-
-  return (
-    <div className="relative mt-4 inline-block">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={url}
-        alt="Zone cliquable"
-        className="max-h-96 w-auto cursor-crosshair rounded-lg"
-        onClick={(e) => {
-          const rect = e.currentTarget.getBoundingClientRect();
-          const x = ((e.clientX - rect.left) / rect.width) * 100;
-          const y = ((e.clientY - rect.top) / rect.height) * 100;
-          onPick(Math.round(x * 10) / 10, Math.round(y * 10) / 10);
-        }}
-      />
-      {point && (
-        <span
-          className="pointer-events-none absolute h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-[var(--primary)] bg-[var(--primary)]/40"
-          style={{ left: `${point.x}%`, top: `${point.y}%` }}
-        />
-      )}
-    </div>
-  );
-}
 
 type Option = { id: string; label: string; orderIndex: number };
 type Question = {
@@ -106,23 +53,16 @@ function QuizBody({ moduleId, quizId }: { moduleId: string; quizId: string }) {
   const [session, setSession] = useState<StartResponse | null>(null);
   const [answers, setAnswers] = useState<Record<string, string[]>>({});
   const [freeTextAnswers, setFreeTextAnswers] = useState<Record<string, string>>({});
-  const [structuredAnswers, setStructuredAnswers] = useState<Record<string, unknown>>({});
   const [current, setCurrent] = useState(0);
   const [result, setResult] = useState<SubmitResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [armedLeft, setArmedLeft] = useState<number | null>(null);
-
-  useEffect(() => {
-    setArmedLeft(null);
-  }, [current]);
 
   useEffect(() => {
     setLoading(true);
     setResult(null);
     setAnswers({});
     setFreeTextAnswers({});
-    setStructuredAnswers({});
     setCurrent(0);
     api
       .post<StartResponse>(`/api/quiz/${quizId}/start`)
@@ -140,7 +80,6 @@ function QuizBody({ moduleId, quizId }: { moduleId: string; quizId: string }) {
         attemptId: session.attemptId,
         answers,
         freeTextAnswers,
-        structuredAnswers,
       });
       setResult(data);
       // Refresh sidebar statuses / unlocks after attempt
@@ -148,7 +87,7 @@ function QuizBody({ moduleId, quizId }: { moduleId: string; quizId: string }) {
     } catch (err) {
       setError(err instanceof ApiClientError ? err.message : "Soumission impossible.");
     }
-  }, [session, answers, freeTextAnswers, structuredAnswers, reload]);
+  }, [session, answers, freeTextAnswers, reload]);
 
   const reportProctoringEvent = useCallback(
     (attemptId: string, eventType: string) => {
@@ -209,17 +148,6 @@ function QuizBody({ moduleId, quizId }: { moduleId: string; quizId: string }) {
 
   function setFreeText(questionId: string, value: string) {
     setFreeTextAnswers((prev) => ({ ...prev, [questionId]: value }));
-  }
-
-  function setMatchingAnswer(questionId: string, leftIndex: number, rightValue: string) {
-    setStructuredAnswers((prev) => {
-      const existing = (prev[questionId] as Record<string, string>) || {};
-      return { ...prev, [questionId]: { ...existing, [String(leftIndex)]: rightValue } };
-    });
-  }
-
-  function setHotspotAnswer(questionId: string, x: number, y: number) {
-    setStructuredAnswers((prev) => ({ ...prev, [questionId]: { x, y } }));
   }
 
   function toggleAnswer(questionId: string, optionId: string, multi: boolean) {
@@ -363,19 +291,13 @@ function QuizBody({ moduleId, quizId }: { moduleId: string; quizId: string }) {
             <IconCompass size={14} />
             {q.questionType === "MULTI_CHOICE"
               ? "Choix multiples"
-              : q.questionType === "MATCHING"
-                ? "Appariement"
-                : q.questionType === "HOTSPOT"
-                  ? "Cliquez sur la bonne zone"
-                  : q.questionType === "FILL_BLANK"
-                    ? "Texte à trous"
-                    : q.questionType === "ESSAY"
-                      ? "Réponse libre"
-                      : "Choix unique"}
+              : q.questionType === "ESSAY"
+                ? "Réponse libre"
+                : "Choix unique"}
           </p>
           <p className="learn-q-prompt">{q.prompt}</p>
 
-          {q.questionType !== "HOTSPOT" && q.imageAssetId && (
+          {q.imageAssetId && (
             <AssetImage
               assetId={q.imageAssetId}
               alt="Illustration de la question"
@@ -401,108 +323,6 @@ function QuizBody({ moduleId, quizId }: { moduleId: string; quizId: string }) {
               })}
             </ul>
           )}
-
-          {q.questionType === "MATCHING" &&
-            (() => {
-              const lefts = (q.metadata?.lefts as string[]) || [];
-              const rights = (q.metadata?.rights as string[]) || [];
-              const chosen = (structuredAnswers[q.id] as Record<string, string>) || {};
-              const usedRights = new Set(Object.values(chosen).filter(Boolean));
-
-              function pickLeft(i: number) {
-                if (chosen[String(i)]) {
-                  setMatchingAnswer(q.id, i, "");
-                  setArmedLeft(null);
-                  return;
-                }
-                setArmedLeft((prev) => (prev === i ? null : i));
-              }
-
-              function pickRight(value: string) {
-                if (armedLeft === null || usedRights.has(value)) return;
-                setMatchingAnswer(q.id, armedLeft, value);
-                setArmedLeft(null);
-              }
-
-              return (
-                <div className="mt-5 space-y-2">
-                  <p className="text-xs text-muted">
-                    Cliquez un élément à gauche, puis son équivalent à droite pour les associer.
-                  </p>
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <div className="space-y-2">
-                      {lefts.map((left, i) => {
-                        const pairedWith = chosen[String(i)];
-                        return (
-                          <button
-                            key={i}
-                            type="button"
-                            onClick={() => pickLeft(i)}
-                            className={`learn-option flex w-full items-center justify-between gap-2 ${
-                              pairedWith ? "is-paired" : armedLeft === i ? "is-armed" : ""
-                            }`}
-                          >
-                            <span>{left}</span>
-                            {pairedWith && (
-                              <span className="flex items-center gap-1 text-xs text-muted">
-                                <ArrowRight size={12} aria-hidden /> {pairedWith}
-                              </span>
-                            )}
-                          </button>
-                        );
-                      })}
-                    </div>
-                    <div className="space-y-2">
-                      {rights.map((r, j) => {
-                        const used = usedRights.has(r);
-                        return (
-                          <button
-                            key={j}
-                            type="button"
-                            disabled={used}
-                            onClick={() => pickRight(r)}
-                            className={`learn-option w-full ${
-                              used ? "is-paired is-disabled" : armedLeft !== null ? "is-armed" : ""
-                            }`}
-                          >
-                            {r}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </div>
-              );
-            })()}
-
-          {q.questionType === "HOTSPOT" && !!q.metadata?.imageAssetId && (
-            <HotspotClickImage
-              assetId={String(q.metadata.imageAssetId)}
-              point={structuredAnswers[q.id] as { x: number; y: number } | undefined}
-              onPick={(x, y) => setHotspotAnswer(q.id, x, y)}
-            />
-          )}
-
-          {q.questionType === "FILL_BLANK" &&
-            (() => {
-              const template = String(q.metadata?.template ?? "");
-              const blankIndex = template.indexOf("___");
-              const before = blankIndex === -1 ? template : template.slice(0, blankIndex);
-              const after = blankIndex === -1 ? "" : template.slice(blankIndex + 3);
-              return (
-                <p className="mt-5 flex flex-wrap items-center gap-2 text-base leading-relaxed text-body">
-                  {before && <span>{before}</span>}
-                  <input
-                    type="text"
-                    className="learn-blank-input"
-                    placeholder="…"
-                    value={freeTextAnswers[q.id] || ""}
-                    onChange={(e) => setFreeText(q.id, e.target.value)}
-                  />
-                  {after && <span>{after}</span>}
-                </p>
-              );
-            })()}
 
           {q.questionType === "ESSAY" && (
             <textarea

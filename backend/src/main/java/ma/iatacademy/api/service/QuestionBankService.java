@@ -62,11 +62,12 @@ public class QuestionBankService {
         QuestionBank bank = requireBank(bankId);
         quizService.validateQuestionOptions(request);
 
+        int nextOrder = questionRepository.findByQuestionBankIdOrderByOrderIndexAsc(bankId).size();
         Question question = Question.builder()
                 .questionBank(bank)
                 .prompt(request.prompt().trim())
                 .questionType(request.questionType())
-                .orderIndex(request.orderIndex())
+                .orderIndex(nextOrder)
                 .explanation(request.explanation())
                 .imageAssetId(request.imageAssetId())
                 .metadata(request.metadata())

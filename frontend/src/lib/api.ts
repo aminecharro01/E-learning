@@ -454,6 +454,10 @@ export async function duplicateQuiz(quizId: string) {
   return data;
 }
 
+export async function deleteQuiz(quizId: string) {
+  await apiClient.delete(`/api/quiz/${quizId}`);
+}
+
 export type QuestionBank = { id: string; name: string; description: string | null; questionCount: number };
 
 export async function listQuestionBanks() {

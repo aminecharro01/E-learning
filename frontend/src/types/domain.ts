@@ -8,14 +8,7 @@ export type BlockType = "VIDEO" | "TEXT" | "PDF" | "IMAGE";
 
 export type QuizType = "APPLICATIF" | "FIN_MODULE";
 
-export type QuestionType =
-  | "SINGLE_CHOICE"
-  | "MULTI_CHOICE"
-  | "TRUE_FALSE"
-  | "MATCHING"
-  | "HOTSPOT"
-  | "FILL_BLANK"
-  | "ESSAY";
+export type QuestionType = "SINGLE_CHOICE" | "MULTI_CHOICE" | "TRUE_FALSE" | "ESSAY";
 
 export type AttemptStatus =
   | "IN_PROGRESS"

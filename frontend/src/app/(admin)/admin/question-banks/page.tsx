@@ -87,27 +87,12 @@ export default function AdminQuestionBanksPage() {
   async function onAddQuestion(values: QuestionFormValues) {
     if (!selectedId) return;
     const isChoiceType = ["SINGLE_CHOICE", "MULTI_CHOICE", "TRUE_FALSE"].includes(values.questionType);
-    let metadata: Record<string, unknown> | null = null;
-    if (values.questionType === "MATCHING") {
-      metadata = { pairs: values.matchingPairs.map((p) => ({ left: p.left, right: p.right })) };
-    } else if (values.questionType === "HOTSPOT") {
-      metadata = {
-        imageAssetId: values.imageAssetId || null,
-        zones: values.hotspotZones.map((z) => ({ x: z.x, y: z.y, width: z.width, height: z.height })),
-      };
-    } else if (values.questionType === "FILL_BLANK") {
-      metadata = {
-        template: values.fillBlankTemplate,
-        acceptedAnswers: (values.fillBlankAcceptedAnswers || "").split(",").map((s) => s.trim()).filter(Boolean),
-      };
-    } else if (values.questionType === "ESSAY") {
-      metadata = values.essayMaxLength ? { maxLength: values.essayMaxLength } : {};
-    }
+    const metadata: Record<string, unknown> | null =
+      values.questionType === "ESSAY" ? (values.essayMaxLength ? { maxLength: values.essayMaxLength } : {}) : null;
     await run(async () => {
       await addBankQuestion(selectedId, {
         prompt: values.prompt,
         questionType: values.questionType,
-        orderIndex: values.orderIndex,
         explanation: values.explanation || null,
         imageAssetId: values.imageAssetId || null,
         options: isChoiceType ? values.options.map((o, i) => ({ label: o.label, correct: o.correct, orderIndex: i })) : [],
