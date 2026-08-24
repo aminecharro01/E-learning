@@ -10,6 +10,7 @@ import ma.iatacademy.api.domain.enums.ConversationType;
 import ma.iatacademy.api.domain.enums.Role;
 import ma.iatacademy.api.dto.messaging.ChatMessageResponse;
 import ma.iatacademy.api.dto.messaging.ConversationResponse;
+import ma.iatacademy.api.dto.messaging.StaffContactResponse;
 import ma.iatacademy.api.exception.ApiException;
 import ma.iatacademy.api.exception.ForbiddenException;
 import ma.iatacademy.api.exception.NotFoundException;
@@ -62,6 +63,23 @@ public class MessagingService {
                     participantRepository.save(ConversationParticipant.builder().conversation(conversation).user(b).build());
                     return conversation.getId();
                 });
+    }
+
+    /** Formateurs + Directeur — pour permettre à un apprenant sans cohorte (donc sans
+     * salon commun) de démarrer lui-même une conversation, au lieu d'attendre que le
+     * staff l'initie. */
+    @Transactional(readOnly = true)
+    public List<StaffContactResponse> listStaffContacts() {
+        return java.util.stream.Stream.concat(
+                        userRepository.findByRole(Role.FORMATEUR).stream(),
+                        userRepository.findByRole(Role.ADMIN).stream())
+                .filter(User::isEnabled)
+                .sorted(Comparator.comparing(u -> u.getFullName() != null ? u.getFullName() : u.getEmail()))
+                .map(u -> new StaffContactResponse(
+                        u.getId(),
+                        u.getFullName() != null ? u.getFullName() : u.getEmail(),
+                        u.getRole().name()))
+                .toList();
     }
 
     @Transactional(readOnly = true)

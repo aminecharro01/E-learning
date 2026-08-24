@@ -532,6 +532,13 @@ export async function listConversations() {
   return data;
 }
 
+export type StaffContact = { id: string; fullName: string; role: "FORMATEUR" | "ADMIN" };
+
+export async function listMessagingStaffContacts() {
+  const { data } = await apiClient.get<StaffContact[]>("/api/conversations/staff");
+  return data;
+}
+
 export async function getOrCreateDirectConversation(otherUserId: string) {
   const { data } = await apiClient.post<{ conversationId: string }>(`/api/conversations/direct/${otherUserId}`);
   return data.conversationId;

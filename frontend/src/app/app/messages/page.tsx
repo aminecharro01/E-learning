@@ -6,10 +6,12 @@ import {
   getOrCreateDirectConversation,
   listConversationMessages,
   listConversations,
+  listMessagingStaffContacts,
   listUsersPaged,
   sendConversationMessage,
   type ChatMessage,
   type Conversation,
+  type StaffContact,
 } from "@/lib/api";
 import type { User } from "@/types/domain";
 import { LearnerAppHeader } from "@/components/learner/LearnerAppHeader";
@@ -29,6 +31,7 @@ export default function MessagesPage() {
   const [body, setBody] = useState("");
   const [search, setSearch] = useState("");
   const [candidates, setCandidates] = useState<User[]>([]);
+  const [staffContacts, setStaffContacts] = useState<StaffContact[]>([]);
   const [error, setError] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -87,6 +90,13 @@ export default function MessagesPage() {
     return () => clearTimeout(t);
   }, [search, isStaff]);
 
+  useEffect(() => {
+    if (!me || isStaff) return;
+    listMessagingStaffContacts()
+      .then(setStaffContacts)
+      .catch(() => setStaffContacts([]));
+  }, [me, isStaff]);
+
   async function onSend() {
     if (!selectedId || !body.trim()) return;
     const trimmed = body.trim();
@@ -142,6 +152,27 @@ export default function MessagesPage() {
                   ))}
                 </ul>
               )}
+            </div>
+          )}
+          {!isStaff && staffContacts.length > 0 && (
+            <div>
+              <p className="nav-group-label mb-1 text-[11px] font-semibold uppercase tracking-wide">
+                Contacter un formateur
+              </p>
+              <ul className="space-y-1">
+                {staffContacts.map((c) => (
+                  <li key={c.id}>
+                    <button
+                      type="button"
+                      className="w-full rounded-lg border border-theme px-2 py-1.5 text-left text-xs hover:bg-surface-2"
+                      onClick={() => void onStartWith(c.id)}
+                    >
+                      {c.fullName}
+                      {c.role === "ADMIN" && <span className="ml-1 text-muted">(Directeur)</span>}
+                    </button>
+                  </li>
+                ))}
+              </ul>
             </div>
           )}
           <ul className="space-y-1.5">

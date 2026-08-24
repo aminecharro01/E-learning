@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import ma.iatacademy.api.dto.messaging.ChatMessageResponse;
 import ma.iatacademy.api.dto.messaging.ConversationResponse;
 import ma.iatacademy.api.dto.messaging.SendMessageRequest;
+import ma.iatacademy.api.dto.messaging.StaffContactResponse;
 import ma.iatacademy.api.security.UserPrincipal;
 import ma.iatacademy.api.service.MessagingService;
 import org.springframework.http.ResponseEntity;
@@ -26,6 +27,12 @@ public class MessagingController {
     @GetMapping
     public ResponseEntity<List<ConversationResponse>> list(@AuthenticationPrincipal UserPrincipal principal) {
         return ResponseEntity.ok(messagingService.listMyConversations(principal));
+    }
+
+    /** Annuaire staff pour permettre à un apprenant de démarrer lui-même une conversation. */
+    @GetMapping("/staff")
+    public ResponseEntity<List<StaffContactResponse>> listStaffContacts() {
+        return ResponseEntity.ok(messagingService.listStaffContacts());
     }
 
     @PostMapping("/direct/{otherUserId}")
