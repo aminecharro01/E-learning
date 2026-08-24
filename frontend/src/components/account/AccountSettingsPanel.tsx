@@ -6,6 +6,7 @@ import type { User } from "@/types/domain";
 import { ApiClientError } from "@/lib/api-client";
 import { resolveAssetUrl } from "@/lib/media";
 import { btn, inputClass } from "@/lib/ui";
+import { Loader } from "@/components/ui/Loader";
 import { TwoFactorSection } from "./TwoFactorSection";
 
 type Props = {
@@ -131,6 +132,7 @@ export function AccountSettingsPanel({ user, onUserChange }: Props) {
                 className={btn.primarySm}
                 onClick={() => fileRef.current?.click()}
               >
+                {uploading && <Loader size="sm" tone="current" />}
                 {uploading ? "Envoi…" : avatarUrl ? "Changer la photo" : "Ajouter une photo"}
               </button>
             </div>
@@ -166,7 +168,8 @@ export function AccountSettingsPanel({ user, onUserChange }: Props) {
           />
         </label>
         <button type="submit" disabled={changingPwd} className={btn.secondary}>
-          {changingPwd ? "…" : "Changer le mot de passe"}
+          {changingPwd && <Loader size="sm" tone="current" />}
+          Changer le mot de passe
         </button>
       </form>
     </div>
