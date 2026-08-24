@@ -5,7 +5,7 @@ import { useForm, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { quizSettingsSchema, type QuizSettingsValues } from "./schemas";
 import { FormField, FormSection, Toggle, fieldClass } from "./FormField";
-import { getModule, listQuestionBanks, type QuestionBank } from "@/lib/api";
+import { getModule } from "@/lib/api";
 import type { Lesson, Module } from "@/types/domain";
 import { moduleSelectGroups } from "@/lib/programme";
 import { btn } from "@/lib/ui";
@@ -46,8 +46,6 @@ export function QuizSettingsForm({ modules, defaultValues, busy, onSubmit }: Pro
       focusLossDetection: false,
       copyProtection: false,
       lockdownMode: false,
-      drawFromBankId: "",
-      drawCount: undefined,
       ...defaultValues,
     },
   });
@@ -69,13 +67,6 @@ export function QuizSettingsForm({ modules, defaultValues, busy, onSubmit }: Pro
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [lessonsLoading, setLessonsLoading] = useState(false);
   const [lessonsError, setLessonsError] = useState<string | null>(null);
-  const [banks, setBanks] = useState<QuestionBank[]>([]);
-
-  useEffect(() => {
-    listQuestionBanks()
-      .then(setBanks)
-      .catch(() => setBanks([]));
-  }, []);
 
   const timeMinutes = useMemo(
     () => Math.round((Number(timeLimitSeconds) || 0) / 60),
@@ -321,33 +312,6 @@ export function QuizSettingsForm({ modules, defaultValues, busy, onSubmit }: Pro
           />
         </div>
       </FormSection>
-
-      {banks.length > 0 && (
-        <FormSection title="Génération automatique" description="Optionnel — laissez vide pour créer un quiz vide">
-          <FormField
-            label="Générer depuis une banque"
-            hint="Tire au hasard N questions dans une banque"
-          >
-            <div className="grid gap-2 sm:grid-cols-2">
-              <select className={fieldClass()} {...register("drawFromBankId")}>
-                <option value="">— Aucune —</option>
-                {banks.map((b) => (
-                  <option key={b.id} value={b.id}>
-                    {b.name} ({b.questionCount})
-                  </option>
-                ))}
-              </select>
-              <input
-                type="number"
-                min={1}
-                className={fieldClass()}
-                placeholder="Nombre de questions"
-                {...register("drawCount")}
-              />
-            </div>
-          </FormField>
-        </FormSection>
-      )}
 
       <details className="rounded-xl border border-theme">
         <summary className="cursor-pointer select-none px-4 py-3 text-sm font-semibold text-heading">

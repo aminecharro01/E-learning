@@ -26,9 +26,6 @@ public record CreateQuizRequest(
         Boolean proctoringEnabled,
         Boolean focusLossDetection,
         Boolean copyProtection,
-        Boolean lockdownMode,
-        /** Génération depuis une banque de questions (optionnel). */
-        UUID drawFromBankId,
-        Integer drawCount
+        Boolean lockdownMode
 ) {
 }

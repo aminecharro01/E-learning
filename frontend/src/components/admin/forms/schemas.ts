@@ -50,8 +50,6 @@ export const quizSettingsSchema = z
     focusLossDetection: z.boolean(),
     copyProtection: z.boolean(),
     lockdownMode: z.boolean(),
-    drawFromBankId: z.string().uuid().optional().or(z.literal("")),
-    drawCount: intField(0).optional(),
   })
   .superRefine((data, ctx) => {
     if (data.quizType === "FIN_MODULE" && !data.moduleId) {

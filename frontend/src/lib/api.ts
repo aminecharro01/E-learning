@@ -418,26 +418,6 @@ export async function addQuizQuestion(quizId: string, payload: Record<string, un
   return data;
 }
 
-export type QuestionImportResult = { importedCount: number; errors: { rowNumber: number; reason: string }[] };
-
-export async function importQuizQuestions(quizId: string, file: File) {
-  const form = new FormData();
-  form.append("file", file);
-  const { data } = await apiClient.post<QuestionImportResult>(`/api/quiz/${quizId}/questions/import`, form, {
-    headers: { "Content-Type": "multipart/form-data" },
-  });
-  return data;
-}
-
-export async function importBankQuestions(bankId: string, file: File) {
-  const form = new FormData();
-  form.append("file", file);
-  const { data } = await apiClient.post<QuestionImportResult>(`/api/question-banks/${bankId}/questions/import`, form, {
-    headers: { "Content-Type": "multipart/form-data" },
-  });
-  return data;
-}
-
 export type AiGenerationPayload = {
   lessonId?: string;
   rawText?: string;
@@ -450,14 +430,6 @@ export type AiGenerationResult = { generatedCount: number; errors: { rowNumber: 
 export async function generateQuizQuestionsAi(quizId: string, payload: AiGenerationPayload) {
   const { data } = await apiClient.post<AiGenerationResult>(
     `/api/quiz/${quizId}/questions/generate-ai`,
-    payload
-  );
-  return data;
-}
-
-export async function generateBankQuestionsAi(bankId: string, payload: AiGenerationPayload) {
-  const { data } = await apiClient.post<AiGenerationResult>(
-    `/api/question-banks/${bankId}/questions/generate-ai`,
     payload
   );
   return data;
@@ -495,36 +467,6 @@ export async function duplicateQuiz(quizId: string) {
 
 export async function deleteQuiz(quizId: string) {
   await apiClient.delete(`/api/quiz/${quizId}`);
-}
-
-export type QuestionBank = { id: string; name: string; description: string | null; questionCount: number };
-
-export async function listQuestionBanks() {
-  const { data } = await apiClient.get<QuestionBank[]>("/api/question-banks");
-  return data;
-}
-
-export async function createQuestionBank(name: string, description?: string) {
-  const { data } = await apiClient.post<QuestionBank>("/api/question-banks", { name, description });
-  return data;
-}
-
-export async function deleteQuestionBank(bankId: string) {
-  await apiClient.delete(`/api/question-banks/${bankId}`);
-}
-
-export async function listBankQuestions(bankId: string) {
-  const { data } = await apiClient.get<Question[]>(`/api/question-banks/${bankId}/questions`);
-  return data;
-}
-
-export async function addBankQuestion(bankId: string, payload: Record<string, unknown>) {
-  const { data } = await apiClient.post<Question>(`/api/question-banks/${bankId}/questions`, payload);
-  return data;
-}
-
-export async function deleteBankQuestion(bankId: string, questionId: string) {
-  await apiClient.delete(`/api/question-banks/${bankId}/questions/${questionId}`);
 }
 
 export async function getPendingReviewAttempts(quizId?: string) {

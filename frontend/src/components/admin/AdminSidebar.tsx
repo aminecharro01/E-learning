@@ -48,7 +48,6 @@ export const GROUPS: NavGroup[] = [
       { name: "Tableau de bord", path: "/admin", icon: <GridIcon /> },
       { name: "Cours & modules", path: "/admin/modules", icon: <BookIcon /> },
       { name: "Quiz", path: "/admin/quiz-bank", icon: <QuizIcon /> },
-      { name: "Banques de questions", path: "/admin/question-banks", icon: <QuizIcon /> },
       { name: "Correction manuelle", path: "/admin/grading", icon: <ClipboardIcon /> },
       { name: "Médias", path: "/admin/media", icon: <MediaIcon /> },
       { name: "Stage & soutenance", path: "/admin/stage", icon: <BookIcon /> },

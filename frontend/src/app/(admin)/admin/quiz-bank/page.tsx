@@ -23,7 +23,6 @@ import {
   generateQuizQuestionsAi,
   getMyProgress,
   getProctoringEvents,
-  importQuizQuestions,
   listQuizAttemptsForStaff,
   listQuizQuestions,
   listQuizzesPaged,
@@ -119,27 +118,6 @@ export default function QuizBankPage() {
       toast.success("Quiz supprimé.");
     } catch (err) {
       toast.error(err instanceof ApiClientError ? err.message : "Suppression du quiz impossible.");
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function onImportQuestions(file: File | undefined) {
-    if (!file || !selectedQuizId) return;
-    setBusy(true);
-    try {
-      const result = await importQuizQuestions(selectedQuizId, file);
-      await refreshQuestions(selectedQuizId);
-      await refreshQuizzes(page, filterModuleId || undefined);
-      if (result.errors.length === 0) {
-        toast.success(`${result.importedCount} question(s) importée(s).`);
-      } else {
-        toast.error(
-          `${result.importedCount} importée(s), ${result.errors.length} ligne(s) en erreur (ex. ligne ${result.errors[0].rowNumber} : ${result.errors[0].reason})`
-        );
-      }
-    } catch (err) {
-      toast.error(err instanceof ApiClientError ? err.message : "Import impossible.");
     } finally {
       setBusy(false);
     }
@@ -289,8 +267,6 @@ export default function QuizBankPage() {
         focusLossDetection: values.focusLossDetection,
         copyProtection: values.copyProtection,
         lockdownMode: values.lockdownMode,
-        drawFromBankId: values.drawFromBankId || undefined,
-        drawCount: values.drawCount || undefined,
       });
       await refreshQuizzes(page, filterModuleId || undefined);
       setSelectedQuizId(data.id);
@@ -531,19 +507,6 @@ export default function QuizBankPage() {
                   >
                     <Trash2 size={16} aria-hidden />
                   </button>
-                  <label className={`${btn.neutralSm} cursor-pointer`}>
-                    Importer (.xlsx)
-                    <input
-                      type="file"
-                      accept=".xlsx"
-                      className="hidden"
-                      disabled={busy}
-                      onChange={(e) => {
-                        void onImportQuestions(e.target.files?.[0]);
-                        e.target.value = "";
-                      }}
-                    />
-                  </label>
                   <button
                     type="button"
                     onClick={() => setAiGenerateOpen(true)}
@@ -564,11 +527,6 @@ export default function QuizBankPage() {
                   </button>
                 </div>
               </div>
-              <p className="text-xs text-muted">
-                Import Excel : colonnes Énoncé | Type (SINGLE_CHOICE/MULTI_CHOICE/TRUE_FALSE) | Option1 | Correcte1
-                (OUI/VRAI/X) | Option2 | Correcte2 | Option3 | Correcte3 | Option4 | Correcte4, ligne d&apos;en-tête incluse.
-              </p>
-
               {questions.length > 1 && (
                 <p className="text-xs text-muted">Glissez-déposez pour réordonner les questions.</p>
               )}

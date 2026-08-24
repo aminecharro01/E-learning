@@ -74,7 +74,7 @@ app:
     # Off tant qu'aucune clé n'est fournie, voir AiProviderProperties/QuestionGenerationService.
     gemini:
       api-key: ${GEMINI_API_KEY:}
-      model: ${GEMINI_MODEL:gemini-2.0-flash}
+      model: ${GEMINI_MODEL:gemini-3.6-flash}
     grok:
       api-key: ${GROK_API_KEY:}
       model: ${GROK_MODEL:grok-2-latest}

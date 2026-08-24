@@ -610,10 +610,6 @@ public class QuizService {
                 .build();
         quizRepository.save(quiz);
 
-        if (request.drawFromBankId() != null && request.drawCount() != null && request.drawCount() > 0) {
-            generateFromBank(quiz, request.drawFromBankId(), request.drawCount());
-        }
-
         return toAdmin(quiz);
     }
 
@@ -638,41 +634,6 @@ public class QuizService {
                 ? progressionService.isYear1ContentDone(principal.getId(), DEFAULT_FORMATION_ID)
                 : false; // only year 1 -> 2 progression is modeled today
         return new YearExamResponse(quiz.getId(), quiz.getTitle(), unlocked);
-    }
-
-    /**
-     * Tire N questions au hasard dans une banque et les clone dans le quiz (copie, pas
-     * de référence) : la banque reste un pool stable, indépendant des modifications
-     * ultérieures du quiz généré. sourceBankItemId garde la traçabilité de l'origine.
-     */
-    private void generateFromBank(Quiz quiz, UUID bankId, int count) {
-        List<Question> pool = new ArrayList<>(questionRepository.findByQuestionBankIdOrderByOrderIndexAsc(bankId));
-        if (pool.isEmpty()) {
-            return;
-        }
-        Collections.shuffle(pool);
-        int idx = 0;
-        for (Question src : pool.stream().limit(count).toList()) {
-            Question clone = Question.builder()
-                    .quiz(quiz)
-                    .prompt(src.getPrompt())
-                    .questionType(src.getQuestionType())
-                    .orderIndex(idx++)
-                    .explanation(src.getExplanation())
-                    .imageAssetId(src.getImageAssetId())
-                    .metadata(src.getMetadata())
-                    .sourceBankItemId(src.getId())
-                    .build();
-            for (AnswerOption o : src.getOptions()) {
-                clone.getOptions().add(AnswerOption.builder()
-                        .question(clone)
-                        .label(o.getLabel())
-                        .correct(o.isCorrect())
-                        .orderIndex(o.getOrderIndex())
-                        .build());
-            }
-            questionRepository.save(clone);
-        }
     }
 
     @Transactional
@@ -721,13 +682,13 @@ public class QuizService {
                 questionGenerationService.generate(sourceText, request.questionType(), request.count());
 
         int success = 0;
-        List<QuestionImportResponse.RowError> errors = new ArrayList<>();
+        List<RowError> errors = new ArrayList<>();
         for (int i = 0; i < generated.size(); i++) {
             try {
                 addQuestion(quizId, generated.get(i));
                 success++;
             } catch (Exception e) {
-                errors.add(new QuestionImportResponse.RowError(i + 1, e.getMessage()));
+                errors.add(new RowError(i + 1, e.getMessage()));
             }
         }
         return new AiGenerationResponse(success, errors);
@@ -892,16 +853,14 @@ public class QuizService {
                 .toList();
     }
 
-    /** Package-private : réutilisé par QuestionBankService pour les questions de banque. */
-    List<CreateOptionRequest> optionsOrEmpty(CreateQuestionRequest request) {
+    private List<CreateOptionRequest> optionsOrEmpty(CreateQuestionRequest request) {
         return request.options() != null ? request.options() : List.of();
     }
 
     private static final Set<QuestionType> CHOICE_TYPES =
             Set.of(QuestionType.SINGLE_CHOICE, QuestionType.MULTI_CHOICE, QuestionType.TRUE_FALSE);
 
-    /** Package-private : réutilisé par QuestionBankService. */
-    void validateQuestionOptions(CreateQuestionRequest request) {
+    private void validateQuestionOptions(CreateQuestionRequest request) {
         if (!CHOICE_TYPES.contains(request.questionType())) {
             validateNewTypeMetadata(request);
             return;
@@ -930,8 +889,7 @@ public class QuizService {
         }
     }
 
-    /** Package-private : réutilisé par QuestionBankService pour mapper les questions de banque. */
-    QuestionAdminResponse toQuestionAdmin(Question q) {
+    private QuestionAdminResponse toQuestionAdmin(Question q) {
         return new QuestionAdminResponse(
                 q.getId(),
                 q.getQuiz() != null ? q.getQuiz().getId() : null,

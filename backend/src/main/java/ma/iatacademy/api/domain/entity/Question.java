@@ -24,18 +24,9 @@ public class Question extends AuditableEntity {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    /** Nullable : une question appartient soit à un quiz, soit à une banque (voir questionBank). */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "quiz_id")
     private Quiz quiz;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "question_bank_id")
-    private QuestionBank questionBank;
-
-    /** Renseigné quand cette question a été clonée depuis une banque lors de la génération d'un examen. */
-    @Column(name = "source_bank_item_id")
-    private UUID sourceBankItemId;
 
     @Column(nullable = false, columnDefinition = "TEXT")
     private String prompt;

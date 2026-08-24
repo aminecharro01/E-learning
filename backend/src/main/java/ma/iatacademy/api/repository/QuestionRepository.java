@@ -11,8 +11,6 @@ import java.util.UUID;
 
 public interface QuestionRepository extends JpaRepository<Question, UUID> {
     List<Question> findByQuizIdOrderByOrderIndexAsc(UUID quizId);
-    List<Question> findByQuestionBankIdOrderByOrderIndexAsc(UUID questionBankId);
-    long countByQuestionBankId(UUID questionBankId);
 
     /** Global search — staff-only (see SearchService), so quiz answers never leak to learners. */
     @Query("SELECT q FROM Question q WHERE LOWER(q.prompt) LIKE LOWER(CONCAT('%', :q, '%'))")

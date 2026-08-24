@@ -4,6 +4,6 @@ import java.util.List;
 
 public record AiGenerationResponse(
         int generatedCount,
-        List<QuestionImportResponse.RowError> errors
+        List<RowError> errors
 ) {
 }

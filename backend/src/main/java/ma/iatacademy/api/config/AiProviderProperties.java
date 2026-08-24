@@ -24,7 +24,7 @@ public class AiProviderProperties {
     @Setter
     public static class Gemini {
         private String apiKey = "";
-        private String model = "gemini-2.0-flash";
+        private String model = "gemini-3.6-flash";
 
         public boolean isConfigured() {
             return apiKey != null && !apiKey.isBlank();
