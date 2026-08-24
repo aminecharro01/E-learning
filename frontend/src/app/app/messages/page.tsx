@@ -11,7 +11,6 @@ import {
   sendConversationMessage,
   type ChatMessage,
   type Conversation,
-  type StaffContact,
 } from "@/lib/api";
 import type { User } from "@/types/domain";
 import { LearnerAppHeader } from "@/components/learner/LearnerAppHeader";
@@ -31,12 +30,15 @@ export default function MessagesPage() {
   const [body, setBody] = useState("");
   const [search, setSearch] = useState("");
   const [candidates, setCandidates] = useState<User[]>([]);
-  const [staffContacts, setStaffContacts] = useState<StaffContact[]>([]);
+  const [conversationsLoaded, setConversationsLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   const reloadConversations = useCallback(async () => {
-    setConversations(await listConversations());
+    const data = await listConversations();
+    setConversations(data);
+    setConversationsLoaded(true);
+    return data;
   }, []);
 
   useEffect(() => {
@@ -90,12 +92,21 @@ export default function MessagesPage() {
     return () => clearTimeout(t);
   }, [search, isStaff]);
 
+  // Un apprenant qui n'a encore aucune conversation (pas de cohorte, jamais contacté par
+  // le staff) est automatiquement mis en relation avec l'administration — pas de liste à
+  // choisir, le message part directement dans la boîte de l'admin.
   useEffect(() => {
-    if (!me || isStaff) return;
+    if (!me || isStaff || !conversationsLoaded || conversations.length > 0) return;
     listMessagingStaffContacts()
-      .then(setStaffContacts)
-      .catch(() => setStaffContacts([]));
-  }, [me, isStaff]);
+      .then(async (contacts) => {
+        const admin = contacts.find((c) => c.role === "ADMIN") ?? contacts[0];
+        if (!admin) return;
+        const id = await getOrCreateDirectConversation(admin.id);
+        await reloadConversations();
+        setSelectedId(id);
+      })
+      .catch(() => undefined);
+  }, [me, isStaff, conversationsLoaded, conversations.length, reloadConversations]);
 
   async function onSend() {
     if (!selectedId || !body.trim()) return;
@@ -152,27 +163,6 @@ export default function MessagesPage() {
                   ))}
                 </ul>
               )}
-            </div>
-          )}
-          {!isStaff && staffContacts.length > 0 && (
-            <div>
-              <p className="nav-group-label mb-1 text-[11px] font-semibold uppercase tracking-wide">
-                Contacter un formateur
-              </p>
-              <ul className="space-y-1">
-                {staffContacts.map((c) => (
-                  <li key={c.id}>
-                    <button
-                      type="button"
-                      className="w-full rounded-lg border border-theme px-2 py-1.5 text-left text-xs hover:bg-surface-2"
-                      onClick={() => void onStartWith(c.id)}
-                    >
-                      {c.fullName}
-                      {c.role === "ADMIN" && <span className="ml-1 text-muted">(Directeur)</span>}
-                    </button>
-                  </li>
-                ))}
-              </ul>
             </div>
           )}
           <ul className="space-y-1.5">
