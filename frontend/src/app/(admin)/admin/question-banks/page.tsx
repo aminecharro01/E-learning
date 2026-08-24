@@ -6,9 +6,11 @@ import {
   createQuestionBank,
   deleteBankQuestion,
   deleteQuestionBank,
+  generateBankQuestionsAi,
   importBankQuestions,
   listBankQuestions,
   listQuestionBanks,
+  type AiGenerationPayload,
   type QuestionBank,
 } from "@/lib/api";
 import type { Question } from "@/types/domain";
@@ -20,6 +22,7 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import { toast } from "@/lib/toast-store";
 import { btn, inputClass } from "@/lib/ui";
 import { QuestionForm } from "@/components/admin/forms/QuestionForm";
+import { AiGenerateForm } from "@/components/admin/forms/AiGenerateForm";
 import type { QuestionFormValues } from "@/components/admin/forms/schemas";
 
 export default function AdminQuestionBanksPage() {
@@ -34,6 +37,7 @@ export default function AdminQuestionBanksPage() {
   const [newName, setNewName] = useState("");
   const [newDesc, setNewDesc] = useState("");
   const [formOpen, setFormOpen] = useState(false);
+  const [aiOpen, setAiOpen] = useState(false);
   const [confirmDeleteBank, setConfirmDeleteBank] = useState(false);
 
   const selected = banks.find((b) => b.id === selectedId) ?? null;
@@ -102,6 +106,23 @@ export default function AdminQuestionBanksPage() {
       await reloadBanks();
       setFormOpen(false);
       toast.success("Question ajoutée à la banque.");
+    });
+  }
+
+  async function onGenerateAi(payload: AiGenerationPayload) {
+    if (!selectedId) return;
+    await run(async () => {
+      const result = await generateBankQuestionsAi(selectedId, payload);
+      await reloadQuestions(selectedId);
+      await reloadBanks();
+      setAiOpen(false);
+      if (result.errors.length === 0) {
+        toast.success(`${result.generatedCount} question(s) générée(s).`);
+      } else {
+        toast.error(
+          `${result.generatedCount} générée(s), ${result.errors.length} en erreur (${result.errors[0].reason})`
+        );
+      }
     });
   }
 
@@ -186,6 +207,14 @@ export default function AdminQuestionBanksPage() {
                   <button type="button" className={btn.primarySm} onClick={() => setFormOpen((v) => !v)}>
                     {formOpen ? "Annuler" : "+ Question"}
                   </button>
+                  <button
+                    type="button"
+                    className={btn.neutralSm}
+                    disabled={busy}
+                    onClick={() => setAiOpen((v) => !v)}
+                  >
+                    {aiOpen ? "Annuler" : "Générer avec IA"}
+                  </button>
                   <label className={`${btn.neutralSm} cursor-pointer`}>
                     Importer (.xlsx)
                     <input
@@ -224,6 +253,11 @@ export default function AdminQuestionBanksPage() {
                 {formOpen && (
                   <div className="mt-4 border-t border-theme pt-4">
                     <QuestionForm busy={busy} submitLabel="Ajouter à la banque" onSubmit={onAddQuestion} />
+                  </div>
+                )}
+                {aiOpen && (
+                  <div className="mt-4 border-t border-theme pt-4">
+                    <AiGenerateForm busy={busy} lessonId={null} onSubmit={onGenerateAi} />
                   </div>
                 )}
               </ComponentCard>

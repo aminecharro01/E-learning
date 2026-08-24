@@ -55,6 +55,7 @@ public class QuizService {
     private final BadgeService badgeService;
     private final ProctoringEventRepository proctoringEventRepository;
     private final EssayGradeRepository essayGradeRepository;
+    private final QuestionGenerationService questionGenerationService;
 
     @Transactional
     public QuizStartResponse start(UUID quizId, UserPrincipal principal) {
@@ -703,6 +704,33 @@ public class QuizService {
         }
         questionRepository.save(question);
         return toAdmin(quiz);
+    }
+
+    /** Génère des questions par IA et les ajoute au quiz via le même chemin qu'un ajout
+     * manuel (addQuestion) — mêmes invariants, mêmes validations. Une question générée
+     * qui échoue la validation est reportée en erreur plutôt que de faire échouer les autres. */
+    @Transactional
+    public AiGenerationResponse generateQuestionsAi(UUID quizId, AiGenerationRequest request) {
+        Quiz quiz = quizRepository.findById(quizId)
+                .orElseThrow(() -> new NotFoundException("Quiz introuvable."));
+        UUID lessonId = request.lessonId() != null
+                ? request.lessonId()
+                : (quiz.getLesson() != null ? quiz.getLesson().getId() : null);
+        String sourceText = questionGenerationService.resolveSourceText(lessonId, request.rawText());
+        List<CreateQuestionRequest> generated =
+                questionGenerationService.generate(sourceText, request.questionType(), request.count());
+
+        int success = 0;
+        List<QuestionImportResponse.RowError> errors = new ArrayList<>();
+        for (int i = 0; i < generated.size(); i++) {
+            try {
+                addQuestion(quizId, generated.get(i));
+                success++;
+            } catch (Exception e) {
+                errors.add(new QuestionImportResponse.RowError(i + 1, e.getMessage()));
+            }
+        }
+        return new AiGenerationResponse(success, errors);
     }
 
     @Transactional

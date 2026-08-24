@@ -4,11 +4,14 @@ import lombok.RequiredArgsConstructor;
 import ma.iatacademy.api.domain.entity.AnswerOption;
 import ma.iatacademy.api.domain.entity.Question;
 import ma.iatacademy.api.domain.entity.QuestionBank;
+import ma.iatacademy.api.dto.quiz.AiGenerationRequest;
+import ma.iatacademy.api.dto.quiz.AiGenerationResponse;
 import ma.iatacademy.api.dto.quiz.CreateQuestionBankRequest;
 import ma.iatacademy.api.dto.quiz.CreateQuestionRequest;
 import ma.iatacademy.api.dto.quiz.CreateOptionRequest;
 import ma.iatacademy.api.dto.quiz.QuestionAdminResponse;
 import ma.iatacademy.api.dto.quiz.QuestionBankResponse;
+import ma.iatacademy.api.dto.quiz.QuestionImportResponse;
 import ma.iatacademy.api.exception.ApiException;
 import ma.iatacademy.api.exception.NotFoundException;
 import ma.iatacademy.api.repository.QuestionBankRepository;
@@ -17,6 +20,7 @@ import ma.iatacademy.api.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -33,6 +37,7 @@ public class QuestionBankService {
     private final QuestionRepository questionRepository;
     private final UserRepository userRepository;
     private final QuizService quizService;
+    private final QuestionGenerationService questionGenerationService;
 
     @Transactional
     public QuestionBankResponse create(CreateQuestionBankRequest request, UUID actorId) {
@@ -82,6 +87,27 @@ public class QuestionBankService {
         }
         questionRepository.save(question);
         return quizService.toQuestionAdmin(question);
+    }
+
+    /** Same AI-generation path as QuizService#generateQuestionsAi, targeting a bank instead. */
+    @Transactional
+    public AiGenerationResponse generateQuestionsAi(UUID bankId, AiGenerationRequest request) {
+        requireBank(bankId);
+        String sourceText = questionGenerationService.resolveSourceText(request.lessonId(), request.rawText());
+        List<CreateQuestionRequest> generated =
+                questionGenerationService.generate(sourceText, request.questionType(), request.count());
+
+        int success = 0;
+        List<QuestionImportResponse.RowError> errors = new ArrayList<>();
+        for (int i = 0; i < generated.size(); i++) {
+            try {
+                addQuestion(bankId, generated.get(i));
+                success++;
+            } catch (Exception e) {
+                errors.add(new QuestionImportResponse.RowError(i + 1, e.getMessage()));
+            }
+        }
+        return new AiGenerationResponse(success, errors);
     }
 
     @Transactional

@@ -20,6 +20,7 @@ import {
   duplicateQuizQuestion,
   addQuizQuestion,
   createQuiz,
+  generateQuizQuestionsAi,
   getMyProgress,
   getProctoringEvents,
   importQuizQuestions,
@@ -28,11 +29,13 @@ import {
   listQuizzesPaged,
   reorderQuizQuestions,
   updateQuizQuestion,
+  type AiGenerationPayload,
   type QuizAttemptAdmin,
 } from "@/lib/api";
 import type { ProctoringEvent } from "@/types/domain";
 import { QuizSettingsForm } from "@/components/admin/forms/QuizSettingsForm";
 import { QuestionForm } from "@/components/admin/forms/QuestionForm";
+import { AiGenerateForm } from "@/components/admin/forms/AiGenerateForm";
 import type { QuestionFormValues, QuizSettingsValues } from "@/components/admin/forms/schemas";
 import { Modal } from "@/components/admin/Modal";
 import { ConfirmDialog } from "@/components/admin/ConfirmDialog";
@@ -61,6 +64,7 @@ export default function QuizBankPage() {
   const [filterModuleId, setFilterModuleId] = useState("");
   const [createOpen, setCreateOpen] = useState(false);
   const [questionFormOpen, setQuestionFormOpen] = useState(false);
+  const [aiGenerateOpen, setAiGenerateOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -136,6 +140,28 @@ export default function QuizBankPage() {
       }
     } catch (err) {
       toast.error(err instanceof ApiClientError ? err.message : "Import impossible.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function onGenerateAi(payload: AiGenerationPayload) {
+    if (!selectedQuizId) return;
+    setBusy(true);
+    try {
+      const result = await generateQuizQuestionsAi(selectedQuizId, payload);
+      await refreshQuestions(selectedQuizId);
+      await refreshQuizzes(page, filterModuleId || undefined);
+      setAiGenerateOpen(false);
+      if (result.errors.length === 0) {
+        toast.success(`${result.generatedCount} question(s) générée(s).`);
+      } else {
+        toast.error(
+          `${result.generatedCount} générée(s), ${result.errors.length} en erreur (${result.errors[0].reason})`
+        );
+      }
+    } catch (err) {
+      toast.error(err instanceof ApiClientError ? err.message : "Génération IA impossible.");
     } finally {
       setBusy(false);
     }
@@ -520,6 +546,14 @@ export default function QuizBankPage() {
                   </label>
                   <button
                     type="button"
+                    onClick={() => setAiGenerateOpen(true)}
+                    className={btn.neutralSm}
+                    disabled={busy}
+                  >
+                    Générer avec IA
+                  </button>
+                  <button
+                    type="button"
                     onClick={() => {
                       setEditing(null);
                       setQuestionFormOpen(true);
@@ -666,6 +700,16 @@ export default function QuizBankPage() {
               </button>
             )}
           </>
+        )}
+      </Modal>
+
+      <Modal
+        open={aiGenerateOpen && !!selectedQuiz}
+        title="Générer des questions avec IA"
+        onClose={() => (!busy ? setAiGenerateOpen(false) : undefined)}
+      >
+        {selectedQuiz && (
+          <AiGenerateForm busy={busy} lessonId={selectedQuiz.lessonId} onSubmit={onGenerateAi} />
         )}
       </Modal>
 

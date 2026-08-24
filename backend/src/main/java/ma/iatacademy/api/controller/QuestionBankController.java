@@ -3,6 +3,8 @@ package ma.iatacademy.api.controller;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import ma.iatacademy.api.dto.MessageResponse;
+import ma.iatacademy.api.dto.quiz.AiGenerationRequest;
+import ma.iatacademy.api.dto.quiz.AiGenerationResponse;
 import ma.iatacademy.api.dto.quiz.CreateQuestionBankRequest;
 import ma.iatacademy.api.dto.quiz.CreateQuestionRequest;
 import ma.iatacademy.api.dto.quiz.QuestionAdminResponse;
@@ -69,6 +71,14 @@ public class QuestionBankController {
             @RequestParam("file") MultipartFile file
     ) {
         return ResponseEntity.status(HttpStatus.CREATED).body(questionImportService.importIntoBank(bankId, file));
+    }
+
+    @PostMapping("/{bankId}/questions/generate-ai")
+    public ResponseEntity<AiGenerationResponse> generateQuestionsAi(
+            @PathVariable UUID bankId,
+            @Valid @RequestBody AiGenerationRequest request
+    ) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(questionBankService.generateQuestionsAi(bankId, request));
     }
 
     @DeleteMapping("/{bankId}/questions/{questionId}")

@@ -151,6 +151,15 @@ public class QuizController {
         return ResponseEntity.status(HttpStatus.CREATED).body(questionImportService.importIntoQuiz(id, file));
     }
 
+    @PostMapping("/{id}/questions/generate-ai")
+    @PreAuthorize("hasAnyRole('ADMIN','FORMATEUR')")
+    public ResponseEntity<AiGenerationResponse> generateQuestionsAi(
+            @PathVariable UUID id,
+            @Valid @RequestBody AiGenerationRequest request
+    ) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(quizService.generateQuestionsAi(id, request));
+    }
+
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN','FORMATEUR')")
     public ResponseEntity<?> list(
