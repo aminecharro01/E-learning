@@ -60,8 +60,7 @@ public class StageService {
 
     @Transactional(readOnly = true)
     public List<LearnerDossierResponse> listDossiers() {
-        return userRepository.findAll().stream()
-                .filter(u -> u.getRole() == Role.ETUDIANT)
+        return userRepository.findByRole(Role.ETUDIANT).stream()
                 .map(u -> toDossier(u, documentRepository.findByLearnerIdOrderByCreatedAtDesc(u.getId())))
                 .toList();
     }

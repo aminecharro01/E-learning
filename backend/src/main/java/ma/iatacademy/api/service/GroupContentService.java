@@ -48,10 +48,7 @@ public class GroupContentService {
             }
             ufCode = request.ufCode().trim();
             // Une UF n'est pas une entité : c'est un code porté par les modules.
-            final String code = ufCode;
-            targets = moduleRepository.findAll().stream()
-                    .filter(m -> code.equalsIgnoreCase(m.getUfCode()))
-                    .toList();
+            targets = moduleRepository.findByUfCodeIgnoreCase(ufCode);
             if (targets.isEmpty()) {
                 throw new NotFoundException("Aucun module pour l'unité " + ufCode + ".");
             }
