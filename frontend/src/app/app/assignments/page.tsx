@@ -58,7 +58,7 @@ export default function AssignmentsPage() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-6 sm:px-6">
+    <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
       <LearnerAppHeader showParcoursLink />
       <div className="mt-4">
         <h1 className="text-2xl font-semibold text-heading">Mes devoirs</h1>

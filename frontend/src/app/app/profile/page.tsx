@@ -41,9 +41,9 @@ export default function ProfilePage() {
 
   return (
     <main className="min-h-screen bg-background">
-      <LearnerAppHeader containerClassName="mx-auto flex max-w-3xl items-center justify-between gap-4 px-4 py-4 sm:px-6" />
+      <LearnerAppHeader />
 
-      <div className="mx-auto max-w-3xl space-y-6 px-4 py-8 sm:px-6">
+      <div className="mx-auto max-w-6xl space-y-6 px-4 py-8 sm:px-6">
         {error && (
           <p className="alert alert-warning" aria-live="polite">
             {error}

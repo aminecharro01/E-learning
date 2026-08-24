@@ -47,12 +47,9 @@ export default function LearnerStagePage() {
 
   return (
     <main className="min-h-screen bg-background">
-      <LearnerAppHeader
-        containerClassName="mx-auto flex max-w-4xl items-center justify-between gap-4 px-4 py-4 sm:px-6"
-        stageUnlocked
-      />
+      <LearnerAppHeader stageUnlocked />
 
-      <div className="mx-auto max-w-4xl space-y-4 px-4 py-8 sm:px-6">
+      <div className="mx-auto max-w-6xl space-y-4 px-4 py-8 sm:px-6">
         <p className="text-sm text-muted">
           Déposez votre convention signée par l&apos;entreprise, votre rapport de stage et votre
           présentation de soutenance. Les documents de l&apos;académie (convention école, assurance)
