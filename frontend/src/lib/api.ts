@@ -456,6 +456,14 @@ export async function generateQuizQuestionsAi(quizId: string, payload: AiGenerat
   return data;
 }
 
+export type AssistantSource = { lessonId: string; lessonTitle: string; moduleTitle: string; link: string };
+export type AssistantAskResponse = { answer: string; sources: AssistantSource[] };
+
+export async function askCourseAssistant(question: string) {
+  const { data } = await apiClient.post<AssistantAskResponse>("/api/assistant/ask", { question });
+  return data;
+}
+
 export async function updateQuizQuestion(
   quizId: string,
   questionId: string,

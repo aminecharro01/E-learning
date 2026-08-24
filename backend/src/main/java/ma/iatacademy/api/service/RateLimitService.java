@@ -26,6 +26,9 @@ public class RateLimitService {
     private static final int MESSAGE_MAX_ATTEMPTS = 30;
     private static final Duration MESSAGE_TTL = Duration.ofMinutes(1);
 
+    private static final int ASSISTANT_MAX_ATTEMPTS = 20;
+    private static final Duration ASSISTANT_TTL = Duration.ofMinutes(5);
+
     private final StringRedisTemplate redisTemplate;
 
     public void checkLoginAllowed(String ip) {
@@ -51,6 +54,11 @@ public class RateLimitService {
     public void checkMessageAllowed(String userId) {
         check("rate:message:" + userId, MESSAGE_MAX_ATTEMPTS, MESSAGE_TTL,
                 "Trop de messages envoyés. Ralentissez un peu.");
+    }
+
+    public void checkAssistantAllowed(String userId) {
+        check("rate:assistant:" + userId, ASSISTANT_MAX_ATTEMPTS, ASSISTANT_TTL,
+                "Trop de questions à l'assistant. Réessayez dans quelques minutes.");
     }
 
     private void check(String key, int maxAttempts, Duration ttl, String message) {
