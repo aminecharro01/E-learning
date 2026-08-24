@@ -15,6 +15,7 @@ import {
   ClipboardList,
   Shield,
   Calendar,
+  Briefcase,
 } from "lucide-react";
 
 type IconProps = LucideProps;
@@ -25,6 +26,10 @@ export function GridIcon(props: IconProps) {
 
 export function BookIcon(props: IconProps) {
   return <BookOpen {...props} />;
+}
+
+export function JobsIcon(props: IconProps) {
+  return <Briefcase {...props} />;
 }
 
 export function QuizIcon(props: IconProps) {

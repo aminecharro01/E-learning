@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { BookOpen, CircleUserRound, Briefcase, LogOut } from "lucide-react";
+import { BookOpen, CircleUserRound, Briefcase, GraduationCap, LogOut } from "lucide-react";
 import { getMe, getMyProgress, logout } from "@/lib/api";
 import type { User } from "@/types/domain";
 import { ThemeToggleButton } from "@/components/ThemeToggleButton";
@@ -93,6 +93,9 @@ export function LearnerAppHeader({
               <Briefcase size={18} aria-hidden />
             </Link>
           ) : null}
+          <Link href="/app/jobs" className={btn.icon} aria-label="Bourse à l'emploi" title="Bourse à l'emploi (alumni)">
+            <GraduationCap size={18} aria-hidden />
+          </Link>
           <button
             type="button"
             onClick={() => void onLogout()}

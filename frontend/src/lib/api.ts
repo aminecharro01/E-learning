@@ -438,6 +438,31 @@ export async function importBankQuestions(bankId: string, file: File) {
   return data;
 }
 
+export type AiGenerationPayload = {
+  lessonId?: string;
+  rawText?: string;
+  questionType: "SINGLE_CHOICE" | "MULTI_CHOICE" | "TRUE_FALSE" | "ESSAY";
+  count: number;
+};
+
+export type AiGenerationResult = { generatedCount: number; errors: { rowNumber: number; reason: string }[] };
+
+export async function generateQuizQuestionsAi(quizId: string, payload: AiGenerationPayload) {
+  const { data } = await apiClient.post<AiGenerationResult>(
+    `/api/quiz/${quizId}/questions/generate-ai`,
+    payload
+  );
+  return data;
+}
+
+export async function generateBankQuestionsAi(bankId: string, payload: AiGenerationPayload) {
+  const { data } = await apiClient.post<AiGenerationResult>(
+    `/api/question-banks/${bankId}/questions/generate-ai`,
+    payload
+  );
+  return data;
+}
+
 export async function updateQuizQuestion(
   quizId: string,
   questionId: string,
@@ -1322,6 +1347,60 @@ export async function deleteNewsletterSubscriber(id: string) {
   const { data } = await apiClient.delete<{ message: string }>(
     `/api/admin/newsletter-subscribers/${id}`
   );
+  return data;
+}
+
+/* ------------------------------------------------------ Bourse à l'emploi (alumni) */
+
+export type JobOffer = {
+  id: string;
+  title: string;
+  company: string;
+  description: string;
+  location: string | null;
+  contractType: "CDI" | "CDD" | "STAGE" | "ALTERNANCE" | "FREELANCE";
+  applyUrl: string | null;
+  contactEmail: string | null;
+  published: boolean;
+  expiresAt: string | null;
+  createdAt: string;
+};
+
+export type CreateJobOfferPayload = {
+  title: string;
+  company: string;
+  description: string;
+  location?: string;
+  contractType: JobOffer["contractType"];
+  applyUrl?: string;
+  contactEmail?: string;
+  expiresAt?: string | null;
+};
+
+export type UpdateJobOfferPayload = CreateJobOfferPayload & { published: boolean };
+
+export async function listJobOffersAdmin() {
+  const { data } = await apiClient.get<JobOffer[]>("/api/admin/job-offers");
+  return data;
+}
+
+export async function createJobOffer(payload: CreateJobOfferPayload) {
+  const { data } = await apiClient.post<JobOffer>("/api/admin/job-offers", payload);
+  return data;
+}
+
+export async function updateJobOffer(id: string, payload: UpdateJobOfferPayload) {
+  const { data } = await apiClient.put<JobOffer>(`/api/admin/job-offers/${id}`, payload);
+  return data;
+}
+
+export async function deleteJobOffer(id: string) {
+  const { data } = await apiClient.delete<{ message: string }>(`/api/admin/job-offers/${id}`);
+  return data;
+}
+
+export async function listJobOffersForLearner() {
+  const { data } = await apiClient.get<JobOffer[]>("/api/job-offers");
   return data;
 }
 
