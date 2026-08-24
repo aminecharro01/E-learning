@@ -8,6 +8,7 @@ import ma.iatacademy.api.dto.media.MoveAssetRequest;
 import ma.iatacademy.api.dto.media.SignedStreamResponse;
 import ma.iatacademy.api.security.UserPrincipal;
 import ma.iatacademy.api.service.MediaService;
+import ma.iatacademy.api.service.RateLimitService;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -25,14 +26,17 @@ import java.util.UUID;
 public class AssetController {
 
     private final MediaService mediaService;
+    private final RateLimitService rateLimitService;
 
     @PostMapping("/upload")
     @PreAuthorize("hasAnyRole('ADMIN','FORMATEUR','ETUDIANT')")
     public ResponseEntity<AssetResponse> upload(
             @RequestParam("file") MultipartFile file,
             @RequestParam(value = "kind", required = false) String kind,
-            @RequestParam(value = "folderId", required = false) UUID folderId
+            @RequestParam(value = "folderId", required = false) UUID folderId,
+            @AuthenticationPrincipal UserPrincipal principal
     ) {
+        rateLimitService.checkUploadAllowed(principal.getId().toString());
         return ResponseEntity.ok(mediaService.upload(file, kind, null, folderId));
     }
 

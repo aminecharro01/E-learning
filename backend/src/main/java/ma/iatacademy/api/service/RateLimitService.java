@@ -29,6 +29,12 @@ public class RateLimitService {
     private static final int ASSISTANT_MAX_ATTEMPTS = 20;
     private static final Duration ASSISTANT_TTL = Duration.ofMinutes(5);
 
+    private static final int AI_GENERATION_MAX_ATTEMPTS = 20;
+    private static final Duration AI_GENERATION_TTL = Duration.ofMinutes(5);
+
+    private static final int UPLOAD_MAX_ATTEMPTS = 30;
+    private static final Duration UPLOAD_TTL = Duration.ofMinutes(10);
+
     private final StringRedisTemplate redisTemplate;
 
     public void checkLoginAllowed(String ip) {
@@ -59,6 +65,16 @@ public class RateLimitService {
     public void checkAssistantAllowed(String userId) {
         check("rate:assistant:" + userId, ASSISTANT_MAX_ATTEMPTS, ASSISTANT_TTL,
                 "Trop de questions à l'assistant. Réessayez dans quelques minutes.");
+    }
+
+    public void checkAiGenerationAllowed(String userId) {
+        check("rate:ai-generation:" + userId, AI_GENERATION_MAX_ATTEMPTS, AI_GENERATION_TTL,
+                "Trop de générations IA. Réessayez dans quelques minutes.");
+    }
+
+    public void checkUploadAllowed(String userId) {
+        check("rate:upload:" + userId, UPLOAD_MAX_ATTEMPTS, UPLOAD_TTL,
+                "Trop de fichiers envoyés. Réessayez dans quelques minutes.");
     }
 
     private void check(String key, int maxAttempts, Duration ttl, String message) {

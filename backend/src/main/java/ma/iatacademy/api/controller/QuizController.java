@@ -142,9 +142,11 @@ public class QuizController {
     @PreAuthorize("hasAnyRole('ADMIN','FORMATEUR')")
     public ResponseEntity<AiGenerationResponse> generateQuestionsAi(
             @PathVariable UUID id,
-            @Valid @RequestBody AiGenerationRequest request
+            @Valid @RequestBody AiGenerationRequest request,
+            @AuthenticationPrincipal UserPrincipal principal
     ) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(quizService.generateQuestionsAi(id, request));
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(quizService.generateQuestionsAi(id, request, principal.getId()));
     }
 
     @GetMapping
