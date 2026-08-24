@@ -32,8 +32,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class DemoDataSeeder implements ApplicationRunner {
 
-    private static final UUID FORMATION_ID =
-            UUID.fromString("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
+    private static final UUID FORMATION_ID = FormationDefaults.DEFAULT_FORMATION_ID;
     /** Changing this forces a one-shot catalog reseed on next boot. */
     private static final String DEMO_MARKER = "Embarquement IAT Academy";
 

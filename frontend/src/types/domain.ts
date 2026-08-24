@@ -6,7 +6,7 @@ export type Role = "SUPER_ADMIN" | "ADMIN" | "FORMATEUR" | "ETUDIANT" | "SUPPORT
 
 export type BlockType = "VIDEO" | "TEXT" | "PDF" | "IMAGE";
 
-export type QuizType = "APPLICATIF" | "FIN_MODULE";
+export type QuizType = "APPLICATIF" | "FIN_MODULE" | "FIN_UF" | "FIN_ANNEE";
 
 export type QuestionType = "SINGLE_CHOICE" | "MULTI_CHOICE" | "TRUE_FALSE" | "ESSAY";
 
@@ -97,6 +97,8 @@ export type Quiz = {
   quizType: QuizType;
   lessonId: string | null;
   moduleId: string | null;
+  ufCode?: string | null;
+  yearNumber?: number | null;
   passingScore: number;
   maxAttempts: number;
   timeLimitSeconds: number;

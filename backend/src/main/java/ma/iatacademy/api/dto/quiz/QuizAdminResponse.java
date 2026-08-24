@@ -10,6 +10,8 @@ public record QuizAdminResponse(
         QuizType quizType,
         UUID lessonId,
         UUID moduleId,
+        String ufCode,
+        Integer yearNumber,
         int passingScore,
         int maxAttempts,
         int timeLimitSeconds,

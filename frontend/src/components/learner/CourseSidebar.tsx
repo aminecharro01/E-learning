@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Lock } from "lucide-react";
 import type { Lesson, ModuleDetail, ModuleLearnerStatus, ModuleQuizItem } from "@/types/domain";
+import type { UfQuizItem } from "@/lib/api";
 import { IconBadge, IconCheck, IconCompass, IconPlane, IconTower } from "@/components/brand/IatIcons";
 import { btn } from "@/lib/ui";
 
@@ -19,6 +20,7 @@ export type UfSidebarModule = {
 type Props = {
   ufTitle: string;
   modules: UfSidebarModule[];
+  ufQuiz?: UfQuizItem | null;
   activeModuleId: string;
   activeLessonId?: string;
   activeQuizId?: string;
@@ -117,6 +119,7 @@ function ModuleLessons({
 export function CourseSidebar({
   ufTitle,
   modules,
+  ufQuiz,
   activeModuleId,
   activeLessonId,
   activeQuizId,
@@ -275,6 +278,24 @@ export function CourseSidebar({
           })}
         </ul>
       </nav>
+
+      {ufQuiz && (
+        <div className="learn-sidebar-nav border-t border-theme pt-2">
+          <p className="bp-eyebrow !mb-1 px-3 !text-[10px]">
+            <IconCompass size={12} />
+            Évaluation d&apos;UF
+          </p>
+          <Link
+            href={`/app/learn/${activeModuleId}/quiz/${ufQuiz.id}`}
+            scroll={false}
+            prefetch
+            className={`learn-quiz-link !ml-2 ${activeQuizId === ufQuiz.id ? "is-active" : ""}`}
+          >
+            <IconBadge size={14} />
+            {ufQuiz.title}
+          </Link>
+        </div>
+      )}
     </aside>
   );
 }

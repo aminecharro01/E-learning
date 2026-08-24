@@ -32,6 +32,8 @@ export function QuizSettingsForm({ modules, defaultValues, busy, onSubmit }: Pro
       quizType: "FIN_MODULE",
       moduleId: modules[0]?.id ?? "",
       lessonId: "",
+      ufCode: "",
+      yearNumber: undefined,
       passingScore: 60,
       maxAttempts: 2,
       timeLimitSeconds: 5400,
@@ -53,7 +55,16 @@ export function QuizSettingsForm({ modules, defaultValues, busy, onSubmit }: Pro
   const quizType = watch("quizType");
   const moduleId = watch("moduleId");
   const lessonId = watch("lessonId");
+  const ufCode = watch("ufCode");
   const timeLimitSeconds = watch("timeLimitSeconds");
+
+  const ufOptions = useMemo(() => {
+    const seen = new Map<string, string>();
+    for (const m of modules) {
+      if (m.ufCode) seen.set(m.ufCode, m.ufTitle || m.ufCode);
+    }
+    return Array.from(seen.entries()).map(([code, title]) => ({ ufCode: code, ufTitle: title }));
+  }, [modules]);
 
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [lessonsLoading, setLessonsLoading] = useState(false);
@@ -117,8 +128,15 @@ export function QuizSettingsForm({ modules, defaultValues, busy, onSubmit }: Pro
       if (lesson) {
         setValue("title", `Quiz section — ${lesson.title}`);
       }
+    } else if (quizType === "FIN_UF" && ufCode) {
+      const uf = ufOptions.find((u) => u.ufCode === ufCode);
+      if (uf) {
+        setValue("title", `Quiz de fin d'UF — ${uf.ufTitle}`);
+      }
+    } else if (quizType === "FIN_ANNEE") {
+      setValue("title", "Examen de fin d'année");
     }
-  }, [quizType, moduleId, lessonId, modules, lessons, setValue]);
+  }, [quizType, moduleId, lessonId, ufCode, modules, lessons, ufOptions, setValue]);
 
   function onTimeMinutesChange(minutes: number) {
     const safe = Number.isFinite(minutes) && minutes >= 0 ? minutes : 0;
@@ -129,7 +147,7 @@ export function QuizSettingsForm({ modules, defaultValues, busy, onSubmit }: Pro
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
       <FormSection title="Type & portée">
         <FormField label="Type d'évaluation" error={errors.quizType}>
-          <div className="grid gap-2 sm:grid-cols-2">
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
             <TypeCard
               active={quizType === "FIN_MODULE"}
               title="Fin de module"
@@ -142,31 +160,77 @@ export function QuizSettingsForm({ modules, defaultValues, busy, onSubmit }: Pro
               desc="Lié à une section précise"
               onClick={() => setValue("quizType", "APPLICATIF", { shouldValidate: true })}
             />
+            <TypeCard
+              active={quizType === "FIN_UF"}
+              title="Fin d'UF"
+              desc="Après toute une unité de formation"
+              onClick={() => setValue("quizType", "FIN_UF", { shouldValidate: true })}
+            />
+            <TypeCard
+              active={quizType === "FIN_ANNEE"}
+              title="Fin d'année"
+              desc="Examen de fin d'année 1 ou 2"
+              onClick={() => setValue("quizType", "FIN_ANNEE", { shouldValidate: true })}
+            />
           </div>
           <input type="hidden" {...register("quizType")} />
         </FormField>
 
-        <FormField
-          label="Module"
-          error={errors.moduleId}
-          hint={
-            quizType === "APPLICATIF"
-              ? "Choisissez d’abord le module, puis la section"
-              : "Module concerné par l’évaluation finale"
-          }
-        >
-          <select className={fieldClass(!!errors.moduleId)} {...register("moduleId")}>
-            {moduleSelectGroups(modules).map((group) => (
-              <optgroup key={group.label} label={group.label}>
-                {group.modules.map((m) => (
-                  <option key={m.id} value={m.id}>
-                    {m.title}
-                  </option>
-                ))}
-              </optgroup>
-            ))}
-          </select>
-        </FormField>
+        {(quizType === "APPLICATIF" || quizType === "FIN_MODULE") && (
+          <FormField
+            label="Module"
+            error={errors.moduleId}
+            hint={
+              quizType === "APPLICATIF"
+                ? "Choisissez d’abord le module, puis la section"
+                : "Module concerné par l’évaluation finale"
+            }
+          >
+            <select className={fieldClass(!!errors.moduleId)} {...register("moduleId")}>
+              {moduleSelectGroups(modules).map((group) => (
+                <optgroup key={group.label} label={group.label}>
+                  {group.modules.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.title}
+                    </option>
+                  ))}
+                </optgroup>
+              ))}
+            </select>
+          </FormField>
+        )}
+
+        {quizType === "FIN_UF" && (
+          <FormField
+            label="Unité de formation"
+            error={errors.ufCode}
+            hint="Déduite des UF déjà utilisées sur les modules existants"
+          >
+            <select className={fieldClass(!!errors.ufCode)} {...register("ufCode")}>
+              <option value="">— Sélectionner une UF —</option>
+              {ufOptions.map((u) => (
+                <option key={u.ufCode} value={u.ufCode}>
+                  {u.ufTitle}
+                </option>
+              ))}
+            </select>
+            {ufOptions.length === 0 && (
+              <p className="mt-1 text-xs text-muted">
+                Aucune UF trouvée — renseignez d’abord un code UF sur au moins un module.
+              </p>
+            )}
+          </FormField>
+        )}
+
+        {quizType === "FIN_ANNEE" && (
+          <FormField label="Année" error={errors.yearNumber}>
+            <select className={fieldClass(!!errors.yearNumber)} {...register("yearNumber")}>
+              <option value="">— Sélectionner une année —</option>
+              <option value={1}>Année 1</option>
+              <option value={2}>Année 2</option>
+            </select>
+          </FormField>
+        )}
 
         {quizType === "APPLICATIF" && (
           <FormField

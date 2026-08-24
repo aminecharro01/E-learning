@@ -33,9 +33,11 @@ export type LessonFormValues = z.output<typeof lessonFormSchema>;
 export const quizSettingsSchema = z
   .object({
     title: z.string().trim().min(2).max(255),
-    quizType: z.enum(["APPLICATIF", "FIN_MODULE"]),
+    quizType: z.enum(["APPLICATIF", "FIN_MODULE", "FIN_UF", "FIN_ANNEE"]),
     moduleId: z.string().uuid().optional().or(z.literal("")),
     lessonId: z.string().uuid().optional().or(z.literal("")),
+    ufCode: z.string().trim().optional().or(z.literal("")),
+    yearNumber: intField(1, 2).optional(),
     passingScore: intField(0, 100),
     maxAttempts: intField(1, 20),
     timeLimitSeconds: intField(0),
@@ -74,6 +76,12 @@ export const quizSettingsSchema = z
           path: ["lessonId"],
         });
       }
+    }
+    if (data.quizType === "FIN_UF" && !data.ufCode) {
+      ctx.addIssue({ code: "custom", message: "Sélectionnez une UF", path: ["ufCode"] });
+    }
+    if (data.quizType === "FIN_ANNEE" && !data.yearNumber) {
+      ctx.addIssue({ code: "custom", message: "Sélectionnez une année", path: ["yearNumber"] });
     }
   });
 

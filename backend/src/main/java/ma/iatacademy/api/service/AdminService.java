@@ -1,6 +1,7 @@
 package ma.iatacademy.api.service;
 
 import lombok.RequiredArgsConstructor;
+import static ma.iatacademy.api.config.FormationDefaults.DEFAULT_FORMATION_ID;
 import ma.iatacademy.api.domain.entity.Certificate;
 import ma.iatacademy.api.domain.entity.Formation;
 import ma.iatacademy.api.domain.entity.LessonProgress;
@@ -37,8 +38,6 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class AdminService {
 
-    private static final UUID DEFAULT_FORMATIONATION_ID =
-            UUID.fromString("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
 
     private final UserRepository userRepository;
     private final ModuleRepository moduleRepository;
@@ -100,7 +99,7 @@ public class AdminService {
                 ? userRepository.searchByRoleAndQuery(Role.ETUDIANT, q.trim(), pageable)
                 : userRepository.findByRole(Role.ETUDIANT, pageable);
 
-        List<ModuleEntity> modules = moduleRepository.findByFormationIdOrderByOrderIndexAsc(DEFAULT_FORMATIONATION_ID);
+        List<ModuleEntity> modules = moduleRepository.findByFormationIdOrderByOrderIndexAsc(DEFAULT_FORMATION_ID);
         int totalModules = modules.size();
 
         List<LearnerSummaryResponse> content = learners.getContent().stream()
@@ -125,7 +124,7 @@ public class AdminService {
         if (user.getRole() != Role.ETUDIANT) {
             throw new ApiException("Ce compte n'est pas un apprenant.");
         }
-        Formation formation = formationRepository.findById(DEFAULT_FORMATIONATION_ID)
+        Formation formation = formationRepository.findById(DEFAULT_FORMATION_ID)
                 .orElseThrow(() -> new NotFoundException("Formation introuvable."));
         List<ModuleEntity> modules = moduleRepository.findByFormationIdOrderByOrderIndexAsc(formation.getId());
         List<LearnerProgressDetailResponse.ModuleStatusItem> items = modules.stream()

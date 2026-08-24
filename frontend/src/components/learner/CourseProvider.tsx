@@ -2,7 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
-import { getModule, getMyProgress } from "@/lib/api";
+import { getModule, getMyProgress, getUfQuiz, type UfQuizItem } from "@/lib/api";
 import type { ModuleDetail, ModuleLearnerStatus } from "@/types/domain";
 import { CourseSidebar, type UfSidebarModule } from "@/components/learner/CourseSidebar";
 import { LearnerAppHeader } from "@/components/learner/LearnerAppHeader";
@@ -54,6 +54,7 @@ async function loadUfBundle(targetModuleId: string): Promise<{
   current: ModuleDetail;
   ufTitle: string;
   details: UfSidebarModule[];
+  ufQuiz: UfQuizItem | null;
 }> {
   const [progress, currentDetail] = await Promise.all([
     getMyProgress(),
@@ -64,6 +65,7 @@ async function loadUfBundle(targetModuleId: string): Promise<{
   const summary = progress.modules.find((m) => m.id === targetModuleId);
   const ufCode = summary?.ufCode ?? current.ufCode ?? null;
   const ufTitle = summary?.ufTitle ?? current.ufTitle ?? "Unité de formation";
+  const ufQuiz = ufCode ? await getUfQuiz(ufCode).catch(() => null) : null;
 
   const siblings = progress.modules
     .filter((m) => (ufCode ? m.ufCode === ufCode : m.id === targetModuleId))
@@ -116,7 +118,7 @@ async function loadUfBundle(targetModuleId: string): Promise<{
     })
   );
 
-  return { current, ufTitle, details };
+  return { current, ufTitle, details, ufQuiz };
 }
 
 type ProviderProps = {
@@ -133,6 +135,7 @@ export function CourseProvider({ children }: ProviderProps) {
   const [module, setModule] = useState<ModuleDetail | null>(null);
   const [ufTitle, setUfTitle] = useState("Unité de formation");
   const [ufModules, setUfModules] = useState<UfSidebarModule[]>([]);
+  const [ufQuiz, setUfQuiz] = useState<UfQuizItem | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [collapsed, setCollapsed] = useState(false);
 
@@ -144,6 +147,7 @@ export function CourseProvider({ children }: ProviderProps) {
       setModule(bundle.current);
       setUfTitle(bundle.ufTitle);
       setUfModules(bundle.details);
+      setUfQuiz(bundle.ufQuiz);
       setError(null);
     },
     []
@@ -217,6 +221,7 @@ export function CourseProvider({ children }: ProviderProps) {
             <CourseSidebar
               ufTitle={ufTitle}
               modules={ufModules}
+              ufQuiz={ufQuiz}
               activeModuleId={moduleId}
               activeLessonId={activeLessonId}
               activeQuizId={activeQuizId}

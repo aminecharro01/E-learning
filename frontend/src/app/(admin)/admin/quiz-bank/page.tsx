@@ -249,6 +249,8 @@ export default function QuizBankPage() {
         quizType: values.quizType,
         moduleId: values.quizType === "FIN_MODULE" ? values.moduleId || null : null,
         lessonId: values.quizType === "APPLICATIF" ? values.lessonId || null : null,
+        ufCode: values.quizType === "FIN_UF" ? values.ufCode || null : null,
+        yearNumber: values.quizType === "FIN_ANNEE" ? values.yearNumber || null : null,
         passingScore: values.passingScore,
         maxAttempts: values.maxAttempts,
         timeLimitSeconds: values.timeLimitSeconds,
@@ -470,9 +472,13 @@ export default function QuizBankPage() {
                 <div>
                   <h2 className="text-lg font-semibold text-heading">{selectedQuiz.title}</h2>
                   <p className="mt-1 text-xs text-muted">
-                    {selectedQuiz.quizType} · Module :{" "}
-                    {moduleTitle(selectedQuiz.moduleId)} · Seuil{" "}
-                    {selectedQuiz.passingScore}% · {selectedQuiz.maxAttempts} tentatives
+                    {selectedQuiz.quizType} ·{" "}
+                    {selectedQuiz.quizType === "FIN_UF"
+                      ? `UF : ${selectedQuiz.ufCode ?? "—"}`
+                      : selectedQuiz.quizType === "FIN_ANNEE"
+                        ? `Année ${selectedQuiz.yearNumber ?? "—"}`
+                        : `Module : ${moduleTitle(selectedQuiz.moduleId)}`}{" "}
+                    · Seuil {selectedQuiz.passingScore}% · {selectedQuiz.maxAttempts} tentatives
                   </p>
                 </div>
                 <div className="flex flex-wrap gap-2">

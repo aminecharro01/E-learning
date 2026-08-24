@@ -7,6 +7,7 @@ import com.lowagie.text.Paragraph;
 import com.lowagie.text.pdf.PdfWriter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import static ma.iatacademy.api.config.FormationDefaults.DEFAULT_FORMATION_ID;
 import ma.iatacademy.api.domain.entity.Certificate;
 import ma.iatacademy.api.domain.entity.Formation;
 import ma.iatacademy.api.domain.entity.ModuleEntity;
@@ -69,9 +70,7 @@ public class CertificateService {
 
     @Transactional(readOnly = true)
     public Certificate getMine(UUID userId) {
-        // Default seeded formation
-        UUID formationId = UUID.fromString("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
-        return certificateRepository.findByUserIdAndFormationId(userId, formationId)
+        return certificateRepository.findByUserIdAndFormationId(userId, DEFAULT_FORMATION_ID)
                 .orElseThrow(() -> new NotFoundException(
                         "Aucune attestation disponible. Validez les 36 modules du cycle (2 ans) d'abord."));
     }

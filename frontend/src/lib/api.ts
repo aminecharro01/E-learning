@@ -359,6 +359,20 @@ export async function createQuiz(payload: Record<string, unknown>) {
   return data;
 }
 
+export type UfQuizItem = { id: string; title: string; quizType: string; published: boolean };
+
+export async function getUfQuiz(ufCode: string) {
+  const { data } = await apiClient.get<UfQuizItem | "">("/api/quiz/uf-quiz", { params: { ufCode } });
+  return data || null;
+}
+
+export type YearExam = { quizId: string; title: string; unlocked: boolean };
+
+export async function getYearExam(year: number) {
+  const { data } = await apiClient.get<YearExam | "">("/api/quiz/year-exam", { params: { year } });
+  return data || null;
+}
+
 export type QuizAttemptAdmin = {
   id: string;
   userId: string;

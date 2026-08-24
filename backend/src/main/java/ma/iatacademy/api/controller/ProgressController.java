@@ -2,6 +2,7 @@ package ma.iatacademy.api.controller;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import static ma.iatacademy.api.config.FormationDefaults.DEFAULT_FORMATION_ID;
 import ma.iatacademy.api.domain.entity.Formation;
 import ma.iatacademy.api.domain.entity.ModuleEntity;
 import ma.iatacademy.api.domain.enums.ModuleLearnerStatus;
@@ -27,10 +28,6 @@ import java.util.UUID;
 @RequestMapping("/api/progress")
 @RequiredArgsConstructor
 public class ProgressController {
-
-    /** Seeded formation id from V1 migration. */
-    private static final UUID DEFAULT_FORMATION_ID =
-            UUID.fromString("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
 
     private final FormationRepository formationRepository;
     private final ModuleRepository moduleRepository;

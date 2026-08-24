@@ -1,6 +1,7 @@
 package ma.iatacademy.api.service;
 
 import lombok.RequiredArgsConstructor;
+import static ma.iatacademy.api.config.FormationDefaults.DEFAULT_FORMATION_ID;
 import ma.iatacademy.api.config.QuizProperties;
 import ma.iatacademy.api.domain.entity.Lesson;
 import ma.iatacademy.api.domain.entity.LessonProgress;
@@ -179,10 +180,27 @@ public class ProgressionService {
             return false;
         }
         return quizRepository.findByModuleIdAndQuizType(moduleId, QuizType.FIN_MODULE)
-                .map(quiz -> quizAttemptRepository
-                        .findFirstByUserIdAndQuizIdAndStatusOrderBySubmittedAtDesc(
-                                userId, quiz.getId(), AttemptStatus.PASSED)
-                        .isPresent())
+                .map(quiz -> hasPassedAttempt(userId, quiz.getId()))
+                .orElse(true);
+    }
+
+    private boolean hasPassedAttempt(UUID userId, UUID quizId) {
+        return quizAttemptRepository
+                .findFirstByUserIdAndQuizIdAndStatusOrderBySubmittedAtDesc(userId, quizId, AttemptStatus.PASSED)
+                .isPresent();
+    }
+
+    /** No FIN_UF quiz configured for this UF = no gate, same "optional" semantics as FIN_MODULE. */
+    private boolean isUfQuizPassed(UUID userId, String ufCode) {
+        return quizRepository.findByFormationIdAndUfCodeAndQuizType(DEFAULT_FORMATION_ID, ufCode, QuizType.FIN_UF)
+                .map(quiz -> hasPassedAttempt(userId, quiz.getId()))
+                .orElse(true);
+    }
+
+    /** No FIN_ANNEE quiz configured for this year = no gate. */
+    private boolean isYearQuizPassed(UUID userId, int yearNumber) {
+        return quizRepository.findByFormationIdAndYearNumberAndQuizType(DEFAULT_FORMATION_ID, yearNumber, QuizType.FIN_ANNEE)
+                .map(quiz -> hasPassedAttempt(userId, quiz.getId()))
                 .orElse(true);
     }
 
@@ -200,16 +218,29 @@ public class ProgressionService {
 
     @Transactional
     public boolean isYear1FullyDone(UUID userId, UUID formationId) {
+        return isYear1ContentDone(userId, formationId) && isYearQuizPassed(userId, 1);
+    }
+
+    /**
+     * Year 1 done except for the FIN_ANNEE quiz itself — lets the "exam unlocked?" check
+     * on the learner dashboard avoid the circularity of isYear1FullyDone requiring the
+     * very quiz it's meant to unlock.
+     */
+    @Transactional(readOnly = true)
+    public boolean isYear1ContentDone(UUID userId, UUID formationId) {
         List<ModuleEntity> year1 = moduleRepository.findByFormationIdOrderByOrderIndexAsc(formationId)
                 .stream()
                 .filter(m -> yearOf(m) == 1)
                 .toList();
+        if (year1.isEmpty()) {
+            return false;
+        }
         for (String uf : distinctUfOrder(year1)) {
             if (!isUfFullyDone(userId, uf, year1)) {
                 return false;
             }
         }
-        return !year1.isEmpty();
+        return true;
     }
 
     private boolean isUfFullyDone(UUID userId, String ufCode, List<ModuleEntity> yearModules) {
@@ -217,6 +248,9 @@ public class ProgressionService {
                 .filter(m -> ufCode.equals(ufKey(m)))
                 .allMatch(m -> isModuleContentCompleted(userId, m.getId()));
         if (!contentDone) {
+            return false;
+        }
+        if (!isUfQuizPassed(userId, ufCode)) {
             return false;
         }
         return ufValidationService.isValidated(userId, ufCode);
@@ -231,8 +265,7 @@ public class ProgressionService {
         if (!appSettingsService.isYear2OpeningDateReached()) {
             return;
         }
-        UUID formationId = UUID.fromString("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
-        if (!isYear1FullyDone(userId, formationId)) {
+        if (!isYear1FullyDone(userId, DEFAULT_FORMATION_ID)) {
             return;
         }
         user.setYear2AccessEnabled(true);

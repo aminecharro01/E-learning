@@ -1,6 +1,7 @@
 package ma.iatacademy.api.service;
 
 import lombok.RequiredArgsConstructor;
+import static ma.iatacademy.api.config.FormationDefaults.DEFAULT_FORMATION_ID;
 import ma.iatacademy.api.config.QuizProperties;
 import ma.iatacademy.api.domain.entity.*;
 import ma.iatacademy.api.domain.enums.AttemptStatus;
@@ -9,6 +10,7 @@ import ma.iatacademy.api.domain.enums.NotificationType;
 import ma.iatacademy.api.domain.enums.QuestionType;
 import ma.iatacademy.api.domain.enums.QuizType;
 import ma.iatacademy.api.domain.enums.Role;
+import ma.iatacademy.api.dto.catalog.ModuleQuizItemResponse;
 import ma.iatacademy.api.dto.common.PageResponse;
 import ma.iatacademy.api.dto.proctoring.ProctoringEventRequest;
 import ma.iatacademy.api.dto.proctoring.ProctoringEventResponse;
@@ -43,6 +45,7 @@ public class QuizService {
     private final QuizAttemptRepository quizAttemptRepository;
     private final LessonRepository lessonRepository;
     private final ModuleRepository moduleRepository;
+    private final FormationRepository formationRepository;
     private final UserRepository userRepository;
     private final StringRedisTemplate redisTemplate;
     private final ProgressionService progressionService;
@@ -534,19 +537,42 @@ public class QuizService {
     public QuizAdminResponse createQuiz(CreateQuizRequest request) {
         Lesson lesson = null;
         ModuleEntity module = null;
-        if (request.quizType() == QuizType.APPLICATIF) {
-            if (request.lessonId() == null) {
-                throw new ApiException("lessonId requis pour un quiz de section.");
+        Formation formation = null;
+        String ufCode = null;
+        Integer yearNumber = null;
+
+        switch (request.quizType()) {
+            case APPLICATIF -> {
+                if (request.lessonId() == null) {
+                    throw new ApiException("lessonId requis pour un quiz de section.");
+                }
+                lesson = lessonRepository.findById(request.lessonId())
+                        .orElseThrow(() -> new NotFoundException("Leçon introuvable."));
+                module = lesson.getModule();
             }
-            lesson = lessonRepository.findById(request.lessonId())
-                    .orElseThrow(() -> new NotFoundException("Leçon introuvable."));
-            module = lesson.getModule();
-        } else {
-            if (request.moduleId() == null) {
-                throw new ApiException("moduleId requis pour une évaluation de module.");
+            case FIN_MODULE -> {
+                if (request.moduleId() == null) {
+                    throw new ApiException("moduleId requis pour une évaluation de module.");
+                }
+                module = moduleRepository.findById(request.moduleId())
+                        .orElseThrow(() -> new NotFoundException("Module introuvable."));
             }
-            module = moduleRepository.findById(request.moduleId())
-                    .orElseThrow(() -> new NotFoundException("Module introuvable."));
+            case FIN_UF -> {
+                if (request.ufCode() == null || request.ufCode().isBlank()) {
+                    throw new ApiException("ufCode requis pour un quiz de fin d'UF.");
+                }
+                ufCode = request.ufCode().trim();
+                formation = formationRepository.findById(DEFAULT_FORMATION_ID)
+                        .orElseThrow(() -> new NotFoundException("Formation introuvable."));
+            }
+            case FIN_ANNEE -> {
+                if (request.yearNumber() == null || (request.yearNumber() != 1 && request.yearNumber() != 2)) {
+                    throw new ApiException("yearNumber (1 ou 2) requis pour un quiz de fin d'année.");
+                }
+                yearNumber = request.yearNumber();
+                formation = formationRepository.findById(DEFAULT_FORMATION_ID)
+                        .orElseThrow(() -> new NotFoundException("Formation introuvable."));
+            }
         }
 
         boolean isModuleQuiz = request.quizType() == QuizType.FIN_MODULE;
@@ -555,6 +581,9 @@ public class QuizService {
                 .quizType(request.quizType())
                 .lesson(lesson)
                 .module(module)
+                .formation(formation)
+                .ufCode(ufCode)
+                .yearNumber(yearNumber)
                 .passingScore(request.passingScore() != null
                         ? request.passingScore()
                         : (isModuleQuiz
@@ -585,6 +614,29 @@ public class QuizService {
         }
 
         return toAdmin(quiz);
+    }
+
+    /** Fin d'UF quiz for the sidebar — null if none is configured for this UF. */
+    @Transactional(readOnly = true)
+    public ModuleQuizItemResponse getUfQuiz(String ufCode) {
+        return quizRepository.findByFormationIdAndUfCodeAndQuizType(DEFAULT_FORMATION_ID, ufCode, QuizType.FIN_UF)
+                .map(q -> new ModuleQuizItemResponse(q.getId(), q.getTitle(), q.getQuizType(), null, null, q.isPublished()))
+                .orElse(null);
+    }
+
+    /** Fin d'année quiz for the learner dashboard CTA — null if none is configured for that year. */
+    @Transactional(readOnly = true)
+    public YearExamResponse getYearExam(int yearNumber, UserPrincipal principal) {
+        Quiz quiz = quizRepository
+                .findByFormationIdAndYearNumberAndQuizType(DEFAULT_FORMATION_ID, yearNumber, QuizType.FIN_ANNEE)
+                .orElse(null);
+        if (quiz == null) {
+            return null;
+        }
+        boolean unlocked = yearNumber == 1
+                ? progressionService.isYear1ContentDone(principal.getId(), DEFAULT_FORMATION_ID)
+                : false; // only year 1 -> 2 progression is modeled today
+        return new YearExamResponse(quiz.getId(), quiz.getTitle(), unlocked);
     }
 
     /**
@@ -931,6 +983,8 @@ public class QuizService {
                 quiz.getQuizType(),
                 quiz.getLesson() != null ? quiz.getLesson().getId() : null,
                 quiz.getModule() != null ? quiz.getModule().getId() : null,
+                quiz.getUfCode(),
+                quiz.getYearNumber(),
                 quiz.getPassingScore(),
                 quiz.getMaxAttempts(),
                 quiz.getTimeLimitSeconds(),

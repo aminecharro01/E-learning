@@ -12,6 +12,10 @@ import java.util.UUID;
 public interface QuizRepository extends JpaRepository<Quiz, UUID> {
     Optional<Quiz> findByLessonIdAndQuizType(UUID lessonId, ma.iatacademy.api.domain.enums.QuizType quizType);
     Optional<Quiz> findByModuleIdAndQuizType(UUID moduleId, ma.iatacademy.api.domain.enums.QuizType quizType);
+    Optional<Quiz> findByFormationIdAndUfCodeAndQuizType(
+            UUID formationId, String ufCode, ma.iatacademy.api.domain.enums.QuizType quizType);
+    Optional<Quiz> findByFormationIdAndYearNumberAndQuizType(
+            UUID formationId, Integer yearNumber, ma.iatacademy.api.domain.enums.QuizType quizType);
     List<Quiz> findByModuleIdOrderByCreatedAtDesc(UUID moduleId);
     List<Quiz> findAllByOrderByCreatedAtDesc();
     List<Quiz> findByLessonIdIn(List<UUID> lessonIds);

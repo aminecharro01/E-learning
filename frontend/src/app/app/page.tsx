@@ -2,11 +2,14 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { Lock } from "lucide-react";
 import {
   getMe,
   getMyCertificate,
   getMyProgress,
+  getYearExam,
   type ProgressResponse,
+  type YearExam,
 } from "@/lib/api";
 import type { Certificate, Module } from "@/types/domain";
 import { LearnerAppHeader } from "@/components/learner/LearnerAppHeader";
@@ -107,6 +110,7 @@ export default function AppHomePage() {
   const [error, setError] = useState<string | null>(null);
   const [expandedUfs, setExpandedUfs] = useState<Set<string>>(new Set());
   const [ufInit, setUfInit] = useState(false);
+  const [yearExam, setYearExam] = useState<YearExam | null>(null);
 
   useEffect(() => {
     Promise.allSettled([getMe(), getMyProgress(), getMyCertificate()]).then(
@@ -135,6 +139,12 @@ export default function AppHomePage() {
   }, []);
 
   const currentYear = year2Access ? 2 : 1;
+
+  useEffect(() => {
+    getYearExam(currentYear)
+      .then(setYearExam)
+      .catch(() => setYearExam(null));
+  }, [currentYear]);
 
   const yearModules = useMemo(() => {
     if (!progress) return [];
@@ -312,6 +322,35 @@ export default function AppHomePage() {
                 </div>
               </div>
             ) : null}
+
+            {yearExam && (
+              <div
+                className={`alert flex items-start gap-3 rounded-xl border p-4 ${
+                  yearExam.unlocked
+                    ? "border-[var(--gold-500)] bg-[color-mix(in_srgb,var(--gold-500)_10%,transparent)]"
+                    : "border-theme"
+                }`}
+              >
+                {yearExam.unlocked ? <IconBadge size={22} /> : <Lock size={20} aria-hidden />}
+                <div className="flex-1">
+                  <p className="font-semibold text-heading">{yearExam.title}</p>
+                  <p className="mt-1 text-sm text-muted">
+                    {yearExam.unlocked
+                      ? "Toutes les UF de cette année sont terminées — vous pouvez passer l'examen de fin d'année."
+                      : "Terminez toutes les UF de cette année (contenu + validations) pour débloquer cet examen."}
+                  </p>
+                  {yearExam.unlocked && yearModules[0] && (
+                    <Link
+                      href={`/app/learn/${yearModules[0].id}/quiz/${yearExam.quizId}`}
+                      className={`${btn.primarySm} mt-3 inline-flex`}
+                    >
+                      <IconBadge size={14} />
+                      Passer l&apos;examen
+                    </Link>
+                  )}
+                </div>
+              </div>
+            )}
 
             <section>
               <div className="section-head">

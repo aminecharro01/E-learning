@@ -11,6 +11,10 @@ public record CreateQuizRequest(
         @NotNull QuizType quizType,
         UUID lessonId,
         UUID moduleId,
+        /** FIN_UF only. */
+        String ufCode,
+        /** FIN_ANNEE only (1 ou 2). */
+        Integer yearNumber,
         Integer passingScore,
         Integer maxAttempts,
         Integer timeLimitSeconds,

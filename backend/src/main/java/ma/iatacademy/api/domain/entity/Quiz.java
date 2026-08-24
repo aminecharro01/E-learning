@@ -38,6 +38,20 @@ public class Quiz extends AuditableEntity {
     @JoinColumn(name = "module_id")
     private ModuleEntity module;
 
+    /** Only set for FIN_UF/FIN_ANNEE — neither a UF nor a year has any other FK to hang
+     *  off of, so these three scalar fields identify the scope directly instead. */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "formation_id")
+    private Formation formation;
+
+    /** FIN_UF only — matches ModuleEntity#ufCode across every module in that UF. */
+    @Column(name = "uf_code", length = 20)
+    private String ufCode;
+
+    /** FIN_ANNEE only — matches ModuleEntity#yearNumber (1 or 2). */
+    @Column(name = "year_number")
+    private Integer yearNumber;
+
     /** TODO: à valider avec le client — default 50 for section / 60 for module */
     @Column(name = "passing_score", nullable = false)
     private int passingScore;

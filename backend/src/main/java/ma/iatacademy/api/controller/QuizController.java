@@ -52,6 +52,21 @@ public class QuizController {
         return ResponseEntity.ok(quizService.listAttemptsForStaff(id));
     }
 
+    @GetMapping("/uf-quiz")
+    public ResponseEntity<?> ufQuiz(@RequestParam String ufCode) {
+        var quiz = quizService.getUfQuiz(ufCode);
+        return quiz != null ? ResponseEntity.ok(quiz) : ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/year-exam")
+    public ResponseEntity<?> yearExam(
+            @RequestParam int year,
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        var exam = quizService.getYearExam(year, principal);
+        return exam != null ? ResponseEntity.ok(exam) : ResponseEntity.noContent().build();
+    }
+
     @GetMapping("/{id}/attempts")
     public ResponseEntity<List<QuizAttemptResponse>> attempts(
             @PathVariable UUID id,
