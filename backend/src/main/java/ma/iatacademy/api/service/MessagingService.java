@@ -26,6 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -86,21 +87,38 @@ public class MessagingService {
 
     @Transactional(readOnly = true)
     public List<ConversationResponse> listMyConversations(UserPrincipal principal) {
-        List<ConversationResponse> direct = participantRepository.findByUserIdOrderByCreatedAtDesc(principal.getId()).stream()
-                .map(cp -> toResponse(cp.getConversation(), principal.getId()))
+        List<Conversation> direct = participantRepository.findByUserIdOrderByCreatedAtDesc(principal.getId()).stream()
+                .map(ConversationParticipant::getConversation)
                 .toList();
 
-        List<ConversationResponse> cohortRooms = principal.getRole() == Role.ETUDIANT
+        List<Conversation> cohortRooms = principal.getRole() == Role.ETUDIANT
                 ? userRepository.findById(principal.getId())
                         .map(User::getGroup)
                         .flatMap(g -> g != null ? conversationRepository.findByGroupId(g.getId()) : java.util.Optional.<Conversation>empty())
-                        .map(c -> toResponse(c, principal.getId()))
                         .map(List::of)
                         .orElse(List.of())
                 : List.of();
 
-        return java.util.stream.Stream.concat(direct.stream(), cohortRooms.stream())
+        List<Conversation> conversations = java.util.stream.Stream.concat(direct.stream(), cohortRooms.stream())
                 .distinct()
+                .toList();
+        if (conversations.isEmpty()) {
+            return List.of();
+        }
+
+        // Batched instead of one query per conversation: two round trips total, no matter
+        // how many conversations the user has (was ~3 queries × N conversations before).
+        List<UUID> ids = conversations.stream().map(Conversation::getId).toList();
+        Map<UUID, Message> lastMessageByConversation = messageRepository.findLastMessagePerConversation(ids).stream()
+                .collect(java.util.stream.Collectors.toMap(m -> m.getConversation().getId(), m -> m));
+        Map<UUID, Long> unreadByConversation = messageRepository.countUnreadPerConversation(ids, principal.getId()).stream()
+                .collect(java.util.stream.Collectors.toMap(
+                        MessageRepository.ConversationUnreadCount::getConversationId,
+                        MessageRepository.ConversationUnreadCount::getUnreadCount));
+
+        return conversations.stream()
+                .map(c -> toResponse(c, principal.getId(), lastMessageByConversation.get(c.getId()),
+                        unreadByConversation.getOrDefault(c.getId(), 0L)))
                 .sorted(Comparator.comparing(ConversationResponse::lastMessageAt, Comparator.nullsLast(Comparator.reverseOrder())))
                 .toList();
     }
@@ -186,9 +204,7 @@ public class MessagingService {
                 .orElseThrow(() -> new ForbiddenException("Cette conversation ne vous appartient pas."));
     }
 
-    private ConversationResponse toResponse(Conversation c, UUID viewerId) {
-        List<Message> messages = messageRepository.findByConversationIdOrderByCreatedAtAsc(c.getId());
-        Message last = messages.isEmpty() ? null : messages.get(messages.size() - 1);
+    private ConversationResponse toResponse(Conversation c, UUID viewerId, Message last, long unreadCount) {
         String title = c.getType() == ConversationType.COHORT_ROOM
                 ? "Salon — " + (c.getGroup() != null ? c.getGroup().getName() : "Cohorte")
                 : c.getParticipants().stream()
@@ -196,12 +212,6 @@ public class MessagingService {
                         .filter(u -> !u.getId().equals(viewerId))
                         .map(u -> u.getFullName() != null ? u.getFullName() : u.getEmail())
                         .findFirst().orElse("Conversation");
-        Instant lastReadAt = participantRepository.findByConversationIdAndUserId(c.getId(), viewerId)
-                .map(ConversationParticipant::getLastReadAt)
-                .orElse(null);
-        long unreadCount = lastReadAt != null
-                ? messageRepository.countByConversationIdAndSenderIdNotAndCreatedAtAfter(c.getId(), viewerId, lastReadAt)
-                : messageRepository.countByConversationIdAndSenderIdNot(c.getId(), viewerId);
         return new ConversationResponse(c.getId(), c.getType(), title,
                 last != null ? last.getBody() : null, last != null ? last.getCreatedAt() : null, unreadCount);
     }

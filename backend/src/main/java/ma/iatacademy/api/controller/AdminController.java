@@ -37,12 +37,6 @@ public class AdminController {
         return ResponseEntity.ok(adminService.stats());
     }
 
-    @GetMapping("/users")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<List<UserResponse>> users() {
-        return ResponseEntity.ok(adminService.listUsers());
-    }
-
     @GetMapping("/users/paged")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<PageResponse<UserResponse>> usersPaged(

@@ -73,13 +73,6 @@ public class AdminService {
     }
 
     @Transactional(readOnly = true)
-    public List<UserResponse> listUsers() {
-        return userRepository.findAll().stream()
-                .map(this::toUserResponse)
-                .toList();
-    }
-
-    @Transactional(readOnly = true)
     public PageResponse<UserResponse> listUsersPaged(int page, int size, String q) {
         int safePage = Math.max(page, 0);
         int safeSize = Math.min(Math.max(size, 1), 100);
@@ -264,9 +257,7 @@ public class AdminService {
 
     @Transactional
     public MessageResponse openYear2ForAllEnabledLearners() {
-        List<User> learners = userRepository.findAll().stream()
-                .filter(u -> u.getRole() == Role.ETUDIANT && u.isEnabled())
-                .toList();
+        List<User> learners = userRepository.findByRoleAndEnabledTrue(Role.ETUDIANT);
         for (User learner : learners) {
             learner.setYear2AccessEnabled(true);
         }

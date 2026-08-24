@@ -11,6 +11,7 @@ import java.util.UUID;
 
 public interface ModuleRepository extends JpaRepository<ModuleEntity, UUID> {
     List<ModuleEntity> findByFormationIdOrderByOrderIndexAsc(UUID formationId);
+    List<ModuleEntity> findByUfCodeIgnoreCase(String ufCode);
 
     @Query("""
             SELECT m FROM ModuleEntity m

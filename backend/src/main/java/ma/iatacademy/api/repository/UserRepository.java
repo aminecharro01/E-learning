@@ -24,6 +24,7 @@ public interface UserRepository extends JpaRepository<User, UUID> {
 
     Page<User> findByRole(Role role, Pageable pageable);
     List<User> findByRole(Role role);
+    List<User> findByRoleAndEnabledTrue(Role role);
 
     @Query("""
             SELECT u FROM User u
