@@ -319,6 +319,16 @@ export default function AppHomePage() {
                     Code : {certificate.verificationCode}
                     {certificate.physicallyDelivered ? " · déjà remis." : ""}
                   </p>
+                  <a
+                    href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(
+                      `${typeof window !== "undefined" ? window.location.origin : ""}/verify/${certificate.verificationCode}`
+                    )}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-[#0A66C2] px-3 py-1.5 text-xs font-medium text-white hover:opacity-90"
+                  >
+                    Partager sur LinkedIn
+                  </a>
                 </div>
               </div>
             ) : null}
