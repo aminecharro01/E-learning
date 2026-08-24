@@ -10,5 +10,6 @@ public enum NotificationType {
     FORUM_REPLY,
     GRADE_PUBLISHED,
     STUDENT_INACTIVE,
-    SESSION_REMINDER
+    SESSION_REMINDER,
+    NEW_MESSAGE
 }

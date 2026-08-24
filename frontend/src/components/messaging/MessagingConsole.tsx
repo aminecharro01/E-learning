@@ -9,6 +9,7 @@ import {
   listConversations,
   listMessagingStaffContacts,
   listUsersPaged,
+  markConversationRead,
   sendConversationMessage,
   type ChatMessage,
   type Conversation,
@@ -109,6 +110,10 @@ export function MessagingConsole() {
       try {
         const list = await listConversationMessages(selectedId!);
         if (!cancelled) setMessages(list);
+        await markConversationRead(selectedId!).catch(() => undefined);
+        if (!cancelled) {
+          setConversations((prev) => prev.map((c) => (c.id === selectedId ? { ...c, unreadCount: 0 } : c)));
+        }
       } catch {
         // silencieux — le prochain polling réessaiera
       }
@@ -264,13 +269,26 @@ export function MessagingConsole() {
                       {isRoom ? <Users size={16} aria-hidden /> : initials(c.title)}
                     </span>
                     <span className="min-w-0 flex-1">
-                      <span className="flex items-center justify-between gap-2">
-                        <span className="truncate text-sm font-medium text-heading">{c.title}</span>
-                        {c.lastMessageAt && (
-                          <span className="shrink-0 text-[11px] text-muted">{formatListTime(c.lastMessageAt)}</span>
-                        )}
+                      <span className="flex items-start justify-between gap-2">
+                        <span
+                          className={`truncate text-sm text-heading ${c.unreadCount > 0 ? "font-semibold" : "font-medium"}`}
+                        >
+                          {c.title}
+                        </span>
+                        <span className="flex shrink-0 flex-col items-end gap-1">
+                          {c.lastMessageAt && (
+                            <span className="text-[11px] text-muted">{formatListTime(c.lastMessageAt)}</span>
+                          )}
+                          {c.unreadCount > 0 && (
+                            <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-[var(--primary)] px-1 text-[10px] font-semibold text-[var(--primary-fg)]">
+                              {c.unreadCount > 9 ? "9+" : c.unreadCount}
+                            </span>
+                          )}
+                        </span>
                       </span>
-                      <span className="mt-0.5 block truncate text-xs text-muted">
+                      <span
+                        className={`mt-0.5 block truncate text-xs ${c.unreadCount > 0 ? "font-medium text-heading" : "text-muted"}`}
+                      >
                         {c.lastMessagePreview || "Aucun message"}
                       </span>
                     </span>

@@ -544,6 +544,7 @@ export type Conversation = {
   title: string;
   lastMessagePreview: string | null;
   lastMessageAt: string | null;
+  unreadCount: number;
 };
 
 export type ChatMessage = { id: string; senderId: string; senderName: string; body: string; createdAt: string };
@@ -575,6 +576,10 @@ export async function listConversationMessages(conversationId: string, since?: s
 export async function sendConversationMessage(conversationId: string, body: string) {
   const { data } = await apiClient.post<ChatMessage>(`/api/conversations/${conversationId}/messages`, { body });
   return data;
+}
+
+export async function markConversationRead(conversationId: string) {
+  await apiClient.post(`/api/conversations/${conversationId}/read`);
 }
 
 export type Campaign = {

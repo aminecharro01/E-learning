@@ -8,6 +8,7 @@ import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import { useSidebar } from "@/context/SidebarContext";
 import { useAuth } from "@/hooks/useAuth";
+import { useUnreadMessagesCount } from "@/hooks/useUnreadMessagesCount";
 import { BrandLogo } from "@/components/brand/BrandLogo";
 import {
   BookIcon,
@@ -98,6 +99,7 @@ export function AdminSidebar() {
   const pathname = usePathname();
   const { isExpanded, isMobileOpen, isHovered, setIsHovered } = useSidebar();
   const { isAdmin, isSuperAdmin } = useAuth();
+  const unreadMessages = useUnreadMessagesCount();
 
   const wide = isExpanded || isHovered || isMobileOpen;
   const spaceLabel = isSuperAdmin ? "Espace Super Admin" : isAdmin ? "Espace Directeur" : "Espace formateur";
@@ -152,11 +154,16 @@ export function AdminSidebar() {
                         `}
                       >
                         <span
-                          className={`flex size-6 shrink-0 items-center justify-center ${
+                          className={`relative flex size-6 shrink-0 items-center justify-center ${
                             active ? "text-primary" : "text-muted group-hover:text-heading"
                           }`}
                         >
                           {item.icon}
+                          {item.path === "/admin/messages" && unreadMessages > 0 && (
+                            <span className="absolute -right-1.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-[var(--danger)] px-1 text-[10px] font-semibold text-[var(--danger-fg)]">
+                              {unreadMessages > 9 ? "9+" : unreadMessages}
+                            </span>
+                          )}
                         </span>
                         {wide && <span>{item.name}</span>}
                       </Link>

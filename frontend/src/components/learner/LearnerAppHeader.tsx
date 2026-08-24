@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { BookOpen, CircleUserRound, Briefcase, GraduationCap, LogOut } from "lucide-react";
+import { BookOpen, CircleUserRound, Briefcase, GraduationCap, LogOut, MessageCircle } from "lucide-react";
 import { getMe, getMyProgress, logout } from "@/lib/api";
 import type { User } from "@/types/domain";
 import { ThemeToggleButton } from "@/components/ThemeToggleButton";
@@ -11,6 +11,7 @@ import { NotificationBell } from "@/components/ui/NotificationBell";
 import { LearnerSearch } from "@/components/learner/LearnerSearch";
 import { BrandLogo } from "@/components/brand/BrandLogo";
 import { btn } from "@/lib/ui";
+import { useUnreadMessagesCount } from "@/hooks/useUnreadMessagesCount";
 
 function greetingForNow(fullName: string | null | undefined): string {
   const hour = new Date().getHours();
@@ -36,6 +37,7 @@ export function LearnerAppHeader({
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [stageUnlocked, setStageUnlocked] = useState(stageUnlockedProp ?? false);
+  const unreadMessages = useUnreadMessagesCount();
 
   useEffect(() => {
     getMe()
@@ -85,6 +87,14 @@ export function LearnerAppHeader({
               <BookOpen size={18} aria-hidden />
             </Link>
           ) : null}
+          <Link href="/app/messages" className={`${btn.icon} relative`} aria-label="Messagerie" title="Messagerie">
+            <MessageCircle size={18} aria-hidden />
+            {unreadMessages > 0 && (
+              <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-[var(--danger)] px-1 text-[10px] font-semibold text-[var(--danger-fg)]">
+                {unreadMessages > 9 ? "9+" : unreadMessages}
+              </span>
+            )}
+          </Link>
           <Link href="/app/profile" className={btn.icon} aria-label="Mon profil" title="Mon profil">
             <CircleUserRound size={18} aria-hidden />
           </Link>
