@@ -12,6 +12,7 @@ import {
   Mail,
   Clock,
   MessageSquare,
+  MessageCircle,
   ClipboardList,
   Shield,
   Calendar,
@@ -70,6 +71,10 @@ export function ClockIcon(props: IconProps) {
 
 export function ChatIcon(props: IconProps) {
   return <MessageSquare {...props} />;
+}
+
+export function MessagingIcon(props: IconProps) {
+  return <MessageCircle {...props} />;
 }
 
 export function ClipboardIcon(props: IconProps) {
