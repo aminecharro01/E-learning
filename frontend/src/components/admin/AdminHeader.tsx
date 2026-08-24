@@ -2,6 +2,7 @@
 
 // Adapted from TailAdmin (MIT License) - https://github.com/TailAdmin/free-nextjs-admin-dashboard
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { X, Menu } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
@@ -50,17 +51,23 @@ export function AdminHeader() {
           <NotificationBell />
           <ThemeToggleButton />
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--neutral)] text-sm font-semibold text-[var(--neutral-fg)]">
-              {(user?.fullName || user?.email || "?").slice(0, 1).toUpperCase()}
-            </div>
-            <div className="text-right">
-              <p className="text-sm font-medium text-heading">
-                {user?.fullName || user?.email || "…"}
-              </p>
-              <p className="text-xs uppercase tracking-wide text-muted">
-                {user?.role ? ROLE_LABEL[user.role] : "…"}
-              </p>
-            </div>
+            <Link
+              href="/admin/profile"
+              className="flex items-center gap-3 rounded-lg px-1 py-0.5 hover:bg-surface-2"
+              title="Mon profil"
+            >
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--neutral)] text-sm font-semibold text-[var(--neutral-fg)]">
+                {(user?.fullName || user?.email || "?").slice(0, 1).toUpperCase()}
+              </div>
+              <div className="text-right">
+                <p className="text-sm font-medium text-heading">
+                  {user?.fullName || user?.email || "…"}
+                </p>
+                <p className="text-xs uppercase tracking-wide text-muted">
+                  {user?.role ? ROLE_LABEL[user.role] : "…"}
+                </p>
+              </div>
+            </Link>
             <button
               type="button"
               className={btn.secondarySm}

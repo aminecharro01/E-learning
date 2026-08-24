@@ -1,15 +1,13 @@
 "use client";
 
-import { FormEvent, useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import QRCode from "qrcode";
-import { changePassword, confirmTotp, disableTotp, enableTotp, getMe, uploadMyAvatar } from "@/lib/api";
+import { getMe } from "@/lib/api";
 import type { User } from "@/types/domain";
-import { ApiClientError } from "@/lib/api-client";
-import { resolveAssetUrl } from "@/lib/media";
 import { LearnerAppHeader } from "@/components/learner/LearnerAppHeader";
-import { btn, inputClass } from "@/lib/ui";
+import { AccountSettingsPanel } from "@/components/account/AccountSettingsPanel";
+import { btn } from "@/lib/ui";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { BadgeStrip } from "@/components/ui/BadgeStrip";
 
@@ -21,15 +19,8 @@ const paymentLabel: Record<string, string> = {
 
 export default function ProfilePage() {
   const router = useRouter();
-  const fileRef = useRef<HTMLInputElement>(null);
   const [user, setUser] = useState<User | null>(null);
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-  const [currentPassword, setCurrentPassword] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [uploading, setUploading] = useState(false);
-  const [changingPwd, setChangingPwd] = useState(false);
 
   useEffect(() => {
     getMe()
@@ -40,62 +31,6 @@ export default function ProfilePage() {
       });
   }, [router]);
 
-  useEffect(() => {
-    if (!user?.avatarAssetId) {
-      setAvatarUrl(null);
-      return;
-    }
-    let cancelled = false;
-    resolveAssetUrl(user.avatarAssetId)
-      .then((url) => {
-        if (!cancelled) setAvatarUrl(url);
-      })
-      .catch(() => {
-        if (!cancelled) setAvatarUrl(null);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [user?.avatarAssetId]);
-
-  async function onAvatarChange(file: File | undefined) {
-    if (!file) return;
-    if (!file.type.startsWith("image/")) {
-      setError("Choisissez une image (PNG, JPG, WEBP…).");
-      return;
-    }
-    setUploading(true);
-    setError(null);
-    setMessage(null);
-    try {
-      const updated = await uploadMyAvatar(file);
-      setUser(updated);
-      setMessage("Photo de profil mise à jour.");
-    } catch (err) {
-      setError(err instanceof ApiClientError ? err.message : "Envoi impossible.");
-    } finally {
-      setUploading(false);
-      if (fileRef.current) fileRef.current.value = "";
-    }
-  }
-
-  async function onChangePassword(e: FormEvent) {
-    e.preventDefault();
-    setChangingPwd(true);
-    setError(null);
-    setMessage(null);
-    try {
-      await changePassword(currentPassword, newPassword);
-      setCurrentPassword("");
-      setNewPassword("");
-      setMessage("Mot de passe modifié.");
-    } catch (err) {
-      setError(err instanceof ApiClientError ? err.message : "Changement de mot de passe impossible.");
-    } finally {
-      setChangingPwd(false);
-    }
-  }
-
   if (!user && !error) {
     return (
       <main className="min-h-screen bg-background p-8">
@@ -103,14 +38,6 @@ export default function ProfilePage() {
       </main>
     );
   }
-
-  const initials =
-    user?.fullName
-      ?.split(/\s+/)
-      .filter(Boolean)
-      .slice(0, 2)
-      .map((p) => p[0]?.toUpperCase())
-      .join("") || "IA";
 
   return (
     <main className="min-h-screen bg-background">
@@ -122,52 +49,10 @@ export default function ProfilePage() {
             {error}
           </p>
         )}
-        {message && (
-          <p className="alert alert-success" aria-live="polite">
-            {message}
-          </p>
-        )}
 
         {user && (
           <>
-            <section className="card-theme rounded-2xl p-6">
-              <div className="flex flex-wrap items-center gap-5">
-                <div className="relative h-24 w-24 overflow-hidden rounded-full bg-surface-2 ring-2 ring-[color-mix(in_srgb,var(--primary)_35%,transparent)]">
-                  {avatarUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={avatarUrl} alt="" className="h-full w-full object-cover" />
-                  ) : (
-                    <span className="flex h-full w-full items-center justify-center text-xl font-bold text-primary">
-                      {initials}
-                    </span>
-                  )}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-semibold text-primary">Photo de profil</p>
-                  <p className="mt-1 text-sm text-muted">
-                    Vous pouvez changer uniquement votre photo. Les autres informations sont gérées
-                    par l&apos;administration.
-                  </p>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    <input
-                      ref={fileRef}
-                      type="file"
-                      accept="image/png,image/jpeg,image/webp,image/gif"
-                      className="sr-only"
-                      onChange={(e) => void onAvatarChange(e.target.files?.[0])}
-                    />
-                    <button
-                      type="button"
-                      disabled={uploading}
-                      className={btn.primarySm}
-                      onClick={() => fileRef.current?.click()}
-                    >
-                      {uploading ? "Envoi…" : avatarUrl ? "Changer la photo" : "Ajouter une photo"}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </section>
+            <AccountSettingsPanel user={user} onUserChange={setUser} />
 
             <section className="card-theme rounded-2xl p-6">
               <p className="text-sm font-semibold text-primary">Badges</p>
@@ -175,8 +60,6 @@ export default function ProfilePage() {
                 <BadgeStrip />
               </div>
             </section>
-
-            <TwoFactorSection />
 
             <section className="card-theme rounded-2xl p-6">
               <p className="text-sm font-semibold text-primary">Messagerie & devoirs</p>
@@ -267,172 +150,7 @@ export default function ProfilePage() {
             </section>
           </>
         )}
-
-        <form onSubmit={onChangePassword} className="card-theme space-y-4 rounded-2xl p-6">
-          <h2 className="text-lg font-bold text-heading">Mot de passe</h2>
-          <label className="block text-sm">
-            <span className="mb-1 block text-muted">Mot de passe actuel</span>
-            <input
-              type="password"
-              className={inputClass}
-              value={currentPassword}
-              onChange={(e) => setCurrentPassword(e.target.value)}
-              required
-              autoComplete="current-password"
-            />
-          </label>
-          <label className="block text-sm">
-            <span className="mb-1 block text-muted">Nouveau mot de passe</span>
-            <input
-              type="password"
-              className={inputClass}
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              required
-              minLength={8}
-              autoComplete="new-password"
-            />
-          </label>
-          <button type="submit" disabled={changingPwd} className={btn.secondary}>
-            {changingPwd ? "…" : "Changer le mot de passe"}
-          </button>
-        </form>
       </div>
     </main>
-  );
-}
-
-function TwoFactorSection() {
-  const [secret, setSecret] = useState<{ secret: string; otpauthUri: string } | null>(null);
-  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
-  const [code, setCode] = useState("");
-  const [enabled, setEnabled] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const [msg, setMsg] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!secret) {
-      setQrDataUrl(null);
-      return;
-    }
-    let cancelled = false;
-    QRCode.toDataURL(secret.otpauthUri, { width: 200, margin: 1 })
-      .then((url) => {
-        if (!cancelled) setQrDataUrl(url);
-      })
-      .catch(() => {
-        if (!cancelled) setQrDataUrl(null);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [secret]);
-
-  async function onEnable() {
-    setBusy(true);
-    setMsg(null);
-    try {
-      setSecret(await enableTotp());
-    } catch (err) {
-      setMsg(err instanceof ApiClientError ? err.message : "Action impossible.");
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function onConfirm() {
-    setBusy(true);
-    setMsg(null);
-    try {
-      await confirmTotp(code);
-      setEnabled(true);
-      setSecret(null);
-      setCode("");
-      setMsg("2FA activée.");
-    } catch (err) {
-      setMsg(err instanceof ApiClientError ? err.message : "Code invalide.");
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function onDisable() {
-    setBusy(true);
-    setMsg(null);
-    try {
-      await disableTotp(code);
-      setEnabled(false);
-      setCode("");
-      setMsg("2FA désactivée.");
-    } catch (err) {
-      setMsg(err instanceof ApiClientError ? err.message : "Code invalide.");
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  return (
-    <section className="card-theme rounded-2xl p-6">
-      <p className="text-sm font-semibold text-primary">Authentification à deux facteurs</p>
-      <p className="mt-1 text-xs text-muted">
-        Optionnelle — code à 6 chiffres depuis une application type Google Authenticator.
-      </p>
-      {msg && <p className="mt-2 text-xs">{msg}</p>}
-
-      {!secret && !enabled && (
-        <button type="button" className={`${btn.secondarySm} mt-3`} disabled={busy} onClick={() => void onEnable()}>
-          Activer la 2FA
-        </button>
-      )}
-
-      {secret && (
-        <div className="mt-3 space-y-2">
-          <p className="text-xs text-body">
-            Scannez ce QR code avec votre application d&apos;authentification (Google Authenticator, Authy…).
-          </p>
-          {qrDataUrl && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={qrDataUrl}
-              alt="QR code à scanner pour activer la 2FA"
-              width={160}
-              height={160}
-              className="rounded-lg border border-theme"
-            />
-          )}
-          <details className="text-xs text-muted">
-            <summary className="cursor-pointer select-none">Impossible de scanner ? Saisir le code manuellement</summary>
-            <p className="mt-1 text-body">
-              Ajoutez ce secret dans votre application : <code className="text-heading">{secret.secret}</code>
-            </p>
-          </details>
-          <div className="flex gap-2">
-            <input
-              className={inputClass}
-              placeholder="Code à 6 chiffres"
-              value={code}
-              onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-            />
-            <button type="button" className={btn.primarySm} disabled={busy || code.length !== 6} onClick={() => void onConfirm()}>
-              Confirmer
-            </button>
-          </div>
-        </div>
-      )}
-
-      {enabled && (
-        <div className="mt-3 flex gap-2">
-          <input
-            className={inputClass}
-            placeholder="Code à 6 chiffres pour désactiver"
-            value={code}
-            onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-          />
-          <button type="button" className={btn.dangerSm} disabled={busy || code.length !== 6} onClick={() => void onDisable()}>
-            Désactiver
-          </button>
-        </div>
-      )}
-    </section>
   );
 }

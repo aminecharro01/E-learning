@@ -20,6 +20,7 @@ import {
   JobsIcon,
   MailIcon,
   MediaIcon,
+  MessagingIcon,
   QuizIcon,
   SettingsIcon,
   UserCircleIcon,
@@ -56,6 +57,7 @@ export const GROUPS: NavGroup[] = [
     label: "Suivi",
     items: [
       { name: "Apprenants", path: "/admin/learners", icon: <UsersIcon /> },
+      { name: "Messagerie", path: "/admin/messages", icon: <MessagingIcon /> },
       { name: "Contact & infolettre", path: "/admin/leads", icon: <MailIcon /> },
       { name: "Devoirs & notes", path: "/admin/gradebook", icon: <ClipboardIcon /> },
       { name: "Forums", path: "/admin/forum", icon: <ChatIcon /> },
