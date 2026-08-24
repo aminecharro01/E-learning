@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Bell } from "lucide-react";
 import { getMyNotifications, markNotificationRead } from "@/lib/api";
 import type { AppNotification } from "@/types/domain";
@@ -28,31 +28,40 @@ export function NotificationBell() {
   const containerRef = useRef<HTMLDivElement>(null);
   const knownIds = useRef<Set<string> | null>(null);
 
-  const poll = useCallback(async () => {
-    try {
-      const data = await getMyNotifications(0, 10);
-      setItems(data.page.content);
-      setUnreadCount(data.unreadCount);
-
-      if (knownIds.current) {
-        const fresh = data.page.content.filter((n) => !n.read && !knownIds.current!.has(n.id));
-        if (fresh.length === 1) {
-          toast.info(fresh[0].title);
-        } else if (fresh.length > 1) {
-          toast.info(`${fresh.length} nouvelles notifications`);
-        }
-      }
-      knownIds.current = new Set(data.page.content.map((n) => n.id));
-    } catch {
-      // Silent: the global api-client interceptor already surfaces a toast on failure.
-    }
-  }, []);
-
   useEffect(() => {
+    // Guards against React Strict Mode's dev-only double-invoke of effects on mount:
+    // without `cancelled`, two overlapping poll() calls can each see knownIds as not-yet-set
+    // and both decide the same notification is "fresh", popping the same toast twice.
+    let cancelled = false;
+
+    async function poll() {
+      try {
+        const data = await getMyNotifications(0, 10);
+        if (cancelled) return;
+        setItems(data.page.content);
+        setUnreadCount(data.unreadCount);
+
+        if (knownIds.current) {
+          const fresh = data.page.content.filter((n) => !n.read && !knownIds.current!.has(n.id));
+          if (fresh.length === 1) {
+            toast.info(fresh[0].title);
+          } else if (fresh.length > 1) {
+            toast.info(`${fresh.length} nouvelles notifications`);
+          }
+        }
+        knownIds.current = new Set(data.page.content.map((n) => n.id));
+      } catch {
+        // Silent: the global api-client interceptor already surfaces a toast on failure.
+      }
+    }
+
     void poll();
     const interval = window.setInterval(() => void poll(), POLL_INTERVAL_MS);
-    return () => window.clearInterval(interval);
-  }, [poll]);
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+    };
+  }, []);
 
   useEffect(() => {
     if (!open) return;
