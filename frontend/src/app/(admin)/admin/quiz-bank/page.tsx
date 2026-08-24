@@ -2,29 +2,9 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import {
-  DndContext,
-  closestCenter,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  type DragEndEvent,
-} from "@dnd-kit/core";
-import { SortableContext, arrayMove, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
-import {
-  ArrowLeft,
-  ArrowRight,
-  Copy,
-  Eye,
-  GripVertical,
-  CheckCircle2,
-  Circle,
-  Image as ImageIcon,
-  Pencil,
-  Sparkles,
-  Trash2,
-} from "lucide-react";
+import type { DragEndEvent } from "@dnd-kit/core";
+import { arrayMove } from "@dnd-kit/sortable";
+import { Copy, Eye, Sparkles, Trash2 } from "lucide-react";
 import {
   deleteQuiz,
   deleteQuizQuestion,
@@ -34,26 +14,23 @@ import {
   createQuiz,
   generateQuizQuestionsAi,
   getMyProgress,
-  getProctoringEvents,
-  listQuizAttemptsForStaff,
   listQuizQuestions,
   listQuizzesPaged,
   reorderQuizQuestions,
   updateQuizQuestion,
   type AiGenerationPayload,
-  type QuizAttemptAdmin,
 } from "@/lib/api";
-import type { ProctoringEvent } from "@/types/domain";
 import { QuizSettingsForm } from "@/components/admin/forms/QuizSettingsForm";
 import { QuestionForm } from "@/components/admin/forms/QuestionForm";
 import { AiGenerateForm } from "@/components/admin/forms/AiGenerateForm";
 import type { QuestionFormValues, QuizSettingsValues } from "@/components/admin/forms/schemas";
 import { Modal } from "@/components/admin/Modal";
 import { ConfirmDialog } from "@/components/admin/ConfirmDialog";
-import { Skeleton } from "@/components/ui/Skeleton";
+import { QuizOutlineSidebar } from "@/components/admin/quiz/QuizOutlineSidebar";
+import { QuizQuestionList } from "@/components/admin/quiz/QuizQuestionList";
+import { QuizAttemptsPanel } from "@/components/admin/quiz/QuizAttemptsPanel";
 import type { Module, Question, Quiz } from "@/types/domain";
 import { ApiClientError } from "@/lib/api-client";
-import { moduleSelectGroups } from "@/lib/programme";
 import { btn } from "@/lib/ui";
 import { toast } from "@/lib/toast-store";
 
@@ -80,15 +57,8 @@ export default function QuizBankPage() {
   const [msg, setMsg] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [attemptsOpen, setAttemptsOpen] = useState(false);
-  const [attempts, setAttempts] = useState<QuizAttemptAdmin[]>([]);
-  const [attemptsLoading, setAttemptsLoading] = useState(false);
-  const [eventsAttemptId, setEventsAttemptId] = useState<string | null>(null);
-  const [events, setEvents] = useState<ProctoringEvent[]>([]);
-  const [eventsLoading, setEventsLoading] = useState(false);
 
   const selectedQuiz = quizzes.find((q) => q.id === selectedQuizId) ?? null;
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
 
   async function onDuplicateQuestion(q: Question) {
     if (!selectedQuizId) return;
@@ -169,39 +139,6 @@ export default function QuizBankPage() {
       toast.error("Échec de l'enregistrement de l'ordre.");
       void refreshQuestions(selectedQuizId);
     });
-  }
-
-  useEffect(() => {
-    setAttemptsOpen(false);
-    setAttempts([]);
-  }, [selectedQuizId]);
-
-  async function onToggleAttempts() {
-    if (!selectedQuizId) return;
-    const next = !attemptsOpen;
-    setAttemptsOpen(next);
-    if (next) {
-      setAttemptsLoading(true);
-      try {
-        setAttempts(await listQuizAttemptsForStaff(selectedQuizId));
-      } catch {
-        setAttempts([]);
-      } finally {
-        setAttemptsLoading(false);
-      }
-    }
-  }
-
-  async function onViewEvents(attemptId: string) {
-    setEventsAttemptId(attemptId);
-    setEventsLoading(true);
-    try {
-      setEvents(await getProctoringEvents(attemptId));
-    } catch {
-      setEvents([]);
-    } finally {
-      setEventsLoading(false);
-    }
   }
 
   const refreshQuizzes = useCallback(async (p: number, moduleId?: string) => {
@@ -380,100 +317,25 @@ export default function QuizBankPage() {
       {msg && <p className="alert alert-success mx-2 lg:mx-4">{msg}</p>}
 
       <div className="card-theme flex min-h-0 flex-1 overflow-hidden rounded-xl">
-        <aside className="app-sidebar flex w-72 shrink-0 flex-col border-r border-theme">
-          <div className="border-b border-theme p-3">
-            <label className="nav-group-label block text-[11px] font-semibold uppercase tracking-wide">
-              Filtrer module
-            </label>
-            <select
-              value={filterModuleId}
-              onChange={(e) => void onFilterChange(e.target.value)}
-              className="select-theme mt-1 w-full"
-            >
-              <option value="">Tous les modules</option>
-              {moduleSelectGroups(modules).map((group) => (
-                <optgroup key={group.label} label={group.label}>
-                  {group.modules.map((m) => (
-                    <option key={m.id} value={m.id}>
-                      {m.title}
-                    </option>
-                  ))}
-                </optgroup>
-              ))}
-            </select>
-          </div>
-
-          <ul className="flex-1 overflow-y-auto p-2">
-            {loading && (
-              <li className="space-y-2 p-2">
-                <Skeleton className="h-9 rounded-lg" />
-                <Skeleton className="h-9 rounded-lg" />
-                <Skeleton className="h-9 rounded-lg" />
-              </li>
-            )}
-            {!loading &&
-              quizzes.map((q) => {
-                const active = q.id === selectedQuizId;
-                return (
-                  <li key={q.id}>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSelectedQuizId(q.id);
-                        setEditing(null);
-                        setQuestionFormOpen(false);
-                      }}
-                      className={`nav-item mb-0.5 w-full rounded-lg px-2.5 py-2.5 text-left ${
-                        active ? "nav-item-active" : ""
-                      }`}
-                    >
-                      <p className={`truncate text-sm font-medium ${active ? "text-primary" : "text-heading"}`}>
-                        {q.title}
-                      </p>
-                      <p className="mt-0.5 truncate text-[11px] text-muted">
-                        {q.quizType === "FIN_MODULE" ? "Fin de module" : "Section"} ·{" "}
-                        {q.questionCount ?? 0} q. · {q.published ? "Publié" : "Brouillon"}
-                      </p>
-                    </button>
-                  </li>
-                );
-              })}
-            {!loading && quizzes.length === 0 && (
-              <li className="px-2 py-8 text-center text-xs text-muted">
-                Aucun quiz. Créez-en un avec le bouton ci-dessus.
-              </li>
-            )}
-          </ul>
-
-          {pageMeta.totalPages > 1 && (
-            <div className="flex gap-2 border-t border-theme p-2">
-              <button
-                type="button"
-                disabled={page <= 0}
-                className={`${btn.neutralXs} flex-1`}
-                onClick={() => {
-                  const p = page - 1;
-                  setPage(p);
-                  void refreshQuizzes(p, filterModuleId || undefined);
-                }}
-              >
-                <ArrowLeft size={14} aria-hidden />
-              </button>
-              <button
-                type="button"
-                disabled={page >= pageMeta.totalPages - 1}
-                className={`${btn.neutralXs} flex-1`}
-                onClick={() => {
-                  const p = page + 1;
-                  setPage(p);
-                  void refreshQuizzes(p, filterModuleId || undefined);
-                }}
-              >
-                <ArrowRight size={14} aria-hidden />
-              </button>
-            </div>
-          )}
-        </aside>
+        <QuizOutlineSidebar
+          modules={modules}
+          quizzes={quizzes}
+          selectedQuizId={selectedQuizId}
+          filterModuleId={filterModuleId}
+          loading={loading}
+          page={page}
+          pageMeta={pageMeta}
+          onSelectQuiz={(id) => {
+            setSelectedQuizId(id);
+            setEditing(null);
+            setQuestionFormOpen(false);
+          }}
+          onFilterChange={(id) => void onFilterChange(id)}
+          onPageChange={(p) => {
+            setPage(p);
+            void refreshQuizzes(p, filterModuleId || undefined);
+          }}
+        />
 
         <div className="min-w-0 flex-1 overflow-y-auto p-5">
           {!selectedQuiz && (
@@ -550,71 +412,19 @@ export default function QuizBankPage() {
                   </button>
                 </div>
               </div>
-              {questions.length > 1 && (
-                <p className="text-xs text-muted">Glissez-déposez pour réordonner les questions.</p>
-              )}
-              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEndQuestions}>
-                <SortableContext items={questions.map((q) => q.id)} strategy={verticalListSortingStrategy}>
-                  <ul className="space-y-2">
-                    {questions.map((q, i) => (
-                      <SortableQuestionItem
-                        key={q.id}
-                        question={q}
-                        index={i}
-                        onEdit={() => {
-                          setEditing(q);
-                          setQuestionFormOpen(true);
-                        }}
-                        onDelete={() => setDeleteQuestionTarget(q)}
-                        onDuplicate={() => void onDuplicateQuestion(q)}
-                      />
-                    ))}
-                    {questions.length === 0 && (
-                      <li className="rounded-xl border border-dashed border-theme px-4 py-10 text-center text-sm text-muted">
-                        Aucune question — ajoutez la première pour ce quiz.
-                      </li>
-                    )}
-                  </ul>
-                </SortableContext>
-              </DndContext>
 
-              <div className="border-t border-theme pt-4">
-                <button type="button" className="text-sm font-medium text-primary hover:underline" onClick={() => void onToggleAttempts()}>
-                  {attemptsOpen ? "Masquer les tentatives" : "Voir les tentatives"}
-                </button>
-                {attemptsOpen && (
-                  <div className="mt-3">
-                    {attemptsLoading ? (
-                      <Skeleton className="h-20 rounded-xl" />
-                    ) : attempts.length === 0 ? (
-                      <p className="text-sm text-muted">Aucune tentative pour ce quiz.</p>
-                    ) : (
-                      <ul className="space-y-1.5">
-                        {attempts.map((a) => (
-                          <li
-                            key={a.id}
-                            className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-theme px-3 py-1.5 text-xs"
-                          >
-                            <span>
-                              {a.userFullName} — {a.status}
-                              {a.score !== null && ` — ${a.score}%`}
-                            </span>
-                            {a.proctoringEventCount > 0 && (
-                              <button
-                                type="button"
-                                className="badge-inline badge-gold"
-                                onClick={() => void onViewEvents(a.id)}
-                              >
-                                {a.proctoringEventCount} évènement(s) anti-triche
-                              </button>
-                            )}
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
-                )}
-              </div>
+              <QuizQuestionList
+                questions={questions}
+                onReorder={onDragEndQuestions}
+                onEdit={(q) => {
+                  setEditing(q);
+                  setQuestionFormOpen(true);
+                }}
+                onDelete={(q) => setDeleteQuestionTarget(q)}
+                onDuplicate={(q) => void onDuplicateQuestion(q)}
+              />
+
+              <QuizAttemptsPanel key={selectedQuiz.id} quizId={selectedQuiz.id} />
             </div>
           )}
         </div>
@@ -694,31 +504,6 @@ export default function QuizBankPage() {
         )}
       </Modal>
 
-      <Modal
-        open={eventsAttemptId !== null}
-        title="Évènements anti-triche"
-        onClose={() => setEventsAttemptId(null)}
-      >
-        {eventsLoading ? (
-          <Skeleton className="h-16 rounded-xl" />
-        ) : events.length === 0 ? (
-          <p className="text-sm text-muted">Aucun évènement.</p>
-        ) : (
-          <ul className="space-y-1.5">
-            {events.map((e) => (
-              <li key={e.id} className="rounded-lg border border-theme px-3 py-1.5 text-xs">
-                <span className="font-medium text-heading">{e.eventType}</span>
-                <span className="ml-2 text-muted">
-                  {new Intl.DateTimeFormat("fr-FR", { dateStyle: "short", timeStyle: "medium" }).format(
-                    new Date(e.occurredAt)
-                  )}
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </Modal>
-
       <ConfirmDialog
         open={!!deleteQuestionTarget}
         title="Supprimer cette question ?"
@@ -741,91 +526,5 @@ export default function QuizBankPage() {
         onConfirm={() => void confirmDeleteQuiz()}
       />
     </div>
-  );
-}
-
-function SortableQuestionItem({
-  question: q,
-  index: i,
-  onEdit,
-  onDelete,
-  onDuplicate,
-}: {
-  question: Question;
-  index: number;
-  onEdit: () => void;
-  onDelete: () => void;
-  onDuplicate: () => void;
-}) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: q.id });
-  const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.6 : 1 };
-
-  return (
-    <li ref={setNodeRef} style={style} className="card-theme rounded-xl px-4 py-3">
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <div className="flex min-w-0 flex-1 gap-2">
-          <button
-            type="button"
-            className={`${btn.neutralXs} h-fit cursor-grab touch-none`}
-            aria-label="Glisser pour réordonner"
-            {...attributes}
-            {...listeners}
-          >
-            <GripVertical size={14} aria-hidden />
-          </button>
-          <div className="min-w-0 flex-1">
-            <p className="nav-group-label text-[11px] font-semibold uppercase tracking-wide">
-              Q{i + 1} · {q.questionType}
-            </p>
-            <p className="mt-1 text-sm font-medium text-heading">{q.prompt}</p>
-            {q.imageAssetId && (
-              <p className="mt-1 flex items-center gap-1 text-[11px] text-muted">
-                <ImageIcon size={12} aria-hidden /> Image jointe
-              </p>
-            )}
-            <ul className="mt-2 space-y-0.5">
-              {q.options?.map((o) => (
-                <li
-                  key={o.id ?? o.label}
-                  className={`flex items-center gap-1 text-xs ${o.correct ? "font-medium text-[var(--alert-success-fg)]" : "text-muted"}`}
-                >
-                  {o.correct ? <CheckCircle2 size={12} aria-hidden /> : <Circle size={12} aria-hidden />}
-                  {o.label}
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
-        <div className="flex shrink-0 gap-1">
-          <button
-            type="button"
-            className={btn.icon}
-            aria-label="Modifier"
-            title="Modifier"
-            onClick={onEdit}
-          >
-            <Pencil size={14} aria-hidden />
-          </button>
-          <button
-            type="button"
-            className={btn.icon}
-            aria-label="Dupliquer"
-            title="Dupliquer"
-            onClick={onDuplicate}
-          >
-            <Copy size={14} aria-hidden />
-          </button>
-          <button
-            type="button"
-            className={btn.icon}
-            aria-label="Supprimer"
-            title="Supprimer"
-            onClick={onDelete}
-          >
-            <Trash2 size={14} aria-hidden className="text-[var(--danger)]" />
-          </button>
-        </div>
-      </div>
-    </li>
   );
 }
