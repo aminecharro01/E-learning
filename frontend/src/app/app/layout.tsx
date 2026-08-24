@@ -1,5 +1,6 @@
 import { Poppins } from "next/font/google";
 import { ProfileCompletionGuard } from "@/components/learner/ProfileCompletionGuard";
+import { ChatbotWidget } from "@/components/learner/ChatbotWidget";
 
 const appSans = Poppins({
   subsets: ["latin"],
@@ -13,6 +14,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     <div className={`app-horizon ${appSans.variable}`} style={{ fontFamily: "var(--font-body)" }}>
       <ProfileCompletionGuard />
       {children}
+      <ChatbotWidget />
     </div>
   );
 }
