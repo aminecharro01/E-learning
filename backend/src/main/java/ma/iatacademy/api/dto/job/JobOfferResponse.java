@@ -14,6 +14,7 @@ public record JobOfferResponse(
         ContractType contractType,
         String applyUrl,
         String contactEmail,
+        UUID photoAssetId,
         boolean published,
         Instant expiresAt,
         Instant createdAt

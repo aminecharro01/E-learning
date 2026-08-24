@@ -46,6 +46,10 @@ public class JobOffer extends AuditableEntity {
     @JoinColumn(name = "posted_by")
     private User postedBy;
 
+    /** Illustration optionnelle de l'offre (logo entreprise, visuel poste). */
+    @Column(name = "photo_asset_id")
+    private UUID photoAssetId;
+
     @Column(nullable = false)
     @Builder.Default
     private boolean published = true;

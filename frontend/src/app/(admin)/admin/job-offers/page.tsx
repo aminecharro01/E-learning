@@ -10,6 +10,7 @@ import {
   type JobOffer,
 } from "@/lib/api";
 import { ApiClientError } from "@/lib/api-client";
+import { resolveAssetUrl, uploadMedia } from "@/lib/media";
 import { useAuth } from "@/hooks/useAuth";
 import { ComponentCard } from "@/components/admin/ui/ComponentCard";
 import { ConfirmDialog } from "@/components/admin/ConfirmDialog";
@@ -33,6 +34,7 @@ const EMPTY_FORM: CreateJobOfferPayload = {
   contractType: "CDI",
   applyUrl: "",
   contactEmail: "",
+  photoAssetId: null,
 };
 
 export default function AdminJobOffersPage() {
@@ -43,6 +45,8 @@ export default function AdminJobOffersPage() {
   const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState<CreateJobOfferPayload>(EMPTY_FORM);
   const [deleteTarget, setDeleteTarget] = useState<JobOffer | null>(null);
+  const [photoPreviewUrl, setPhotoPreviewUrl] = useState<string | null>(null);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
   const reload = useCallback(async () => {
     setOffers(await listJobOffersAdmin());
@@ -81,12 +85,32 @@ export default function AdminJobOffersPage() {
         contractType: offer.contractType,
         applyUrl: offer.applyUrl || undefined,
         contactEmail: offer.contactEmail || undefined,
+        photoAssetId: offer.photoAssetId,
         expiresAt: offer.expiresAt,
         published: !offer.published,
       });
       await reload();
       toast.success(offer.published ? "Offre dépubliée." : "Offre publiée.");
     });
+  }
+
+  async function onPickPhoto(file: File | undefined) {
+    if (!file) return;
+    setUploadingPhoto(true);
+    try {
+      const asset = await uploadMedia(file, "IMAGE");
+      setForm((f) => ({ ...f, photoAssetId: asset.id }));
+      setPhotoPreviewUrl(await resolveAssetUrl(asset.id));
+    } catch (err) {
+      toast.error(err instanceof ApiClientError ? err.message : "Impossible d'envoyer la photo.");
+    } finally {
+      setUploadingPhoto(false);
+    }
+  }
+
+  function resetForm() {
+    setForm(EMPTY_FORM);
+    setPhotoPreviewUrl(null);
   }
 
   return (
@@ -156,6 +180,34 @@ export default function AdminJobOffersPage() {
               onChange={(e) => setForm((f) => ({ ...f, contactEmail: e.target.value }))}
             />
           </div>
+          <div className="flex flex-wrap items-center gap-3">
+            <label className={`${btn.neutralSm} cursor-pointer`}>
+              {uploadingPhoto ? "Envoi…" : photoPreviewUrl ? "Changer la photo" : "Ajouter une photo (optionnel)"}
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                disabled={uploadingPhoto || busy}
+                onChange={(e) => void onPickPhoto(e.target.files?.[0])}
+              />
+            </label>
+            {form.photoAssetId && (
+              <button
+                type="button"
+                className="text-xs text-[var(--danger)] hover:underline"
+                onClick={() => {
+                  setForm((f) => ({ ...f, photoAssetId: null }));
+                  setPhotoPreviewUrl(null);
+                }}
+              >
+                Retirer
+              </button>
+            )}
+          </div>
+          {photoPreviewUrl && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={photoPreviewUrl} alt="Photo de l'offre" className="max-h-40 rounded-lg border border-theme" />
+          )}
           <button
             type="button"
             className={btn.primarySm}
@@ -170,7 +222,7 @@ export default function AdminJobOffersPage() {
                   applyUrl: form.applyUrl?.trim() || undefined,
                   contactEmail: form.contactEmail?.trim() || undefined,
                 });
-                setForm(EMPTY_FORM);
+                resetForm();
                 await reload();
                 toast.success("Offre créée.");
               })
@@ -191,17 +243,20 @@ export default function AdminJobOffersPage() {
             {offers.map((o) => (
               <li key={o.id} className="rounded-xl border border-theme p-3">
                 <div className="flex flex-wrap items-start justify-between gap-2">
-                  <div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <p className="font-medium text-heading">{o.title}</p>
-                      <span className={`badge-inline ${o.published ? "badge-success" : "badge-gold"}`}>
-                        {o.published ? "Publiée" : "Dépubliée"}
-                      </span>
+                  <div className="flex items-start gap-3">
+                    {o.photoAssetId && <OfferThumbnail assetId={o.photoAssetId} />}
+                    <div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="font-medium text-heading">{o.title}</p>
+                        <span className={`badge-inline ${o.published ? "badge-success" : "badge-gold"}`}>
+                          {o.published ? "Publiée" : "Dépubliée"}
+                        </span>
+                      </div>
+                      <p className="mt-1 text-xs text-muted">
+                        {o.company} — {CONTRACT_LABEL[o.contractType]}
+                        {o.location && ` — ${o.location}`}
+                      </p>
                     </div>
-                    <p className="mt-1 text-xs text-muted">
-                      {o.company} — {CONTRACT_LABEL[o.contractType]}
-                      {o.location && ` — ${o.location}`}
-                    </p>
                   </div>
                   <div className="flex gap-2">
                     <button
@@ -248,4 +303,24 @@ export default function AdminJobOffersPage() {
       />
     </div>
   );
+}
+
+function OfferThumbnail({ assetId }: { assetId: string }) {
+  const [url, setUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    resolveAssetUrl(assetId)
+      .then((u) => {
+        if (!cancelled) setUrl(u);
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [assetId]);
+
+  if (!url) return null;
+  // eslint-disable-next-line @next/next/no-img-element
+  return <img src={url} alt="" className="h-12 w-12 shrink-0 rounded-lg border border-theme object-cover" />;
 }

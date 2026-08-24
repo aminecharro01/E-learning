@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { ExternalLink, Lock, Mail } from "lucide-react";
 import { listJobOffersForLearner, type JobOffer } from "@/lib/api";
 import { ApiClientError } from "@/lib/api-client";
+import { resolveAssetUrl } from "@/lib/media";
 import { LearnerAppHeader } from "@/components/learner/LearnerAppHeader";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { IconCompass } from "@/components/brand/IatIcons";
@@ -70,12 +71,15 @@ export default function LearnerJobsPage() {
               {offers.map((o) => (
                 <li key={o.id} className="card-theme rounded-xl p-4">
                   <div className="flex flex-wrap items-start justify-between gap-2">
-                    <div>
-                      <p className="font-semibold text-heading">{o.title}</p>
-                      <p className="text-sm text-muted">
-                        {o.company}
-                        {o.location && ` — ${o.location}`}
-                      </p>
+                    <div className="flex items-start gap-3">
+                      {o.photoAssetId && <OfferPhoto assetId={o.photoAssetId} />}
+                      <div>
+                        <p className="font-semibold text-heading">{o.title}</p>
+                        <p className="text-sm text-muted">
+                          {o.company}
+                          {o.location && ` — ${o.location}`}
+                        </p>
+                      </div>
                     </div>
                     <span className="badge-inline badge-gold">{CONTRACT_LABEL[o.contractType]}</span>
                   </div>
@@ -110,4 +114,24 @@ export default function LearnerJobsPage() {
       </main>
     </div>
   );
+}
+
+function OfferPhoto({ assetId }: { assetId: string }) {
+  const [url, setUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    resolveAssetUrl(assetId)
+      .then((u) => {
+        if (!cancelled) setUrl(u);
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [assetId]);
+
+  if (!url) return null;
+  // eslint-disable-next-line @next/next/no-img-element
+  return <img src={url} alt="" className="h-14 w-14 shrink-0 rounded-lg border border-theme object-cover" />;
 }

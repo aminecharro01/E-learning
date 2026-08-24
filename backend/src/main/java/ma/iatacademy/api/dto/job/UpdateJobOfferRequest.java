@@ -5,6 +5,7 @@ import jakarta.validation.constraints.NotNull;
 import ma.iatacademy.api.domain.enums.ContractType;
 
 import java.time.Instant;
+import java.util.UUID;
 
 public record UpdateJobOfferRequest(
         @NotBlank String title,
@@ -14,6 +15,7 @@ public record UpdateJobOfferRequest(
         @NotNull ContractType contractType,
         String applyUrl,
         String contactEmail,
+        UUID photoAssetId,
         boolean published,
         Instant expiresAt
 ) {

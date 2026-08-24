@@ -42,6 +42,7 @@ public class JobOfferService {
                 .contractType(request.contractType())
                 .applyUrl(request.applyUrl())
                 .contactEmail(request.contactEmail())
+                .photoAssetId(request.photoAssetId())
                 .postedBy(userRepository.getReferenceById(actorId))
                 .published(true)
                 .expiresAt(request.expiresAt())
@@ -60,6 +61,7 @@ public class JobOfferService {
         offer.setContractType(request.contractType());
         offer.setApplyUrl(request.applyUrl());
         offer.setContactEmail(request.contactEmail());
+        offer.setPhotoAssetId(request.photoAssetId());
         offer.setPublished(request.published());
         offer.setExpiresAt(request.expiresAt());
         return toResponse(offer);
@@ -92,7 +94,7 @@ public class JobOfferService {
     private JobOfferResponse toResponse(JobOffer o) {
         return new JobOfferResponse(
                 o.getId(), o.getTitle(), o.getCompany(), o.getDescription(), o.getLocation(),
-                o.getContractType(), o.getApplyUrl(), o.getContactEmail(), o.isPublished(),
+                o.getContractType(), o.getApplyUrl(), o.getContactEmail(), o.getPhotoAssetId(), o.isPublished(),
                 o.getExpiresAt(), o.getCreatedAt()
         );
     }
