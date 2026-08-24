@@ -119,9 +119,17 @@ public class GlobalExceptionHandler {
         return ResponseEntity.badRequest().body(body);
     }
 
+    /**
+     * Never echo ex.getMessage() here: for a truly unhandled exception (NPE, SQL
+     * constraint violation, Hibernate lazy-init failure...) that text is a raw Java/JDBC
+     * message, in English, sometimes naming internal classes or table columns — not
+     * something to show a learner. Log the real exception for us, return a generic
+     * French message for them.
+     */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, Object>> handleGeneric(Exception ex) {
-        return build(HttpStatus.INTERNAL_SERVER_ERROR, ex.getMessage() != null ? ex.getMessage() : "Erreur inattendue");
+        log.error("Erreur interne non gérée", ex);
+        return build(HttpStatus.INTERNAL_SERVER_ERROR, "Une erreur inattendue est survenue. Veuillez réessayer.");
     }
 
     private ResponseEntity<Map<String, Object>> build(HttpStatus status, String message) {
