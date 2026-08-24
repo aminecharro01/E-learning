@@ -7,6 +7,7 @@ import { SidebarProvider, useSidebar } from "@/context/SidebarContext";
 import { AdminSidebar } from "@/components/admin/AdminSidebar";
 import { AdminHeader } from "@/components/admin/AdminHeader";
 import { CommandPalette } from "@/components/admin/CommandPalette";
+import { PageLoader } from "@/components/ui/Loader";
 
 function AdminShell({ children }: { children: React.ReactNode }) {
   const { user, loading, hasRole } = useAuth();
@@ -26,11 +27,7 @@ function AdminShell({ children }: { children: React.ReactNode }) {
   }, [loading, user, hasRole, router, pathname]);
 
   if (loading || !user || !hasRole("SUPER_ADMIN", "ADMIN", "FORMATEUR")) {
-    return (
-      <div className="app-horizon flex min-h-screen items-center justify-center text-sm text-muted">
-        Vérification de session…
-      </div>
-    );
+    return <PageLoader label="Vérification de session…" />;
   }
 
   const offset = isExpanded || isHovered || isMobileOpen ? "lg:ml-[290px]" : "lg:ml-[90px]";
