@@ -281,6 +281,27 @@ export async function createLessonComment(lessonId: string, body: string, parent
   return data;
 }
 
+export type LessonNote = { id: string; body: string; createdAt: string; updatedAt: string };
+
+export async function listLessonNotes(lessonId: string) {
+  const { data } = await apiClient.get<LessonNote[]>(`/api/lessons/${lessonId}/notes`);
+  return data;
+}
+
+export async function createLessonNote(lessonId: string, body: string) {
+  const { data } = await apiClient.post<LessonNote>(`/api/lessons/${lessonId}/notes`, { body });
+  return data;
+}
+
+export async function updateLessonNote(noteId: string, body: string) {
+  const { data } = await apiClient.put<LessonNote>(`/api/lessons/notes/${noteId}`, { body });
+  return data;
+}
+
+export async function deleteLessonNote(noteId: string) {
+  await apiClient.delete(`/api/lessons/notes/${noteId}`);
+}
+
 export async function getModuleComments(moduleId: string) {
   const { data } = await apiClient.get<LessonComment[]>(`/api/modules/${moduleId}/comments`);
   return data;

@@ -8,6 +8,7 @@ import { getLesson, markLessonComplete, sendLessonHeartbeat } from "@/lib/api";
 import { useCourse } from "@/components/learner/CourseProvider";
 import { LessonBlocks } from "@/components/learner/LessonBlocks";
 import { LessonQA } from "@/components/learner/LessonQA";
+import { LessonNotesPanel } from "@/components/learner/LessonNotesPanel";
 import type { Lesson } from "@/types/domain";
 import { ApiClientError } from "@/lib/api-client";
 import { IconBadge, IconCompass, IconPlane } from "@/components/brand/IatIcons";
@@ -84,90 +85,100 @@ function SectionContent() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
-      <section className="learn-pass" aria-label="Section en cours">
-        <div className="learn-pass-main">
-          <span className="bp-eyebrow">
-            <IconPlane size={14} />
-            Mode lecture
-          </span>
-          <p className="learn-mod-meta">
-            {module?.title ?? "Module"} · Section {idx >= 0 ? idx + 1 : "—"}
-            {lessons.length > 0 ? ` / ${lessons.length}` : ""}
-          </p>
-          <h1 className="learn-pass-title">
-            {lesson ? titleWithGrad(lesson.title) : "Chargement…"}
-          </h1>
-        </div>
-        <div className="learn-pass-stub">
-          <IconCompass size={22} />
-          <span className="course-stub-code">{sectionCode}</span>
-        </div>
-      </section>
-
-      {error && <p className="alert alert-error mb-4">{error}</p>}
-
-      {lesson && (
-        <>
-          <div className="learn-content-card">
-            <LessonBlocks
-              blocks={lesson.blocks || []}
-              lessonId={lesson.id}
-              onVideoProgress={(p) => {
-                if (p >= 90) setLessonCompleted(lesson.id, true);
-              }}
-            />
-          </div>
-
-          <div className="mt-8 flex flex-wrap items-center justify-between gap-3 border-t border-theme pt-6">
-            {prev ? (
-              <Link
-                href={`/app/learn/${params.moduleId}/s/${prev.id}`}
-                className={`${btn.secondary} inline-flex items-center gap-1`}
-              >
-                <ArrowLeft size={16} aria-hidden /> {prev.title}
-              </Link>
-            ) : (
-              <span />
-            )}
-            <div className="flex flex-wrap gap-2">
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() => void onComplete()}
-                className={btn.primary}
-              >
-                <IconPlane size={16} />
-                {busy ? "…" : next || moduleQuiz ? "Terminer et continuer" : "Marquer terminé"}
-              </button>
-              {next && (
-                <button type="button" onClick={goNext} className={`${btn.neutral} inline-flex items-center gap-1`}>
-                  Suivant <ArrowRight size={16} aria-hidden />
-                </button>
-              )}
-              {!next && moduleQuiz && (
-                <Link
-                  href={`/app/learn/${params.moduleId}/quiz/${moduleQuiz.id}`}
-                  className={btn.secondary}
-                >
-                  <IconBadge size={16} />
-                  Passer le quiz
-                </Link>
-              )}
+    <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+        <div className="min-w-0">
+          <section className="learn-pass" aria-label="Section en cours">
+            <div className="learn-pass-main">
+              <span className="bp-eyebrow">
+                <IconPlane size={14} />
+                Mode lecture
+              </span>
+              <p className="learn-mod-meta">
+                {module?.title ?? "Module"} · Section {idx >= 0 ? idx + 1 : "—"}
+                {lessons.length > 0 ? ` / ${lessons.length}` : ""}
+              </p>
+              <h1 className="learn-pass-title">
+                {lesson ? titleWithGrad(lesson.title) : "Chargement…"}
+              </h1>
             </div>
-          </div>
+            <div className="learn-pass-stub">
+              <IconCompass size={22} />
+              <span className="course-stub-code">{sectionCode}</span>
+            </div>
+          </section>
 
-          {params.moduleId && <LessonQA lessonId={lesson.id} moduleId={params.moduleId} />}
-        </>
-      )}
+          {error && <p className="alert alert-error mb-4">{error}</p>}
 
-      {!lesson && !error && (
-        <div className="mt-6 space-y-3">
-          <Skeleton className="h-48 rounded-2xl" />
-          <Skeleton className="h-5 w-2/3 rounded-lg" />
-          <Skeleton className="h-5 w-1/2 rounded-lg" />
+          {lesson && (
+            <>
+              <div className="learn-content-card">
+                <LessonBlocks
+                  blocks={lesson.blocks || []}
+                  lessonId={lesson.id}
+                  onVideoProgress={(p) => {
+                    if (p >= 90) setLessonCompleted(lesson.id, true);
+                  }}
+                />
+              </div>
+
+              <div className="mt-8 flex flex-wrap items-center justify-between gap-3 border-t border-theme pt-6">
+                {prev ? (
+                  <Link
+                    href={`/app/learn/${params.moduleId}/s/${prev.id}`}
+                    className={`${btn.secondary} inline-flex items-center gap-1`}
+                  >
+                    <ArrowLeft size={16} aria-hidden /> {prev.title}
+                  </Link>
+                ) : (
+                  <span />
+                )}
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => void onComplete()}
+                    className={btn.primary}
+                  >
+                    <IconPlane size={16} />
+                    {busy ? "…" : next || moduleQuiz ? "Terminer et continuer" : "Marquer terminé"}
+                  </button>
+                  {next && (
+                    <button type="button" onClick={goNext} className={`${btn.neutral} inline-flex items-center gap-1`}>
+                      Suivant <ArrowRight size={16} aria-hidden />
+                    </button>
+                  )}
+                  {!next && moduleQuiz && (
+                    <Link
+                      href={`/app/learn/${params.moduleId}/quiz/${moduleQuiz.id}`}
+                      className={btn.secondary}
+                    >
+                      <IconBadge size={16} />
+                      Passer le quiz
+                    </Link>
+                  )}
+                </div>
+              </div>
+
+              {params.moduleId && <LessonQA lessonId={lesson.id} moduleId={params.moduleId} />}
+            </>
+          )}
+
+          {!lesson && !error && (
+            <div className="mt-6 space-y-3">
+              <Skeleton className="h-48 rounded-2xl" />
+              <Skeleton className="h-5 w-2/3 rounded-lg" />
+              <Skeleton className="h-5 w-1/2 rounded-lg" />
+            </div>
+          )}
         </div>
-      )}
+
+        {lesson && (
+          <aside className="lg:sticky lg:top-24 lg:self-start">
+            <LessonNotesPanel lessonId={lesson.id} />
+          </aside>
+        )}
+      </div>
     </div>
   );
 }
