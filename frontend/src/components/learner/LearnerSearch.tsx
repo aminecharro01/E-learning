@@ -7,6 +7,14 @@ import { searchCatalog } from "@/lib/api";
 import type { SearchResultItem } from "@/types/domain";
 import { btn } from "@/lib/ui";
 
+const TYPE_LABEL: Record<SearchResultItem["type"], string> = {
+  MODULE: "Module",
+  LESSON: "Section",
+  LESSON_CONTENT: "Contenu",
+  LESSON_PDF: "PDF",
+  QUESTION: "Question",
+};
+
 export function LearnerSearch() {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -87,8 +95,9 @@ export function LearnerSearch() {
                     className="flex flex-col gap-0.5 border-b border-theme px-4 py-2 text-sm last:border-b-0 hover:bg-surface-2"
                     onClick={() => setOpen(false)}
                   >
-                    <span className="text-[11px] text-muted">{item.type === "MODULE" ? "Module" : "Section"}</span>
+                    <span className="text-[11px] text-muted">{TYPE_LABEL[item.type]}</span>
                     <span className="font-medium text-heading">{item.title}</span>
+                    {item.snippet && <span className="truncate text-xs text-muted">{item.snippet}</span>}
                   </Link>
                 ))
               )}

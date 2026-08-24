@@ -6,6 +6,10 @@ public record SearchResultItem(
         UUID id,
         String type,
         String title,
-        String link
+        String link,
+        String snippet
 ) {
+    public SearchResultItem(UUID id, String type, String title, String link) {
+        this(id, type, title, link, null);
+    }
 }

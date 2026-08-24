@@ -275,9 +275,10 @@ export type AppNotification = {
 
 export type SearchResultItem = {
   id: string;
-  type: "MODULE" | "LESSON";
+  type: "MODULE" | "LESSON" | "LESSON_CONTENT" | "LESSON_PDF" | "QUESTION";
   title: string;
   link: string;
+  snippet?: string | null;
 };
 
 export type Badge = {

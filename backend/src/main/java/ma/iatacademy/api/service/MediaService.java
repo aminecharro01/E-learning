@@ -159,6 +159,9 @@ public class MediaService {
         try {
             file.transferTo(dest.toFile());
             asset.setStoragePath(dest.toString());
+            if (kind.equals("PDF")) {
+                asset.setExtractedText(extractPdfText(dest));
+            }
             assetRepository.save(asset);
         } catch (IOException e) {
             assetRepository.delete(asset);
@@ -166,6 +169,19 @@ public class MediaService {
         }
 
         return toResponse(asset);
+    }
+
+    /**
+     * Best-effort only — feeds the global search index (SearchService). A failure here
+     * must never fail the upload itself, so any exception is caught and logged.
+     */
+    private String extractPdfText(Path pdfPath) {
+        try (org.apache.pdfbox.pdmodel.PDDocument doc = org.apache.pdfbox.Loader.loadPDF(pdfPath.toFile())) {
+            return new org.apache.pdfbox.text.PDFTextStripper().getText(doc);
+        } catch (Exception e) {
+            log.warn("PDF text extraction failed for {}: {}", pdfPath, e.getMessage());
+            return null;
+        }
     }
 
     /**

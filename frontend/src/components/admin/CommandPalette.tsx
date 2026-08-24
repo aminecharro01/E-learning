@@ -8,6 +8,14 @@ import { useAuth } from "@/hooks/useAuth";
 import { searchCatalog } from "@/lib/api";
 import type { SearchResultItem } from "@/types/domain";
 
+const TYPE_LABEL: Record<SearchResultItem["type"], string> = {
+  MODULE: "Module",
+  LESSON: "Section",
+  LESSON_CONTENT: "Contenu",
+  LESSON_PDF: "PDF",
+  QUESTION: "Question",
+};
+
 export function CommandPalette() {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -106,10 +114,13 @@ export function CommandPalette() {
                 key={`${item.type}-${item.id}`}
                 value={item.title}
                 onSelect={() => go(item.link)}
-                className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-sm text-foreground data-[selected=true]:bg-surface-2"
+                className="flex flex-col items-start gap-0.5 rounded-lg px-3 py-2 text-sm text-foreground data-[selected=true]:bg-surface-2"
               >
-                <span className="text-xs text-muted">{item.type === "MODULE" ? "Module" : "Section"}</span>
-                {item.title}
+                <span className="flex items-center gap-2">
+                  <span className="text-xs text-muted">{TYPE_LABEL[item.type]}</span>
+                  {item.title}
+                </span>
+                {item.snippet && <span className="truncate text-xs text-muted">{item.snippet}</span>}
               </Command.Item>
             ))}
           </Command.Group>

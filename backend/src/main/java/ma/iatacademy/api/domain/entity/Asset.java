@@ -46,4 +46,9 @@ public class Asset extends AuditableEntity {
     // relation — same pattern as ownerId above.
     @Column(name = "folder_id")
     private UUID folderId;
+
+    // Best-effort text extraction for PDFs only (see MediaService#upload), used by
+    // global search. Null for every other asset kind, or if extraction failed.
+    @Column(name = "extracted_text", columnDefinition = "TEXT")
+    private String extractedText;
 }
