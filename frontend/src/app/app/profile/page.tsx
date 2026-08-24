@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import QRCode from "qrcode";
 import { changePassword, confirmTotp, disableTotp, enableTotp, getMe, uploadMyAvatar } from "@/lib/api";
 import type { User } from "@/types/domain";
 import { ApiClientError } from "@/lib/api-client";
@@ -303,10 +304,29 @@ export default function ProfilePage() {
 
 function TwoFactorSection() {
   const [secret, setSecret] = useState<{ secret: string; otpauthUri: string } | null>(null);
+  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [code, setCode] = useState("");
   const [enabled, setEnabled] = useState(false);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!secret) {
+      setQrDataUrl(null);
+      return;
+    }
+    let cancelled = false;
+    QRCode.toDataURL(secret.otpauthUri, { width: 200, margin: 1 })
+      .then((url) => {
+        if (!cancelled) setQrDataUrl(url);
+      })
+      .catch(() => {
+        if (!cancelled) setQrDataUrl(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [secret]);
 
   async function onEnable() {
     setBusy(true);
@@ -368,8 +388,24 @@ function TwoFactorSection() {
       {secret && (
         <div className="mt-3 space-y-2">
           <p className="text-xs text-body">
-            Ajoutez ce secret dans votre application d&apos;authentification : <code className="text-heading">{secret.secret}</code>
+            Scannez ce QR code avec votre application d&apos;authentification (Google Authenticator, Authy…).
           </p>
+          {qrDataUrl && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={qrDataUrl}
+              alt="QR code à scanner pour activer la 2FA"
+              width={160}
+              height={160}
+              className="rounded-lg border border-theme"
+            />
+          )}
+          <details className="text-xs text-muted">
+            <summary className="cursor-pointer select-none">Impossible de scanner ? Saisir le code manuellement</summary>
+            <p className="mt-1 text-body">
+              Ajoutez ce secret dans votre application : <code className="text-heading">{secret.secret}</code>
+            </p>
+          </details>
           <div className="flex gap-2">
             <input
               className={inputClass}
