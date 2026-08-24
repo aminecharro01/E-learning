@@ -7,6 +7,7 @@ import ma.iatacademy.api.domain.entity.LearnerGroup;
 import ma.iatacademy.api.domain.entity.Message;
 import ma.iatacademy.api.domain.entity.User;
 import ma.iatacademy.api.domain.enums.ConversationType;
+import ma.iatacademy.api.domain.enums.NotificationType;
 import ma.iatacademy.api.domain.enums.Role;
 import ma.iatacademy.api.dto.messaging.ChatMessageResponse;
 import ma.iatacademy.api.dto.messaging.ConversationResponse;
@@ -36,6 +37,7 @@ public class MessagingService {
     private final MessageRepository messageRepository;
     private final UserRepository userRepository;
     private final RateLimitService rateLimitService;
+    private final NotificationService notificationService;
 
     /** Créée automatiquement à la création d'une cohorte (GroupService#create). */
     @Transactional
@@ -124,7 +126,49 @@ public class MessagingService {
                 .body(body.trim())
                 .build();
         messageRepository.save(message);
+        notifyRecipients(conversation, message, principal.getId());
         return toResponse(message);
+    }
+
+    /** Marque la conversation comme lue par l'utilisateur courant (remet son compteur de non-lus à zéro). */
+    @Transactional
+    public void markRead(UUID conversationId, UserPrincipal principal) {
+        assertAccess(conversationId, principal);
+        ConversationParticipant participant = participantRepository
+                .findByConversationIdAndUserId(conversationId, principal.getId())
+                .orElseGet(() -> ConversationParticipant.builder()
+                        .conversation(conversationRepository.getReferenceById(conversationId))
+                        .user(userRepository.getReferenceById(principal.getId()))
+                        .build());
+        participant.setLastReadAt(Instant.now());
+        participantRepository.save(participant);
+    }
+
+    /** Notifie tout le monde sauf l'auteur — les autres participants pour une conversation
+     * directe, tous les membres de la cohorte pour un salon (le staff n'y a pas de ligne
+     * ConversationParticipant : son accès passe par le rôle, pas par l'appartenance). */
+    private void notifyRecipients(Conversation conversation, Message message, UUID senderId) {
+        User sender = message.getSender();
+        String senderName = sender.getFullName() != null ? sender.getFullName() : sender.getEmail();
+        String body = message.getBody();
+        String preview = body.length() > 80 ? body.substring(0, 77) + "…" : body;
+        for (User recipient : resolveRecipients(conversation, senderId)) {
+            String link = recipient.getRole().isStaff() ? "/admin/messages" : "/app/messages";
+            notificationService.notify(recipient, NotificationType.NEW_MESSAGE, "Message de " + senderName, preview, link);
+        }
+    }
+
+    private List<User> resolveRecipients(Conversation conversation, UUID senderId) {
+        if (conversation.getType() == ConversationType.COHORT_ROOM) {
+            if (conversation.getGroup() == null) return List.of();
+            return userRepository.findByGroupIdOrderByFullNameAsc(conversation.getGroup().getId()).stream()
+                    .filter(u -> !u.getId().equals(senderId))
+                    .toList();
+        }
+        return conversation.getParticipants().stream()
+                .map(ConversationParticipant::getUser)
+                .filter(u -> !u.getId().equals(senderId))
+                .toList();
     }
 
     private void assertAccess(UUID conversationId, UserPrincipal principal) {
@@ -152,8 +196,14 @@ public class MessagingService {
                         .filter(u -> !u.getId().equals(viewerId))
                         .map(u -> u.getFullName() != null ? u.getFullName() : u.getEmail())
                         .findFirst().orElse("Conversation");
+        Instant lastReadAt = participantRepository.findByConversationIdAndUserId(c.getId(), viewerId)
+                .map(ConversationParticipant::getLastReadAt)
+                .orElse(null);
+        long unreadCount = lastReadAt != null
+                ? messageRepository.countByConversationIdAndSenderIdNotAndCreatedAtAfter(c.getId(), viewerId, lastReadAt)
+                : messageRepository.countByConversationIdAndSenderIdNot(c.getId(), viewerId);
         return new ConversationResponse(c.getId(), c.getType(), title,
-                last != null ? last.getBody() : null, last != null ? last.getCreatedAt() : null);
+                last != null ? last.getBody() : null, last != null ? last.getCreatedAt() : null, unreadCount);
     }
 
     private ChatMessageResponse toResponse(Message m) {

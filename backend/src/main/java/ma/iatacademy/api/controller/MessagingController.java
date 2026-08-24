@@ -61,4 +61,13 @@ public class MessagingController {
     ) {
         return ResponseEntity.ok(messagingService.send(conversationId, request.body(), principal));
     }
+
+    @PostMapping("/{conversationId}/read")
+    public ResponseEntity<Void> markRead(
+            @PathVariable UUID conversationId,
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        messagingService.markRead(conversationId, principal);
+        return ResponseEntity.noContent().build();
+    }
 }

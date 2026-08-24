@@ -222,7 +222,8 @@ export type NotificationType =
   | "MODULE_COMPLETED"
   | "UF_VALIDATED"
   | "BADGE_EARNED"
-  | "MODULE_ASSIGNED";
+  | "MODULE_ASSIGNED"
+  | "NEW_MESSAGE";
 
 export type EnrollmentMode = "EN_LIGNE" | "HYBRIDE";
 

@@ -3,6 +3,7 @@ package ma.iatacademy.api.domain.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.Instant;
 import java.util.UUID;
 
 @Entity
@@ -28,4 +29,7 @@ public class ConversationParticipant extends AuditableEntity {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
+
+    @Column(name = "last_read_at")
+    private Instant lastReadAt;
 }

@@ -10,6 +10,7 @@ public record ConversationResponse(
         ConversationType type,
         String title,
         String lastMessagePreview,
-        Instant lastMessageAt
+        Instant lastMessageAt,
+        long unreadCount
 ) {
 }
