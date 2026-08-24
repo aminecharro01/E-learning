@@ -586,7 +586,7 @@ export type VirtualSession = {
   groupId: string;
   groupName: string;
   title: string;
-  provider: "ZOOM" | "GOOGLE_MEET" | "JITSI" | "OTHER";
+  provider: "ZOOM" | "GOOGLE_MEET" | "TEAMS" | "JITSI" | "OTHER";
   joinUrl: string;
   scheduledAt: string;
   durationMinutes: number;
@@ -1303,6 +1303,7 @@ export type JobOffer = {
   contractType: "CDI" | "CDD" | "STAGE" | "ALTERNANCE" | "FREELANCE";
   applyUrl: string | null;
   contactEmail: string | null;
+  photoAssetId: string | null;
   published: boolean;
   expiresAt: string | null;
   createdAt: string;
@@ -1316,6 +1317,7 @@ export type CreateJobOfferPayload = {
   contractType: JobOffer["contractType"];
   applyUrl?: string;
   contactEmail?: string;
+  photoAssetId?: string | null;
   expiresAt?: string | null;
 };
 

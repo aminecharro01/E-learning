@@ -16,6 +16,14 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import { toast } from "@/lib/toast-store";
 import { btn, inputClass } from "@/lib/ui";
 
+const PROVIDER_LABEL: Record<VirtualSession["provider"], string> = {
+  GOOGLE_MEET: "Google Meet",
+  ZOOM: "Zoom",
+  TEAMS: "Microsoft Teams",
+  JITSI: "Jitsi",
+  OTHER: "Autre",
+};
+
 function formatDateTime(iso: string) {
   return new Intl.DateTimeFormat("fr-FR", {
     day: "2-digit",
@@ -35,7 +43,7 @@ export default function AdminSessionsPage() {
   const [error, setError] = useState<string | null>(null);
 
   const [title, setTitle] = useState("");
-  const [provider, setProvider] = useState<VirtualSession["provider"]>("JITSI");
+  const [provider, setProvider] = useState<VirtualSession["provider"]>("GOOGLE_MEET");
   const [joinUrl, setJoinUrl] = useState("");
   const [scheduledAt, setScheduledAt] = useState("");
   const [duration, setDuration] = useState("60");
@@ -82,7 +90,7 @@ export default function AdminSessionsPage() {
         <div>
           <h1 className="text-2xl font-semibold text-heading">Classes virtuelles</h1>
           <p className="mt-1 text-sm text-muted">
-            Lien externe (Jitsi gratuit sans compte, ou Zoom/Meet créé manuellement) — rappel automatique
+            Lien de visioconférence créé manuellement (Google Meet, Zoom ou Teams) — rappel automatique
             envoyé à la cohorte 1h avant.
           </p>
         </div>
@@ -101,10 +109,9 @@ export default function AdminSessionsPage() {
         <div className="grid gap-2 sm:grid-cols-2">
           <input className={inputClass} placeholder="Titre" value={title} onChange={(e) => setTitle(e.target.value)} />
           <select className={inputClass} value={provider} onChange={(e) => setProvider(e.target.value as VirtualSession["provider"])}>
-            <option value="JITSI">Jitsi (gratuit)</option>
-            <option value="ZOOM">Zoom</option>
             <option value="GOOGLE_MEET">Google Meet</option>
-            <option value="OTHER">Autre</option>
+            <option value="ZOOM">Zoom</option>
+            <option value="TEAMS">Microsoft Teams</option>
           </select>
           <input className={inputClass} placeholder="Lien de la session" value={joinUrl} onChange={(e) => setJoinUrl(e.target.value)} />
           <input type="datetime-local" className={inputClass} value={scheduledAt} onChange={(e) => setScheduledAt(e.target.value)} />
@@ -148,7 +155,7 @@ export default function AdminSessionsPage() {
                 <div>
                   <p className="font-medium text-heading">{s.title}</p>
                   <p className="text-xs text-muted">
-                    {s.provider} — {formatDateTime(s.scheduledAt)} ({s.durationMinutes} min)
+                    {PROVIDER_LABEL[s.provider]} — {formatDateTime(s.scheduledAt)} ({s.durationMinutes} min)
                   </p>
                 </div>
                 <div className="flex items-center gap-2">

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useFieldArray, useForm, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Plus, X } from "lucide-react";
+import { CheckCircle2, Circle, Plus, X } from "lucide-react";
 import { questionFormSchema, type QuestionFormValues } from "./schemas";
 import { FormField, FormSection, fieldClass } from "./FormField";
 import { resolveAssetUrl, uploadMedia } from "@/lib/media";
@@ -50,6 +50,25 @@ export function QuestionForm({
   const { fields, append, remove } = useFieldArray({ control, name: "options" });
   const questionType = watch("questionType");
   const imageAssetId = watch("imageAssetId");
+  const isSingleAnswer = questionType === "SINGLE_CHOICE" || questionType === "TRUE_FALSE";
+
+  // Vrai/Faux : forcer les libellés et garder une seule bonne réponse à la fois.
+  useEffect(() => {
+    if (questionType !== "TRUE_FALSE") return;
+    const current = watch("options");
+    if (current.length !== 2 || current[0]?.label !== "Vrai" || current[1]?.label !== "Faux") {
+      const hasCorrect = current.some((o) => o.correct);
+      setValue("options", [
+        { label: "Vrai", correct: hasCorrect ? !!current[0]?.correct : true, orderIndex: 0 },
+        { label: "Faux", correct: hasCorrect ? !!current[1]?.correct : false, orderIndex: 1 },
+      ]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only react to type switching
+  }, [questionType]);
+
+  function onSelectSingleCorrect(index: number) {
+    fields.forEach((_, i) => setValue(`options.${i}.correct`, i === index, { shouldValidate: true }));
+  }
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -149,16 +168,18 @@ export function QuestionForm({
       </FormSection>
 
       {isChoiceType && (
-        <div className="space-y-2">
+        <div className="space-y-2.5 rounded-xl border border-theme bg-surface-2/40 p-3">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-semibold text-heading">Options</p>
-              <p className="text-xs text-muted">Cochez la ou les bonnes réponses</p>
+              <p className="text-xs text-muted">
+                {isSingleAnswer ? "Sélectionnez la seule bonne réponse" : "Cochez une ou plusieurs bonnes réponses"}
+              </p>
             </div>
             {questionType !== "TRUE_FALSE" && (
               <button
                 type="button"
-                className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+                className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium text-primary transition-colors hover:bg-surface-2"
                 onClick={() =>
                   append({
                     label: `Option ${fields.length + 1}`,
@@ -171,39 +192,56 @@ export function QuestionForm({
               </button>
             )}
           </div>
-          {fields.map((field, index) => (
-            <div
-              key={field.id}
-              className={`flex items-center gap-2 rounded-lg border px-2 py-1.5 transition-colors ${
-                watch(`options.${index}.correct`)
-                  ? "border-[var(--alert-success-fg)] bg-[var(--alert-success-bg)]"
-                  : "border-theme"
-              }`}
-            >
-              <input
-                type="checkbox"
-                className="h-4 w-4 shrink-0"
-                aria-label="Bonne réponse"
-                {...register(`options.${index}.correct`)}
-              />
-              <input
-                className={`${fieldClass()} border-0 bg-transparent px-1 focus-visible:shadow-none`}
-                placeholder={`Option ${index + 1}`}
-                {...register(`options.${index}.label`)}
-              />
-              <input type="hidden" {...register(`options.${index}.orderIndex`)} value={index} />
-              {questionType !== "TRUE_FALSE" && fields.length > 2 && (
-                <button
-                  type="button"
-                  className="shrink-0 rounded p-1 text-muted hover:bg-surface-2 hover:text-[var(--danger)]"
-                  aria-label="Supprimer cette option"
-                  onClick={() => remove(index)}
-                >
-                  <X className="h-3.5 w-3.5" />
-                </button>
-              )}
-            </div>
-          ))}
+          {fields.map((field, index) => {
+            const correct = !!watch(`options.${index}.correct`);
+            return (
+              <div
+                key={field.id}
+                className={`flex items-center gap-2 rounded-lg border px-2.5 py-2 transition-colors ${
+                  correct
+                    ? "border-[var(--alert-success-fg)] bg-[var(--alert-success-bg)]"
+                    : "border-theme bg-surface hover:border-[var(--ring)]"
+                }`}
+              >
+                {isSingleAnswer ? (
+                  <button
+                    type="button"
+                    className="shrink-0 text-[var(--alert-success-fg)]"
+                    aria-label="Définir comme bonne réponse"
+                    aria-pressed={correct}
+                    onClick={() => onSelectSingleCorrect(index)}
+                  >
+                    {correct ? <CheckCircle2 className="h-5 w-5" /> : <Circle className="h-5 w-5 text-muted" />}
+                  </button>
+                ) : (
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4 shrink-0 accent-[var(--alert-success-fg)]"
+                    aria-label="Bonne réponse"
+                    {...register(`options.${index}.correct`)}
+                  />
+                )}
+                <input
+                  className={`${fieldClass()} border-0 bg-transparent px-1 focus-visible:shadow-none`}
+                  placeholder={`Option ${index + 1}`}
+                  disabled={questionType === "TRUE_FALSE"}
+                  {...register(`options.${index}.label`)}
+                />
+                <input type="hidden" {...register(`options.${index}.orderIndex`)} value={index} />
+                {questionType !== "TRUE_FALSE" && fields.length > 2 && (
+                  <button
+                    type="button"
+                    className="shrink-0 rounded p-1 text-muted transition-colors hover:bg-surface-2 hover:text-[var(--danger)]"
+                    aria-label="Supprimer cette option"
+                    title="Supprimer cette option"
+                    onClick={() => remove(index)}
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                )}
+              </div>
+            );
+          })}
           {errors.options && (
             <p className="text-xs text-[var(--alert-error-fg)]">{errors.options.message || errors.options.root?.message}</p>
           )}

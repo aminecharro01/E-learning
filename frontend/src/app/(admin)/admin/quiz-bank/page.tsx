@@ -12,7 +12,19 @@ import {
 } from "@dnd-kit/core";
 import { SortableContext, arrayMove, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { ArrowLeft, ArrowRight, GripVertical, CheckCircle2, Circle, Image as ImageIcon, Trash2 } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  Copy,
+  Eye,
+  GripVertical,
+  CheckCircle2,
+  Circle,
+  Image as ImageIcon,
+  Pencil,
+  Sparkles,
+  Trash2,
+} from "lucide-react";
 import {
   deleteQuiz,
   deleteQuizQuestion,
@@ -490,12 +502,21 @@ export default function QuizBankPage() {
                         ? `/app/learn/${selectedQuiz.moduleId}/quiz/${selectedQuiz.id}`
                         : `/app/quiz/${selectedQuiz.id}`
                     }
-                    className={btn.neutralSm}
+                    className={btn.icon}
+                    aria-label="Aperçu apprenant"
+                    title="Aperçu apprenant"
                   >
-                    Aperçu apprenant
+                    <Eye size={16} aria-hidden />
                   </Link>
-                  <button type="button" onClick={() => void onDuplicateQuiz()} className={btn.neutralSm} disabled={busy}>
-                    Dupliquer le quiz
+                  <button
+                    type="button"
+                    onClick={() => void onDuplicateQuiz()}
+                    className={btn.icon}
+                    disabled={busy}
+                    aria-label="Dupliquer le quiz"
+                    title="Dupliquer le quiz"
+                  >
+                    <Copy size={16} aria-hidden />
                   </button>
                   <button
                     type="button"
@@ -510,10 +531,12 @@ export default function QuizBankPage() {
                   <button
                     type="button"
                     onClick={() => setAiGenerateOpen(true)}
-                    className={btn.neutralSm}
+                    className={btn.icon}
                     disabled={busy}
+                    aria-label="Générer avec IA"
+                    title="Générer avec IA"
                   >
-                    Générer avec IA
+                    <Sparkles size={16} aria-hidden />
                   </button>
                   <button
                     type="button"
@@ -773,15 +796,33 @@ function SortableQuestionItem({
             </ul>
           </div>
         </div>
-        <div className="flex shrink-0 gap-2">
-          <button type="button" className="text-xs text-primary hover:underline" onClick={onEdit}>
-            Modifier
+        <div className="flex shrink-0 gap-1">
+          <button
+            type="button"
+            className={btn.icon}
+            aria-label="Modifier"
+            title="Modifier"
+            onClick={onEdit}
+          >
+            <Pencil size={14} aria-hidden />
           </button>
-          <button type="button" className="text-xs text-primary hover:underline" onClick={onDuplicate}>
-            Dupliquer
+          <button
+            type="button"
+            className={btn.icon}
+            aria-label="Dupliquer"
+            title="Dupliquer"
+            onClick={onDuplicate}
+          >
+            <Copy size={14} aria-hidden />
           </button>
-          <button type="button" className="text-xs text-[var(--danger)] hover:underline" onClick={onDelete}>
-            Supprimer
+          <button
+            type="button"
+            className={btn.icon}
+            aria-label="Supprimer"
+            title="Supprimer"
+            onClick={onDelete}
+          >
+            <Trash2 size={14} aria-hidden className="text-[var(--danger)]" />
           </button>
         </div>
       </div>

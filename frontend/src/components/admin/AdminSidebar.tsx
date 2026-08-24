@@ -8,7 +8,6 @@ import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import { useSidebar } from "@/context/SidebarContext";
 import { useAuth } from "@/hooks/useAuth";
-import { btn } from "@/lib/ui";
 import { BrandLogo } from "@/components/brand/BrandLogo";
 import {
   BookIcon,
@@ -167,16 +166,6 @@ export function AdminSidebar() {
           );
         })}
       </nav>
-
-      {wide && (
-        <div className="app-sidebar-cta mt-auto rounded-2xl p-4">
-          <p className="text-sm font-medium text-heading">Vue apprenant</p>
-          <p className="mt-1 text-xs text-muted">Prévisualisez le parcours tel que vu par l&apos;apprenant.</p>
-          <Link href="/app" className={`${btn.primarySm} mt-3 w-full`}>
-            Ouvrir l&apos;espace apprenant
-          </Link>
-        </div>
-      )}
     </aside>
   );
 }
