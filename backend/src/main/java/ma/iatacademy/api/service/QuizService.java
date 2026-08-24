@@ -50,6 +50,7 @@ public class QuizService {
     private final StringRedisTemplate redisTemplate;
     private final ProgressionService progressionService;
     private final QuizProperties quizProperties;
+    private final RateLimitService rateLimitService;
     private final CertificateService certificateService;
     private final NotificationService notificationService;
     private final BadgeService badgeService;
@@ -671,7 +672,8 @@ public class QuizService {
      * manuel (addQuestion) — mêmes invariants, mêmes validations. Une question générée
      * qui échoue la validation est reportée en erreur plutôt que de faire échouer les autres. */
     @Transactional
-    public AiGenerationResponse generateQuestionsAi(UUID quizId, AiGenerationRequest request) {
+    public AiGenerationResponse generateQuestionsAi(UUID quizId, AiGenerationRequest request, UUID actorId) {
+        rateLimitService.checkAiGenerationAllowed(actorId.toString());
         Quiz quiz = quizRepository.findById(quizId)
                 .orElseThrow(() -> new NotFoundException("Quiz introuvable."));
         UUID lessonId = request.lessonId() != null
