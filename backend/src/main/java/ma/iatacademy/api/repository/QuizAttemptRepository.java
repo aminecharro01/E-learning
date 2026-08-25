@@ -11,6 +11,16 @@ import java.util.Optional;
 import java.util.UUID;
 
 public interface QuizAttemptRepository extends JpaRepository<QuizAttempt, UUID> {
+
+    /** Serializes concurrent start() calls for the same user+quiz so the "check for an
+     * existing attempt, else create one" logic in QuizAttemptService can't race — without
+     * this, N simultaneous requests each see "no open attempt" and each create their own row
+     * (reproduced by loadtest/quiz-start-concurrency.js). Transaction-scoped: released
+     * automatically when the calling @Transactional method commits or rolls back. */
+    @org.springframework.data.jpa.repository.Query(
+            value = "SELECT pg_advisory_xact_lock(hashtext(:lockKey))", nativeQuery = true)
+    void acquireStartLock(@org.springframework.data.repository.query.Param("lockKey") String lockKey);
+
     List<QuizAttempt> findByUserIdAndQuizIdOrderByStartedAtDesc(UUID userId, UUID quizId);
     List<QuizAttempt> findByUserIdAndStatusInOrderByStartedAtDesc(UUID userId, List<AttemptStatus> statuses);
     long countByUserIdAndQuizIdAndStatusIn(UUID userId, UUID quizId, List<AttemptStatus> statuses);

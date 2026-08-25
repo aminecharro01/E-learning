@@ -86,6 +86,12 @@ public class QuizAttemptService {
         assertCanAccessQuiz(principal, quiz);
 
         boolean preview = principal.getRole().isStaff();
+        if (!preview) {
+            // See QuizAttemptRepository#acquireStartLock — without this, concurrent /start
+            // calls for the same user+quiz race past the check below and each create their
+            // own attempt row instead of resuming a single shared one.
+            quizAttemptRepository.acquireStartLock(principal.getId() + ":" + quizId);
+        }
         QuizAttempt resumable = preview ? null : resolveResumableAttempt(principal.getId(), quiz);
 
         List<Question> bank = questionRepository.findByQuizIdOrderByOrderIndexAsc(quizId);
