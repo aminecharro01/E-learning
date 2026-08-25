@@ -4,8 +4,9 @@ import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { Bot, BookOpen, Send, Sparkles, Trash2, X } from "lucide-react";
-import { askCourseAssistant, type AssistantSource } from "@/lib/api";
+import { askCourseAssistant, getModule, type AssistantSource } from "@/lib/api";
 import { ApiClientError } from "@/lib/api-client";
+import { parseLearnPath } from "@/components/learner/CourseProvider";
 import { Loader } from "@/components/ui/Loader";
 import { btn, inputClass } from "@/lib/ui";
 
@@ -72,24 +73,9 @@ function AssistantMessageBody({ text }: { text: string }) {
   return <div>{blocks}</div>;
 }
 
-/** Amorces génériques — jamais spécifiques à un sujet précis : l'assistant ne répond
- * qu'à partir du contenu réellement débloqué pour l'apprenant (voir CourseAssistantService),
- * donc une suggestion ne doit jamais prétendre connaître un sujet à l'avance. */
-const GENERAL_SUGGESTIONS = [
-  "Explique-moi ça plus simplement",
-  "Donne-moi un exemple concret",
-  "Quels sont les points clés à retenir ?",
-];
-
-const LESSON_SUGGESTION = "Résume les points clés de cette leçon";
-
 /** Interdit pendant un quiz — /app/quiz/[id] et /app/learn/[moduleId]/quiz/[quizId]. */
 function isQuizRoute(pathname: string) {
   return pathname.includes("/quiz/");
-}
-
-function isLessonRoute(pathname: string) {
-  return pathname.includes("/learn/") && pathname.includes("/s/");
 }
 
 /** Assistant de cours (RAG par mots-clés sur le contenu déjà publié et déjà débloqué pour
@@ -101,6 +87,7 @@ export function ChatbotWidget() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [question, setQuestion] = useState("");
   const [loading, setLoading] = useState(false);
+  const [lessonTitle, setLessonTitle] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -122,13 +109,43 @@ export function ChatbotWidget() {
     return () => document.removeEventListener("keydown", onKeyDown);
   }, [open]);
 
+  // Suggestions must be grounded in the exact lesson being viewed: the assistant only
+  // ever matches literal keyword overlap with real course text (see
+  // CourseAssistantService#extractKeywords), so a generic prompt like "donne-moi un
+  // exemple" almost never shares vocabulary with any lesson and reliably comes back
+  // empty — confirmed live, this is what made suggestions look broken for learners.
+  // Using the real lesson title all but guarantees a match, since a lesson's own text
+  // nearly always repeats its subject.
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+    const { moduleId, activeLessonId } = parseLearnPath(pathname ?? "");
+    if (!moduleId || !activeLessonId) {
+      setLessonTitle(null);
+      return;
+    }
+    let cancelled = false;
+    getModule(moduleId)
+      .then((detail) => {
+        if (cancelled) return;
+        setLessonTitle(detail.lessons.find((l) => l.id === activeLessonId)?.title ?? null);
+      })
+      .catch(() => {
+        if (!cancelled) setLessonTitle(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [open, pathname]);
+
   if (isQuizRoute(pathname ?? "")) {
     return null;
   }
 
-  const suggestions = isLessonRoute(pathname ?? "")
-    ? [LESSON_SUGGESTION, ...GENERAL_SUGGESTIONS.slice(0, 2)]
-    : GENERAL_SUGGESTIONS;
+  const suggestions = lessonTitle
+    ? [`Résume la leçon « ${lessonTitle} »`, `Explique-moi « ${lessonTitle} »`]
+    : [];
 
   async function ask(text: string) {
     const trimmed = text.trim();
@@ -211,25 +228,27 @@ export function ChatbotWidget() {
             {messages.length === 0 && (
               <div className="space-y-3">
                 <p className="text-sm text-muted">
-                  Posez une question sur le contenu de vos cours débloqués — je réponds à partir des leçons déjà
-                  accessibles pour vous, et je cite mes sources.
+                  Posez une question sur un point précis de vos cours débloqués (un terme, une notion) — je réponds
+                  à partir des leçons déjà accessibles pour vous, et je cite mes sources.
                 </p>
-                <div className="space-y-1.5">
-                  <p className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-muted">
-                    <Sparkles size={12} aria-hidden /> Idées de questions
-                  </p>
-                  {suggestions.map((s) => (
-                    <button
-                      key={s}
-                      type="button"
-                      onClick={() => void ask(s)}
-                      className="block w-full rounded-lg border border-theme px-3 py-2 text-left text-sm text-body transition-colors hover:border-[var(--primary)] hover:bg-surface-2"
-                    >
-                      {s === LESSON_SUGGESTION && <BookOpen size={13} className="mr-1.5 inline-block align-[-2px] text-muted" aria-hidden />}
-                      {s}
-                    </button>
-                  ))}
-                </div>
+                {suggestions.length > 0 && (
+                  <div className="space-y-1.5">
+                    <p className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-muted">
+                      <Sparkles size={12} aria-hidden /> À propos de cette leçon
+                    </p>
+                    {suggestions.map((s) => (
+                      <button
+                        key={s}
+                        type="button"
+                        onClick={() => void ask(s)}
+                        className="block w-full rounded-lg border border-theme px-3 py-2 text-left text-sm text-body transition-colors hover:border-[var(--primary)] hover:bg-surface-2"
+                      >
+                        <BookOpen size={13} className="mr-1.5 inline-block align-[-2px] text-muted" aria-hidden />
+                        {s}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
             {messages.map((m) => (
