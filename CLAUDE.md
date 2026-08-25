@@ -31,6 +31,9 @@ npx tsc --noEmit                     # type-check
 npx eslint . --ext .ts,.tsx
 npm run build                        # production build (also type-checks + lints)
 npm run dev                          # dev server (Turbopack)
+npm run test                         # Vitest unit/component suite (jsdom + React Testing Library)
+npm run test:watch                   # Vitest in watch mode
+npm run test:e2e                     # Playwright e2e — needs a running backend, see frontend/e2e/README.md
 ```
 
 **After every change, backend or frontend:** run the relevant compile/test and tsc/eslint/build commands above before considering the change done. Both must be clean before committing.
