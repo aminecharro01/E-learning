@@ -49,6 +49,15 @@ type SubmitResponse = {
   preview?: boolean;
 };
 
+const ATTEMPT_STATUS_LABEL: Record<string, string> = {
+  IN_PROGRESS: "En cours",
+  SUBMITTED: "Soumis",
+  EXPIRED: "Expiré",
+  PASSED: "Réussi",
+  FAILED: "Échoué",
+  PENDING_REVIEW: "En attente de correction",
+};
+
 function QuizBody({ moduleId, quizId }: { moduleId: string; quizId: string }) {
   const { reload } = useCourse();
   const [session, setSession] = useState<StartResponse | null>(null);
@@ -59,6 +68,8 @@ function QuizBody({ moduleId, quizId }: { moduleId: string; quizId: string }) {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [showReview, setShowReview] = useState(false);
+  const [retrying, setRetrying] = useState(false);
+  const [retryError, setRetryError] = useState<string | null>(null);
 
   useEffect(() => {
     setLoading(true);
@@ -75,6 +86,24 @@ function QuizBody({ moduleId, quizId }: { moduleId: string; quizId: string }) {
       })
       .finally(() => setLoading(false));
   }, [quizId]);
+
+  async function retry() {
+    setRetrying(true);
+    setRetryError(null);
+    try {
+      const { data } = await api.post<StartResponse>(`/api/quiz/${quizId}/start`);
+      setSession(data);
+      setResult(null);
+      setShowReview(false);
+      setAnswers({});
+      setFreeTextAnswers({});
+      setCurrent(0);
+    } catch (err) {
+      setRetryError(err instanceof ApiClientError ? err.message : "Nouvelle tentative impossible.");
+    } finally {
+      setRetrying(false);
+    }
+  }
 
   const submit = useCallback(async () => {
     if (!session) return;
@@ -207,6 +236,7 @@ function QuizBody({ moduleId, quizId }: { moduleId: string; quizId: string }) {
             {result.preview && (
               <p className="alert alert-warning mt-3">Mode aperçu staff — tentative non enregistrée.</p>
             )}
+            {retryError && <p className="alert alert-warning mt-3">{retryError}</p>}
             <dl className="bp-meta mt-4">
               <div>
                 <dt>Score</dt>
@@ -218,7 +248,7 @@ function QuizBody({ moduleId, quizId }: { moduleId: string; quizId: string }) {
               </div>
               <div>
                 <dt>Statut</dt>
-                <dd>{result.status}</dd>
+                <dd>{ATTEMPT_STATUS_LABEL[result.status] ?? result.status}</dd>
               </div>
             </dl>
             <div className="bp-actions">
@@ -229,6 +259,12 @@ function QuizBody({ moduleId, quizId }: { moduleId: string; quizId: string }) {
               <Link href="/app" className={btn.secondary}>
                 Parcours
               </Link>
+              {!result.passed && !result.preview && (
+                <button type="button" className={btn.secondary} disabled={retrying} onClick={() => void retry()}>
+                  <IconPlane size={16} />
+                  {retrying ? "Nouvelle tentative…" : "Réessayer"}
+                </button>
+              )}
               {!result.preview && (
                 <button type="button" className={btn.neutral} onClick={() => setShowReview((v) => !v)}>
                   {showReview ? "Masquer mes réponses" : "Voir mes réponses"}
@@ -238,7 +274,7 @@ function QuizBody({ moduleId, quizId }: { moduleId: string; quizId: string }) {
           </div>
           <div className="learn-pass-stub">
             {result.passed ? <IconCheck size={28} /> : <IconWing size={28} />}
-            <span className="course-stub-code">{result.passed ? "PASS" : "RETRY"}</span>
+            <span className="course-stub-code">{result.passed ? "PASS" : "RÉESSAYER"}</span>
           </div>
         </section>
 

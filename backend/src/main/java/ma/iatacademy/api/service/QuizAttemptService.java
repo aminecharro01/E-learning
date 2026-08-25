@@ -199,15 +199,34 @@ public class QuizAttemptService {
     }
 
     /** Vue staff : toutes les tentatives d'un quiz, avec le nombre d'évènements anti-triche relevés. */
-    @Transactional(readOnly = true)
+    @Transactional
     public List<QuizAttemptAdminResponse> listAttemptsForStaff(UUID quizId) {
-        return quizAttemptRepository.findByQuizIdOrderByStartedAtDesc(quizId).stream()
+        List<QuizAttempt> attempts = quizAttemptRepository.findByQuizIdOrderByStartedAtDesc(quizId);
+        attempts.forEach(this::reconcileIfAbandoned);
+        return attempts.stream()
                 .map(a -> new QuizAttemptAdminResponse(
                         a.getId(), a.getUser().getId(),
                         a.getUser().getFullName() != null ? a.getUser().getFullName() : a.getUser().getEmail(),
                         a.getStatus(), a.getScore(), a.getStartedAt(), a.getSubmittedAt(),
                         proctoringEventRepository.countByAttemptId(a.getId())))
                 .toList();
+    }
+
+    /** Un apprenant qui ferme l'onglet sans jamais soumettre laisse une tentative
+     * IN_PROGRESS pour toujours — rien ne la revoit tant qu'il ne revient pas lui-même
+     * (submit() ne détecte l'abandon qu'à ce moment-là). On applique ici la même logique
+     * dès qu'un membre du staff consulte la liste : si la session Redis a expiré, la
+     * tentative est bien abandonnée. */
+    private void reconcileIfAbandoned(QuizAttempt attempt) {
+        if (attempt.getStatus() != AttemptStatus.IN_PROGRESS) {
+            return;
+        }
+        if (Boolean.TRUE.equals(redisTemplate.hasKey(attemptKey(attempt.getId())))) {
+            return;
+        }
+        attempt.setStatus(AttemptStatus.EXPIRED);
+        attempt.setSubmittedAt(Instant.now());
+        quizAttemptRepository.save(attempt);
     }
 
     @Transactional(readOnly = true)
@@ -433,13 +452,15 @@ public class QuizAttemptService {
         };
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public List<QuizAttemptResponse> listAttempts(UUID quizId, UserPrincipal principal) {
         if (!quizRepository.existsById(quizId)) {
             throw new NotFoundException("Quiz introuvable.");
         }
-        return quizAttemptRepository.findByUserIdAndQuizIdOrderByStartedAtDesc(principal.getId(), quizId)
-                .stream()
+        List<QuizAttempt> attempts = quizAttemptRepository
+                .findByUserIdAndQuizIdOrderByStartedAtDesc(principal.getId(), quizId);
+        attempts.forEach(this::reconcileIfAbandoned);
+        return attempts.stream()
                 .map(a -> new QuizAttemptResponse(
                         a.getId(),
                         quizId,

@@ -37,6 +37,15 @@ type SubmitResponse = {
   preview?: boolean;
 };
 
+const ATTEMPT_STATUS_LABEL: Record<string, string> = {
+  IN_PROGRESS: "En cours",
+  SUBMITTED: "Soumis",
+  EXPIRED: "Expiré",
+  PASSED: "Réussi",
+  FAILED: "Échoué",
+  PENDING_REVIEW: "En attente de correction",
+};
+
 export default function QuizTakingPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
@@ -47,6 +56,8 @@ export default function QuizTakingPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [showReview, setShowReview] = useState(false);
+  const [retrying, setRetrying] = useState(false);
+  const [retryError, setRetryError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!params.id) return;
@@ -58,6 +69,25 @@ export default function QuizTakingPage() {
       })
       .finally(() => setLoading(false));
   }, [params.id]);
+
+  async function retry() {
+    if (!params.id) return;
+    setRetrying(true);
+    setRetryError(null);
+    try {
+      const { data } = await api.post<StartResponse>(`/api/quiz/${params.id}/start`);
+      setSession(data);
+      setResult(null);
+      setShowReview(false);
+      setAnswers({});
+      setCurrent(0);
+    } catch (err: unknown) {
+      const resp = (err as { response?: { data?: { error?: string } } })?.response;
+      setRetryError(resp?.data?.error || "Nouvelle tentative impossible.");
+    } finally {
+      setRetrying(false);
+    }
+  }
 
   const submit = useCallback(async () => {
     if (!session) return;
@@ -116,18 +146,24 @@ export default function QuizTakingPage() {
             Mode aperçu staff — tentative non enregistrée, hors progression apprenant.
           </p>
         )}
+        {retryError && <p className="alert alert-warning mt-3">{retryError}</p>}
         <p className="mt-4 text-lg text-body">
           Score : <strong className="text-heading">{result.score}%</strong> (minimum {result.passingScore}%)
         </p>
         <p
           className={`mt-2 font-medium ${result.passed ? "text-[var(--alert-success-fg)]" : "text-[var(--alert-error-fg)]"}`}
         >
-          {result.passed ? "Réussi" : "Échoué"} — {result.status}
+          {result.passed ? "Réussi" : "Échoué"} — {ATTEMPT_STATUS_LABEL[result.status] ?? result.status}
         </p>
         <div className="mt-6 flex flex-wrap gap-2">
           <Link href="/app" className={btn.primarySm}>
             Retour au tableau de bord
           </Link>
+          {!result.passed && !result.preview && (
+            <button type="button" className={btn.secondarySm} disabled={retrying} onClick={() => void retry()}>
+              {retrying ? "Nouvelle tentative…" : "Réessayer"}
+            </button>
+          )}
           {!result.preview && session && (
             <button type="button" className={btn.neutralSm} onClick={() => setShowReview((v) => !v)}>
               {showReview ? "Masquer mes réponses" : "Voir mes réponses"}

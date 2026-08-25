@@ -8,6 +8,15 @@ import { Modal } from "@/components/admin/Modal";
 
 type Props = { quizId: string };
 
+const ATTEMPT_STATUS_LABEL: Record<string, string> = {
+  IN_PROGRESS: "En cours",
+  SUBMITTED: "Soumis",
+  EXPIRED: "Expiré",
+  PASSED: "Réussi",
+  FAILED: "Échoué",
+  PENDING_REVIEW: "En attente de correction",
+};
+
 /** Attempts + proctoring-events view for a quiz — fully self-contained (fetches its own
  * data from just a quizId), so the parent renders it with key={quizId} to reset it when the
  * selected quiz changes. Extracted from quiz-bank/page.tsx (was 831 lines). */
@@ -69,7 +78,7 @@ export function QuizAttemptsPanel({ quizId }: Props) {
                   className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-theme px-3 py-1.5 text-xs"
                 >
                   <span>
-                    {a.userFullName} — {a.status}
+                    {a.userFullName} — {ATTEMPT_STATUS_LABEL[a.status] ?? a.status}
                     {a.score !== null && ` — ${a.score}%`}
                   </span>
                   {a.proctoringEventCount > 0 && (
