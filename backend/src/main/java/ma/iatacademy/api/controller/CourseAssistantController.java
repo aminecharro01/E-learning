@@ -25,6 +25,6 @@ public class CourseAssistantController {
             @Valid @RequestBody AssistantAskRequest request,
             @AuthenticationPrincipal UserPrincipal principal
     ) {
-        return ResponseEntity.ok(courseAssistantService.ask(request.question(), principal.getId()));
+        return ResponseEntity.ok(courseAssistantService.ask(request.question(), principal));
     }
 }

@@ -6,12 +6,14 @@ import lombok.extern.slf4j.Slf4j;
 import ma.iatacademy.api.config.AiProviderProperties;
 import ma.iatacademy.api.domain.entity.Asset;
 import ma.iatacademy.api.domain.entity.LessonBlock;
+import ma.iatacademy.api.domain.entity.ModuleEntity;
 import ma.iatacademy.api.domain.enums.BlockType;
 import ma.iatacademy.api.dto.assistant.AssistantAskResponse;
 import ma.iatacademy.api.dto.assistant.AssistantSource;
 import ma.iatacademy.api.exception.ApiException;
 import ma.iatacademy.api.repository.AssetRepository;
 import ma.iatacademy.api.repository.LessonBlockRepository;
+import ma.iatacademy.api.security.UserPrincipal;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
@@ -62,10 +64,11 @@ public class CourseAssistantService {
     private final AssetRepository assetRepository;
     private final AiProviderProperties properties;
     private final RateLimitService rateLimitService;
+    private final ProgressionService progressionService;
     private final RestClient restClient = RestClient.create();
 
     @Transactional(readOnly = true)
-    public AssistantAskResponse ask(String question, UUID userId) {
+    public AssistantAskResponse ask(String question, UserPrincipal principal) {
         String q = question == null ? "" : question.trim();
         if (q.isBlank()) {
             throw new ApiException("Posez une question.");
@@ -73,7 +76,7 @@ public class CourseAssistantService {
         if (q.length() > MAX_QUESTION_LENGTH) {
             throw new ApiException("Question trop longue (500 caractères maximum).");
         }
-        rateLimitService.checkAssistantAllowed(userId.toString());
+        rateLimitService.checkAssistantAllowed(principal.getId().toString());
 
         List<String> keywords = extractKeywords(q);
         if (keywords.isEmpty()) {
@@ -82,7 +85,7 @@ public class CourseAssistantService {
                     List.of());
         }
 
-        List<ScoredBlock> matches = retrieve(keywords);
+        List<ScoredBlock> matches = retrieve(keywords, principal);
         if (matches.isEmpty()) {
             return new AssistantAskResponse(
                     "Je n'ai trouvé aucun contenu de cours en rapport avec votre question. "
@@ -145,8 +148,11 @@ public class CourseAssistantService {
     }
 
     /** Une requête ILIKE par mot-clé (réutilise le repository existant) ; les blocs qui
-     * ressortent pour plusieurs mots-clés remontent en tête. */
-    private List<ScoredBlock> retrieve(List<String> keywords) {
+     * ressortent pour plusieurs mots-clés remontent en tête. Filtre ensuite tout bloc dont
+     * le module n'est pas encore débloqué pour cet apprenant — l'assistant ne doit jamais
+     * répondre (ni renvoyer de lien) à partir d'un contenu que la progression séquentielle
+     * par UF lui interdit encore de consulter directement. Le staff n'est pas filtré. */
+    private List<ScoredBlock> retrieve(List<String> keywords, UserPrincipal principal) {
         Pageable top = PageRequest.of(0, 5);
         Map<UUID, ScoredBlock> byId = new LinkedHashMap<>();
         for (String keyword : keywords) {
@@ -159,7 +165,14 @@ public class CourseAssistantService {
                         (a, b) -> new ScoredBlock(a.block(), a.score() + 1));
             }
         }
+
+        boolean staff = principal.getRole().isStaff();
+        Map<UUID, Boolean> moduleAccessCache = new LinkedHashMap<>();
         return byId.values().stream()
+                .filter(m -> staff || moduleAccessCache.computeIfAbsent(
+                        m.block().getLesson().getModule().getId(),
+                        moduleId -> progressionService.isModuleAccessible(
+                                principal.getId(), m.block().getLesson().getModule())))
                 .sorted(Comparator.comparingInt(ScoredBlock::score).reversed())
                 .limit(MAX_SOURCES)
                 .toList();
