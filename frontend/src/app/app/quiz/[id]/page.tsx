@@ -61,13 +61,23 @@ export default function QuizTakingPage() {
 
   useEffect(() => {
     if (!params.id) return;
+    let cancelled = false;
     api
       .post<StartResponse>(`/api/quiz/${params.id}/start`)
-      .then((res) => setSession(res.data))
-      .catch((err) => {
-        setError(err?.response?.data?.error || "Impossible de démarrer le quiz.");
+      .then((res) => {
+        if (!cancelled) setSession(res.data);
       })
-      .finally(() => setLoading(false));
+      .catch((err) => {
+        if (!cancelled) {
+          setError(err?.response?.data?.error || "Impossible de démarrer le quiz.");
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [params.id]);
 
   async function retry() {

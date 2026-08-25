@@ -73,6 +73,7 @@ function QuizBody({ moduleId, quizId }: { moduleId: string; quizId: string }) {
   const [retryError, setRetryError] = useState<string | null>(null);
 
   useEffect(() => {
+    let cancelled = false;
     setLoading(true);
     setResult(null);
     setShowReview(false);
@@ -81,11 +82,20 @@ function QuizBody({ moduleId, quizId }: { moduleId: string; quizId: string }) {
     setCurrent(0);
     api
       .post<StartResponse>(`/api/quiz/${quizId}/start`)
-      .then((res) => setSession(res.data))
-      .catch((err) => {
-        setError(err instanceof ApiClientError ? err.message : "Impossible de démarrer le quiz.");
+      .then((res) => {
+        if (!cancelled) setSession(res.data);
       })
-      .finally(() => setLoading(false));
+      .catch((err) => {
+        if (!cancelled) {
+          setError(err instanceof ApiClientError ? err.message : "Impossible de démarrer le quiz.");
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [quizId]);
 
   async function retry() {

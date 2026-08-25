@@ -86,24 +86,31 @@ public class QuizAttemptService {
         assertCanAccessQuiz(principal, quiz);
 
         boolean preview = principal.getRole().isStaff();
-        if (!preview) {
-            assertAttemptsAllowed(principal.getId(), quiz);
-        }
+        QuizAttempt resumable = preview ? null : resolveResumableAttempt(principal.getId(), quiz);
 
         List<Question> bank = questionRepository.findByQuizIdOrderByOrderIndexAsc(quizId);
         if (bank.isEmpty()) {
             throw new ApiException("Ce quiz ne contient aucune question.");
         }
 
-        List<Question> drawn = new ArrayList<>(bank);
-        if (quiz.isRandomizeQuestions()) {
-            Collections.shuffle(drawn);
+        List<Question> drawn;
+        if (resumable != null) {
+            Map<UUID, Question> byId = bank.stream().collect(Collectors.toMap(Question::getId, q -> q));
+            drawn = resumable.getQuestionOrder().stream()
+                    .map(byId::get)
+                    .filter(Objects::nonNull)
+                    .toList();
+        } else {
+            drawn = new ArrayList<>(bank);
+            if (quiz.isRandomizeQuestions()) {
+                Collections.shuffle(drawn);
+            }
         }
 
-        Instant now = Instant.now();
-        Instant expiresAt = quiz.getTimeLimitSeconds() > 0
-                ? now.plusSeconds(quiz.getTimeLimitSeconds())
-                : null;
+        Instant now = resumable != null ? resumable.getStartedAt() : Instant.now();
+        Instant expiresAt = resumable != null
+                ? resumable.getExpiresAt()
+                : (quiz.getTimeLimitSeconds() > 0 ? now.plusSeconds(quiz.getTimeLimitSeconds()) : null);
 
         List<UUID> questionOrder = drawn.stream().map(Question::getId).toList();
         UUID attemptId;
@@ -120,6 +127,11 @@ public class QuizAttemptService {
                     ttl
             );
             redisTemplate.opsForValue().set(previewUserKey(attemptId), principal.getId().toString(), ttl);
+        } else if (resumable != null) {
+            // Tentative déjà ouverte (session Redis toujours valide) : on la renvoie telle
+            // quelle plutôt que d'en créer une seconde — évite le faux blocage "Une tentative
+            // est déjà en cours" quand la page est simplement rechargée/remontée.
+            attemptId = resumable.getId();
         } else {
             QuizAttempt attempt = QuizAttempt.builder()
                     .user(userRepository.getReferenceById(principal.getId()))
@@ -544,17 +556,21 @@ public class QuizAttemptService {
         }
     }
 
-    private void assertAttemptsAllowed(UUID userId, Quiz quiz) {
+    /** Retourne la tentative IN_PROGRESS à reprendre si elle existe encore réellement (session
+     * Redis valide), sinon applique les règles de nouvelle tentative (max, délai) et retourne
+     * null pour signaler qu'une nouvelle tentative peut être créée. Une tentative dont la
+     * session Redis a expiré est d'abord réconciliée en EXPIRED (voir reconcileIfAbandoned)
+     * avant d'être écartée du calcul — elle ne doit ni bloquer ni être "reprise". */
+    private QuizAttempt resolveResumableAttempt(UUID userId, Quiz quiz) {
         List<QuizAttempt> previous = quizAttemptRepository
                 .findByUserIdAndQuizIdOrderByStartedAtDesc(userId, quiz.getId());
-        // Same reconciliation as listAttemptsForStaff/listAttempts: an attempt whose Redis
-        // session already died (tab closed, never submitted) must not block a new one just
-        // because its DB row is still IN_PROGRESS.
         previous.forEach(this::reconcileIfAbandoned);
 
-        boolean hasOpen = previous.stream().anyMatch(a -> a.getStatus() == AttemptStatus.IN_PROGRESS);
-        if (hasOpen) {
-            throw new ApiException("Une tentative est déjà en cours pour ce quiz.");
+        Optional<QuizAttempt> open = previous.stream()
+                .filter(a -> a.getStatus() == AttemptStatus.IN_PROGRESS)
+                .findFirst();
+        if (open.isPresent()) {
+            return open.get();
         }
 
         long used = previous.stream()
@@ -578,6 +594,8 @@ public class QuizAttemptService {
                 throw new ApiException("Délai d'attente avant une nouvelle tentative non écoulé.");
             }
         }
+
+        return null;
     }
 
     private boolean isAnswerCorrect(Question question, List<String> selectedRaw) {
