@@ -5,7 +5,7 @@ public record QuizSettingsResponse(
         int defaultModulePassingScore,
         int defaultModuleMaxAttempts,
         int defaultModuleTimeLimitSeconds,
-        int defaultRetryDelayHours,
+        int defaultRetryDelayMinutes,
         int sectionCompletionVideoPercent
 ) {
 }

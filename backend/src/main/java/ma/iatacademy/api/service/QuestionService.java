@@ -267,7 +267,7 @@ public class QuestionService {
                 quiz.getTimeLimitSeconds(),
                 quiz.isRandomizeQuestions(),
                 quiz.isRandomizeOptions(),
-                quiz.getRetryDelayHours(),
+                quiz.getRetryDelayMinutes(),
                 quiz.isBlocking(),
                 quiz.isPublished(),
                 quiz.isProctoringEnabled(),

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import type { DragEndEvent } from "@dnd-kit/core";
 import { arrayMove } from "@dnd-kit/sortable";
-import { Copy, Eye, Sparkles, Trash2 } from "lucide-react";
+import { Copy, Eye, Settings, Sparkles, Trash2 } from "lucide-react";
 import {
   deleteQuiz,
   deleteQuizQuestion,
@@ -17,6 +17,7 @@ import {
   listQuizQuestions,
   listQuizzesPaged,
   reorderQuizQuestions,
+  updateQuiz,
   updateQuizQuestion,
   type AiGenerationPayload,
 } from "@/lib/api";
@@ -51,6 +52,7 @@ export default function QuizBankPage() {
   const [deleteQuizConfirmOpen, setDeleteQuizConfirmOpen] = useState(false);
   const [filterModuleId, setFilterModuleId] = useState("");
   const [createOpen, setCreateOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [questionFormOpen, setQuestionFormOpen] = useState(false);
   const [aiGenerateOpen, setAiGenerateOpen] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -192,37 +194,58 @@ export default function QuizBankPage() {
     }
   }
 
+  function toQuizPayload(values: QuizSettingsValues) {
+    return {
+      title: values.title,
+      quizType: values.quizType,
+      moduleId: values.quizType === "FIN_MODULE" ? values.moduleId || null : null,
+      lessonId: values.quizType === "APPLICATIF" ? values.lessonId || null : null,
+      ufCode: values.quizType === "FIN_UF" ? values.ufCode || null : null,
+      yearNumber: values.quizType === "FIN_ANNEE" ? values.yearNumber || null : null,
+      passingScore: values.passingScore,
+      maxAttempts: values.maxAttempts,
+      timeLimitSeconds: values.timeLimitSeconds,
+      randomizeQuestions: values.randomizeQuestions,
+      randomizeOptions: values.randomizeOptions,
+      retryDelayMinutes: values.retryDelayMinutes,
+      blocking: values.blocking,
+      published: values.published,
+      proctoringEnabled: values.proctoringEnabled,
+      focusLossDetection: values.focusLossDetection,
+      copyProtection: values.copyProtection,
+      lockdownMode: values.lockdownMode,
+    };
+  }
+
   async function onCreateQuiz(values: QuizSettingsValues) {
     setBusy(true);
     setError(null);
     setMsg(null);
     try {
-      const data = await createQuiz({
-        title: values.title,
-        quizType: values.quizType,
-        moduleId: values.quizType === "FIN_MODULE" ? values.moduleId || null : null,
-        lessonId: values.quizType === "APPLICATIF" ? values.lessonId || null : null,
-        ufCode: values.quizType === "FIN_UF" ? values.ufCode || null : null,
-        yearNumber: values.quizType === "FIN_ANNEE" ? values.yearNumber || null : null,
-        passingScore: values.passingScore,
-        maxAttempts: values.maxAttempts,
-        timeLimitSeconds: values.timeLimitSeconds,
-        randomizeQuestions: values.randomizeQuestions,
-        randomizeOptions: values.randomizeOptions,
-        retryDelayHours: values.retryDelayHours,
-        blocking: values.blocking,
-        published: values.published,
-        proctoringEnabled: values.proctoringEnabled,
-        focusLossDetection: values.focusLossDetection,
-        copyProtection: values.copyProtection,
-        lockdownMode: values.lockdownMode,
-      });
+      const data = await createQuiz(toQuizPayload(values));
       await refreshQuizzes(page, filterModuleId || undefined);
       setSelectedQuizId(data.id);
       setCreateOpen(false);
       setMsg(`Quiz créé.`);
     } catch (err) {
       setError(err instanceof ApiClientError ? err.message : "Création quiz impossible.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function onUpdateQuizSettings(values: QuizSettingsValues) {
+    if (!selectedQuizId) return;
+    setBusy(true);
+    setError(null);
+    setMsg(null);
+    try {
+      await updateQuiz(selectedQuizId, toQuizPayload(values));
+      await refreshQuizzes(page, filterModuleId || undefined);
+      setSettingsOpen(false);
+      setMsg("Réglages du quiz mis à jour.");
+    } catch (err) {
+      setError(err instanceof ApiClientError ? err.message : "Mise à jour des réglages impossible.");
     } finally {
       setBusy(false);
     }
@@ -372,6 +395,15 @@ export default function QuizBankPage() {
                   </Link>
                   <button
                     type="button"
+                    onClick={() => setSettingsOpen(true)}
+                    className={btn.icon}
+                    aria-label="Réglages du quiz"
+                    title="Réglages du quiz"
+                  >
+                    <Settings size={16} aria-hidden />
+                  </button>
+                  <button
+                    type="button"
                     onClick={() => void onDuplicateQuiz()}
                     className={btn.icon}
                     disabled={busy}
@@ -445,6 +477,43 @@ export default function QuizBankPage() {
           />
         ) : (
           <p className="text-sm text-muted">Chargement des modules…</p>
+        )}
+      </Modal>
+
+      <Modal
+        open={settingsOpen && !!selectedQuiz}
+        title="Réglages du quiz"
+        onClose={() => (!busy ? setSettingsOpen(false) : undefined)}
+      >
+        {selectedQuiz && (
+          <QuizSettingsForm
+            key={`edit-${selectedQuiz.id}`}
+            modules={modules}
+            busy={busy}
+            submitLabel="Enregistrer"
+            submittingLabel="Enregistrement…"
+            defaultValues={{
+              title: selectedQuiz.title,
+              quizType: selectedQuiz.quizType,
+              moduleId: selectedQuiz.moduleId || "",
+              lessonId: selectedQuiz.lessonId || "",
+              ufCode: selectedQuiz.ufCode || "",
+              yearNumber: selectedQuiz.yearNumber || undefined,
+              passingScore: selectedQuiz.passingScore,
+              maxAttempts: selectedQuiz.maxAttempts,
+              timeLimitSeconds: selectedQuiz.timeLimitSeconds,
+              randomizeQuestions: selectedQuiz.randomizeQuestions,
+              randomizeOptions: selectedQuiz.randomizeOptions,
+              retryDelayMinutes: selectedQuiz.retryDelayMinutes,
+              blocking: selectedQuiz.blocking,
+              published: selectedQuiz.published,
+              proctoringEnabled: selectedQuiz.proctoringEnabled ?? false,
+              focusLossDetection: selectedQuiz.focusLossDetection ?? false,
+              copyProtection: selectedQuiz.copyProtection ?? false,
+              lockdownMode: selectedQuiz.lockdownMode ?? false,
+            }}
+            onSubmit={onUpdateQuizSettings}
+          />
         )}
       </Modal>
 

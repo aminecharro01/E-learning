@@ -71,10 +71,27 @@ public class QuizController {
         return ResponseEntity.ok(quizService.listAttempts(id, principal));
     }
 
+    @GetMapping("/attempts/{attemptId}/review")
+    public ResponseEntity<AttemptReviewResponse> attemptReview(
+            @PathVariable UUID attemptId,
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        return ResponseEntity.ok(quizService.getAttemptReview(attemptId, principal));
+    }
+
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN','FORMATEUR')")
     public ResponseEntity<QuizAdminResponse> create(@Valid @RequestBody CreateQuizRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(quizService.createQuiz(request));
+    }
+
+    @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN','FORMATEUR')")
+    public ResponseEntity<QuizAdminResponse> update(
+            @PathVariable UUID id,
+            @Valid @RequestBody CreateQuizRequest request
+    ) {
+        return ResponseEntity.ok(quizService.updateQuiz(id, request));
     }
 
     @PostMapping("/{id}/questions")

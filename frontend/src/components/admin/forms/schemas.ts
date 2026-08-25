@@ -43,7 +43,7 @@ export const quizSettingsSchema = z
     timeLimitSeconds: intField(0),
     randomizeQuestions: z.boolean(),
     randomizeOptions: z.boolean(),
-    retryDelayHours: intField(0, 168),
+    retryDelayMinutes: intField(0, 10080),
     blocking: z.boolean(),
     published: z.boolean(),
     proctoringEnabled: z.boolean(),
@@ -127,7 +127,7 @@ export const quizDefaultsSchema = z.object({
   defaultModulePassingScore: intField(0, 100),
   defaultModuleMaxAttempts: intField(1, 20),
   defaultModuleTimeLimitSeconds: intField(0),
-  defaultRetryDelayHours: intField(0, 168),
+  defaultRetryDelayMinutes: intField(0, 10080),
   sectionCompletionVideoPercent: intField(1, 100),
 });
 

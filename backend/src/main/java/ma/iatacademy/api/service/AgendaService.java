@@ -62,11 +62,11 @@ public class AgendaService {
 
         for (QuizAttempt a : latestFailedByQuiz.values()) {
             Quiz quiz = a.getQuiz();
-            if (quiz.getRetryDelayHours() <= 0) {
+            if (quiz.getRetryDelayMinutes() <= 0) {
                 continue;
             }
             Instant base = a.getSubmittedAt() != null ? a.getSubmittedAt() : a.getStartedAt();
-            Instant earliest = base.plus(Duration.ofHours(quiz.getRetryDelayHours()));
+            Instant earliest = base.plus(Duration.ofMinutes(quiz.getRetryDelayMinutes()));
             if (earliest.isAfter(now)) {
                 items.add(new AgendaItemResponse(
                         "QUIZ_RETRY", "Nouvelle tentative possible : " + quiz.getTitle(), earliest, "/app"));

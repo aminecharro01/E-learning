@@ -7,6 +7,7 @@ import { api } from "@/lib/api";
 import { QuizTimer } from "@/components/QuizTimer";
 import { useCourse } from "@/components/learner/CourseProvider";
 import { AssetImage } from "@/components/AssetImage";
+import { QuizAttemptReview } from "@/components/learner/QuizAttemptReview";
 import { ApiClientError } from "@/lib/api-client";
 import { IconBadge, IconCheck, IconCompass, IconPlane, IconWing } from "@/components/brand/IatIcons";
 import { btn } from "@/lib/ui";
@@ -57,10 +58,12 @@ function QuizBody({ moduleId, quizId }: { moduleId: string; quizId: string }) {
   const [result, setResult] = useState<SubmitResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showReview, setShowReview] = useState(false);
 
   useEffect(() => {
     setLoading(true);
     setResult(null);
+    setShowReview(false);
     setAnswers({});
     setFreeTextAnswers({});
     setCurrent(0);
@@ -226,6 +229,11 @@ function QuizBody({ moduleId, quizId }: { moduleId: string; quizId: string }) {
               <Link href="/app" className={btn.secondary}>
                 Parcours
               </Link>
+              {!result.preview && (
+                <button type="button" className={btn.neutral} onClick={() => setShowReview((v) => !v)}>
+                  {showReview ? "Masquer mes réponses" : "Voir mes réponses"}
+                </button>
+              )}
             </div>
           </div>
           <div className="learn-pass-stub">
@@ -233,6 +241,8 @@ function QuizBody({ moduleId, quizId }: { moduleId: string; quizId: string }) {
             <span className="course-stub-code">{result.passed ? "PASS" : "RETRY"}</span>
           </div>
         </section>
+
+        {showReview && !result.preview && session && <QuizAttemptReview attemptId={session.attemptId} />}
       </div>
     );
   }

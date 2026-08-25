@@ -15,6 +15,6 @@ public class QuizProperties {
     private int defaultModulePassingScore = 60;
     private int defaultModuleMaxAttempts = 2;
     private int defaultModuleTimeLimitSeconds = 5400;
-    private int defaultRetryDelayHours = 24;
+    private int defaultRetryDelayMinutes = 1440;
     private int sectionCompletionVideoPercent = 90;
 }

@@ -357,7 +357,7 @@ public class DemoDataSeeder implements ApplicationRunner {
                 .timeLimitSeconds(900)
                 .randomizeQuestions(false)
                 .randomizeOptions(false)
-                .retryDelayHours(1)
+                .retryDelayMinutes(60)
                 .blocking(true)
                 .published(true)
                 .build();

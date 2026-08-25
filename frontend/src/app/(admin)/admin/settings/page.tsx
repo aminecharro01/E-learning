@@ -361,13 +361,13 @@ export default function AdminSettingsPage() {
                   />
                 </FormField>
                 <FormField
-                  label="Délai retry (heures)"
-                  error={quizForm.formState.errors.defaultRetryDelayHours}
+                  label="Délai retry (minutes)"
+                  error={quizForm.formState.errors.defaultRetryDelayMinutes}
                 >
                   <input
                     type="number"
                     className={inputClass}
-                    {...quizForm.register("defaultRetryDelayHours")}
+                    {...quizForm.register("defaultRetryDelayMinutes")}
                   />
                 </FormField>
                 <FormField

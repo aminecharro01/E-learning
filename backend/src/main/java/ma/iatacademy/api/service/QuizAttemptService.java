@@ -2,6 +2,7 @@ package ma.iatacademy.api.service;
 
 import lombok.RequiredArgsConstructor;
 import ma.iatacademy.api.domain.entity.AnswerOption;
+import ma.iatacademy.api.domain.entity.EssayGrade;
 import ma.iatacademy.api.domain.entity.ProctoringEvent;
 import ma.iatacademy.api.domain.entity.Question;
 import ma.iatacademy.api.domain.entity.Quiz;
@@ -14,6 +15,7 @@ import ma.iatacademy.api.domain.enums.QuizType;
 import ma.iatacademy.api.domain.enums.Role;
 import ma.iatacademy.api.dto.proctoring.ProctoringEventRequest;
 import ma.iatacademy.api.dto.proctoring.ProctoringEventResponse;
+import ma.iatacademy.api.dto.quiz.AttemptReviewResponse;
 import ma.iatacademy.api.dto.quiz.QuizAttemptAdminResponse;
 import ma.iatacademy.api.dto.quiz.QuizAttemptResponse;
 import ma.iatacademy.api.dto.quiz.QuizOptionPublic;
@@ -25,6 +27,7 @@ import ma.iatacademy.api.exception.ApiException;
 import ma.iatacademy.api.exception.ForbiddenException;
 import ma.iatacademy.api.exception.GoneException;
 import ma.iatacademy.api.exception.NotFoundException;
+import ma.iatacademy.api.repository.EssayGradeRepository;
 import ma.iatacademy.api.repository.ProctoringEventRepository;
 import ma.iatacademy.api.repository.QuestionRepository;
 import ma.iatacademy.api.repository.QuizAttemptRepository;
@@ -42,6 +45,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -69,6 +73,7 @@ public class QuizAttemptService {
     private final BadgeService badgeService;
     private final CertificateService certificateService;
     private final ProctoringEventRepository proctoringEventRepository;
+    private final EssayGradeRepository essayGradeRepository;
 
     @Transactional
     public QuizStartResponse start(UUID quizId, UserPrincipal principal) {
@@ -447,6 +452,66 @@ public class QuizAttemptService {
                 .toList();
     }
 
+    /** Détail question par question d'une tentative terminée — bonne/mauvaise réponse pour
+     * que l'apprenant revoie ce qu'il a répondu. Jamais accessible tant que la tentative est
+     * en cours (ça reviendrait à donner les réponses pendant l'épreuve). */
+    @Transactional(readOnly = true)
+    public AttemptReviewResponse getAttemptReview(UUID attemptId, UserPrincipal principal) {
+        QuizAttempt attempt = quizAttemptRepository.findById(attemptId)
+                .orElseThrow(() -> new NotFoundException("Tentative introuvable."));
+        if (!attempt.getUser().getId().equals(principal.getId()) && !principal.getRole().isStaff()) {
+            throw new ForbiddenException("Cette tentative ne vous appartient pas.");
+        }
+        if (attempt.getStatus() == AttemptStatus.IN_PROGRESS) {
+            throw new ApiException("La tentative n'est pas encore terminée.");
+        }
+
+        Quiz quiz = attempt.getQuiz();
+        Map<UUID, Question> questionMap = questionRepository.findByQuizIdOrderByOrderIndexAsc(quiz.getId())
+                .stream().collect(Collectors.toMap(Question::getId, q -> q));
+        Map<UUID, EssayGrade> gradesByQuestion = essayGradeRepository.findByAttemptId(attempt.getId()).stream()
+                .collect(Collectors.toMap(g -> g.getQuestion().getId(), g -> g));
+
+        List<UUID> order = attempt.getQuestionOrder() != null ? attempt.getQuestionOrder() : List.of();
+        List<AttemptReviewResponse.QuestionReview> reviews = order.stream()
+                .map(questionMap::get)
+                .filter(Objects::nonNull)
+                .map(q -> toQuestionReview(q, attempt, gradesByQuestion.get(q.getId())))
+                .toList();
+
+        return new AttemptReviewResponse(attempt.getId(), attempt.getScore(), quiz.getPassingScore(),
+                attempt.getStatus(), reviews);
+    }
+
+    private AttemptReviewResponse.QuestionReview toQuestionReview(Question q, QuizAttempt attempt, EssayGrade grade) {
+        if (q.getQuestionType() == QuestionType.ESSAY) {
+            String submitted = attempt.getFreeTextAnswers() == null
+                    ? null : attempt.getFreeTextAnswers().get(q.getId().toString());
+            return new AttemptReviewResponse.QuestionReview(
+                    q.getId(), q.getPrompt(), q.getQuestionType(), List.of(), submitted,
+                    null,
+                    grade != null ? grade.getScore() : null,
+                    grade != null ? grade.getFeedback() : null,
+                    q.getExplanation()
+            );
+        }
+
+        List<String> selectedRaw = attempt.getAnswers() == null
+                ? List.of() : attempt.getAnswers().getOrDefault(q.getId().toString(), List.of());
+        Set<UUID> selected = selectedRaw.stream()
+                .filter(Objects::nonNull)
+                .map(UUID::fromString)
+                .collect(Collectors.toSet());
+        List<AttemptReviewResponse.OptionReview> options = q.getOptions().stream()
+                .sorted(Comparator.comparingInt(AnswerOption::getOrderIndex))
+                .map(o -> new AttemptReviewResponse.OptionReview(o.getId(), o.getLabel(), o.isCorrect(), selected.contains(o.getId())))
+                .toList();
+        boolean correct = isAnswerCorrect(q, selectedRaw);
+        return new AttemptReviewResponse.QuestionReview(
+                q.getId(), q.getPrompt(), q.getQuestionType(), options, null, correct, null, null, q.getExplanation()
+        );
+    }
+
     private void assertCanAccessQuiz(UserPrincipal principal, Quiz quiz) {
         if (principal.getRole().isStaff()) {
             return;
@@ -480,10 +545,10 @@ public class QuizAttemptService {
         Optional<QuizAttempt> lastFailed = previous.stream()
                 .filter(a -> a.getStatus() == AttemptStatus.FAILED || a.getStatus() == AttemptStatus.EXPIRED)
                 .findFirst();
-        if (lastFailed.isPresent() && quiz.getRetryDelayHours() > 0) {
+        if (lastFailed.isPresent() && quiz.getRetryDelayMinutes() > 0) {
             Instant earliest = lastFailed.get().getSubmittedAt() != null
-                    ? lastFailed.get().getSubmittedAt().plus(Duration.ofHours(quiz.getRetryDelayHours()))
-                    : lastFailed.get().getStartedAt().plus(Duration.ofHours(quiz.getRetryDelayHours()));
+                    ? lastFailed.get().getSubmittedAt().plus(Duration.ofMinutes(quiz.getRetryDelayMinutes()))
+                    : lastFailed.get().getStartedAt().plus(Duration.ofMinutes(quiz.getRetryDelayMinutes()));
             if (Instant.now().isBefore(earliest)) {
                 throw new ApiException("Délai d'attente avant une nouvelle tentative non écoulé.");
             }

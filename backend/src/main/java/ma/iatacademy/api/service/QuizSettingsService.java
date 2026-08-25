@@ -35,7 +35,7 @@ public class QuizSettingsService {
         quizProperties.setDefaultModulePassingScore(request.defaultModulePassingScore());
         quizProperties.setDefaultModuleMaxAttempts(request.defaultModuleMaxAttempts());
         quizProperties.setDefaultModuleTimeLimitSeconds(request.defaultModuleTimeLimitSeconds());
-        quizProperties.setDefaultRetryDelayHours(request.defaultRetryDelayHours());
+        quizProperties.setDefaultRetryDelayMinutes(request.defaultRetryDelayMinutes());
         quizProperties.setSectionCompletionVideoPercent(request.sectionCompletionVideoPercent());
         persistToRedis();
         return toResponse();
@@ -47,7 +47,7 @@ public class QuizSettingsService {
                 quizProperties.getDefaultModulePassingScore(),
                 quizProperties.getDefaultModuleMaxAttempts(),
                 quizProperties.getDefaultModuleTimeLimitSeconds(),
-                quizProperties.getDefaultRetryDelayHours(),
+                quizProperties.getDefaultRetryDelayMinutes(),
                 quizProperties.getSectionCompletionVideoPercent()
         );
     }
@@ -71,7 +71,7 @@ public class QuizSettingsService {
             quizProperties.setDefaultModulePassingScore(stored.defaultModulePassingScore());
             quizProperties.setDefaultModuleMaxAttempts(stored.defaultModuleMaxAttempts());
             quizProperties.setDefaultModuleTimeLimitSeconds(stored.defaultModuleTimeLimitSeconds());
-            quizProperties.setDefaultRetryDelayHours(stored.defaultRetryDelayHours());
+            quizProperties.setDefaultRetryDelayMinutes(stored.defaultRetryDelayMinutes());
             quizProperties.setSectionCompletionVideoPercent(stored.sectionCompletionVideoPercent());
         } catch (JsonProcessingException ignored) {
             // keep yml defaults
