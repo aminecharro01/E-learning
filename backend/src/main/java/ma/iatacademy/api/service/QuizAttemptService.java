@@ -547,6 +547,10 @@ public class QuizAttemptService {
     private void assertAttemptsAllowed(UUID userId, Quiz quiz) {
         List<QuizAttempt> previous = quizAttemptRepository
                 .findByUserIdAndQuizIdOrderByStartedAtDesc(userId, quiz.getId());
+        // Same reconciliation as listAttemptsForStaff/listAttempts: an attempt whose Redis
+        // session already died (tab closed, never submitted) must not block a new one just
+        // because its DB row is still IN_PROGRESS.
+        previous.forEach(this::reconcileIfAbandoned);
 
         boolean hasOpen = previous.stream().anyMatch(a -> a.getStatus() == AttemptStatus.IN_PROGRESS);
         if (hasOpen) {

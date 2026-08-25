@@ -453,6 +453,7 @@ html.dark .iat-board .badge-navy {
   display: flex;
   min-height: 0;
   flex: 1;
+  overflow: hidden;
 }
 
 .iat-board .learn-sidebar {
@@ -462,6 +463,11 @@ html.dark .iat-board .badge-navy {
   flex-direction: column;
   background: var(--bp-raised);
   border-right: 1.8px solid var(--bp-line);
+  position: sticky;
+  top: 0;
+  align-self: flex-start;
+  height: 100%;
+  max-height: 100dvh;
 }
 
 .iat-board .learn-sidebar.is-collapsed {

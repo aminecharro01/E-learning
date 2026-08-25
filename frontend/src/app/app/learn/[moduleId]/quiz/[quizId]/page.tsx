@@ -4,12 +4,13 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { api } from "@/lib/api";
+import { Frown, Smile } from "lucide-react";
 import { QuizTimer } from "@/components/QuizTimer";
 import { useCourse } from "@/components/learner/CourseProvider";
 import { AssetImage } from "@/components/AssetImage";
 import { QuizAttemptReview } from "@/components/learner/QuizAttemptReview";
 import { ApiClientError } from "@/lib/api-client";
-import { IconBadge, IconCheck, IconCompass, IconPlane, IconWing } from "@/components/brand/IatIcons";
+import { IconBadge, IconCompass, IconPlane } from "@/components/brand/IatIcons";
 import { btn } from "@/lib/ui";
 
 type Option = { id: string; label: string; orderIndex: number };
@@ -215,7 +216,7 @@ function QuizBody({ moduleId, quizId }: { moduleId: string; quizId: string }) {
 
   if (result) {
     return (
-      <div className="mx-auto max-w-xl px-4 py-10 sm:px-6">
+      <div className="mx-auto max-w-4xl px-4 py-10 sm:px-6">
         <section className="learn-result-pass">
           <div className="learn-pass-main">
             <span className="bp-eyebrow">
@@ -273,7 +274,11 @@ function QuizBody({ moduleId, quizId }: { moduleId: string; quizId: string }) {
             </div>
           </div>
           <div className="learn-pass-stub">
-            {result.passed ? <IconCheck size={28} /> : <IconWing size={28} />}
+            {result.passed ? (
+              <Smile size={32} className="text-[var(--gold-500)]" aria-hidden />
+            ) : (
+              <Frown size={32} className="text-[var(--danger)]" aria-hidden />
+            )}
             <span className="course-stub-code">{result.passed ? "PASS" : "RÉESSAYER"}</span>
           </div>
         </section>
@@ -289,7 +294,7 @@ function QuizBody({ moduleId, quizId }: { moduleId: string; quizId: string }) {
   const qCode = `Q-${String(current + 1).padStart(2, "0")}`;
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-8 sm:px-6">
+    <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6">
       {session.preview && (
         <p className="alert alert-warning mb-4">Mode aperçu (ADMIN / FORMATEUR)</p>
       )}
