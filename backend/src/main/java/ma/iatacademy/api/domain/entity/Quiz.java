@@ -71,9 +71,9 @@ public class Quiz extends AuditableEntity {
     @Builder.Default
     private boolean randomizeOptions = true;
 
-    @Column(name = "retry_delay_hours", nullable = false)
+    @Column(name = "retry_delay_minutes", nullable = false)
     @Builder.Default
-    private int retryDelayHours = 24;
+    private int retryDelayMinutes = 1440;
 
     /** When true, failing the quiz blocks progress to the next section/module. */
     @Column(name = "blocking", nullable = false)

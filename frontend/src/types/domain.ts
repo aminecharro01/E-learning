@@ -104,7 +104,7 @@ export type Quiz = {
   timeLimitSeconds: number;
   randomizeQuestions: boolean;
   randomizeOptions: boolean;
-  retryDelayHours: number;
+  retryDelayMinutes: number;
   blocking: boolean;
   published: boolean;
   proctoringEnabled?: boolean;

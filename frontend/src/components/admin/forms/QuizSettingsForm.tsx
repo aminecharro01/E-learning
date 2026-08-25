@@ -14,10 +14,19 @@ type Props = {
   modules: Module[];
   defaultValues?: Partial<QuizSettingsValues>;
   busy?: boolean;
+  submitLabel?: string;
+  submittingLabel?: string;
   onSubmit: (values: QuizSettingsValues) => Promise<void> | void;
 };
 
-export function QuizSettingsForm({ modules, defaultValues, busy, onSubmit }: Props) {
+export function QuizSettingsForm({
+  modules,
+  defaultValues,
+  busy,
+  submitLabel = "Créer le quiz",
+  submittingLabel = "Création…",
+  onSubmit,
+}: Props) {
   const {
     register,
     handleSubmit,
@@ -39,7 +48,7 @@ export function QuizSettingsForm({ modules, defaultValues, busy, onSubmit }: Pro
       timeLimitSeconds: 5400,
       randomizeQuestions: true,
       randomizeOptions: true,
-      retryDelayHours: 24,
+      retryDelayMinutes: 1440,
       blocking: true,
       published: true,
       proctoringEnabled: false,
@@ -287,12 +296,12 @@ export function QuizSettingsForm({ modules, defaultValues, busy, onSubmit }: Pro
             />
             <input type="hidden" {...register("timeLimitSeconds")} />
           </FormField>
-          <FormField label="Délai entre tentatives (h)" error={errors.retryDelayHours}>
+          <FormField label="Délai entre tentatives (min)" error={errors.retryDelayMinutes}>
             <input
               type="number"
               min={0}
-              className={fieldClass(!!errors.retryDelayHours)}
-              {...register("retryDelayHours")}
+              className={fieldClass(!!errors.retryDelayMinutes)}
+              {...register("retryDelayMinutes")}
             />
           </FormField>
         </div>
@@ -330,7 +339,7 @@ export function QuizSettingsForm({ modules, defaultValues, busy, onSubmit }: Pro
         disabled={busy || (quizType === "APPLICATIF" && !lessonId)}
         className={`${btn.blockPrimary} sm:w-auto`}
       >
-        {busy ? "Création…" : "Créer le quiz"}
+        {busy ? submittingLabel : submitLabel}
       </button>
     </form>
   );

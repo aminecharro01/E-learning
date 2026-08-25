@@ -74,7 +74,7 @@ export type QuizSettings = {
   defaultModulePassingScore: number;
   defaultModuleMaxAttempts: number;
   defaultModuleTimeLimitSeconds: number;
-  defaultRetryDelayHours: number;
+  defaultRetryDelayMinutes: number;
   sectionCompletionVideoPercent: number;
 };
 
@@ -377,6 +377,36 @@ export async function deleteLesson(lessonId: string) {
 
 export async function createQuiz(payload: Record<string, unknown>) {
   const { data } = await apiClient.post<Quiz>("/api/quiz", payload);
+  return data;
+}
+
+export async function updateQuiz(quizId: string, payload: Record<string, unknown>) {
+  const { data } = await apiClient.put<Quiz>(`/api/quiz/${quizId}`, payload);
+  return data;
+}
+
+export type AttemptReviewOption = { optionId: string; label: string; correct: boolean; selected: boolean };
+export type AttemptReviewQuestion = {
+  questionId: string;
+  prompt: string;
+  questionType: string;
+  options: AttemptReviewOption[];
+  freeTextAnswer: string | null;
+  correct: boolean | null;
+  essayScore: number | null;
+  essayFeedback: string | null;
+  explanation: string | null;
+};
+export type AttemptReview = {
+  attemptId: string;
+  score: number | null;
+  passingScore: number;
+  status: string;
+  questions: AttemptReviewQuestion[];
+};
+
+export async function getAttemptReview(attemptId: string) {
+  const { data } = await apiClient.get<AttemptReview>(`/api/quiz/attempts/${attemptId}/review`);
   return data;
 }
 

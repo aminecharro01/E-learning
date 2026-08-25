@@ -14,6 +14,7 @@ import ma.iatacademy.api.dto.proctoring.ProctoringEventRequest;
 import ma.iatacademy.api.dto.proctoring.ProctoringEventResponse;
 import ma.iatacademy.api.dto.quiz.AiGenerationRequest;
 import ma.iatacademy.api.dto.quiz.AiGenerationResponse;
+import ma.iatacademy.api.dto.quiz.AttemptReviewResponse;
 import ma.iatacademy.api.dto.quiz.CreateQuestionRequest;
 import ma.iatacademy.api.dto.quiz.CreateQuizRequest;
 import ma.iatacademy.api.dto.quiz.GradeEssayRequest;
@@ -92,6 +93,10 @@ public class QuizService {
         return quizAttemptService.listAttempts(quizId, principal);
     }
 
+    public AttemptReviewResponse getAttemptReview(UUID attemptId, UserPrincipal principal) {
+        return quizAttemptService.getAttemptReview(attemptId, principal);
+    }
+
     // --- Correction, déléguée à QuizGradingService ---
 
     public void gradeEssay(UUID attemptId, UUID questionId, GradeEssayRequest request, UUID graderId) {
@@ -136,6 +141,92 @@ public class QuizService {
 
     @Transactional
     public QuizAdminResponse createQuiz(CreateQuizRequest request) {
+        QuizScope scope = resolveScope(request);
+        boolean isModuleQuiz = request.quizType() == QuizType.FIN_MODULE;
+        Quiz quiz = Quiz.builder()
+                .title(request.title().trim())
+                .quizType(request.quizType())
+                .lesson(scope.lesson())
+                .module(scope.module())
+                .formation(scope.formation())
+                .ufCode(scope.ufCode())
+                .yearNumber(scope.yearNumber())
+                .passingScore(request.passingScore() != null
+                        ? request.passingScore()
+                        : (isModuleQuiz
+                        ? quizProperties.getDefaultModulePassingScore()
+                        : quizProperties.getDefaultSectionPassingScore()))
+                .maxAttempts(request.maxAttempts() != null
+                        ? request.maxAttempts()
+                        : (isModuleQuiz ? quizProperties.getDefaultModuleMaxAttempts() : 5))
+                .timeLimitSeconds(request.timeLimitSeconds() != null
+                        ? request.timeLimitSeconds()
+                        : (isModuleQuiz ? quizProperties.getDefaultModuleTimeLimitSeconds() : 0))
+                .randomizeQuestions(request.randomizeQuestions() == null || request.randomizeQuestions())
+                .randomizeOptions(request.randomizeOptions() == null || request.randomizeOptions())
+                .retryDelayMinutes(request.retryDelayMinutes() != null
+                        ? request.retryDelayMinutes()
+                        : quizProperties.getDefaultRetryDelayMinutes())
+                .blocking(request.blocking() != null ? request.blocking() : isModuleQuiz)
+                .published(Boolean.TRUE.equals(request.published()))
+                .proctoringEnabled(Boolean.TRUE.equals(request.proctoringEnabled()))
+                .focusLossDetection(Boolean.TRUE.equals(request.focusLossDetection()))
+                .copyProtection(Boolean.TRUE.equals(request.copyProtection()))
+                .lockdownMode(Boolean.TRUE.equals(request.lockdownMode()))
+                .build();
+        quizRepository.save(quiz);
+
+        return toAdmin(quiz);
+    }
+
+    /** Mêmes réglages qu'à la création — modifiables à tout moment, y compris une fois des
+     * tentatives déjà passées (les tentatives existantes gardent leurs propres score/statut,
+     * seule la prochaine tentative applique le nouveau réglage). */
+    @Transactional
+    public QuizAdminResponse updateQuiz(UUID quizId, CreateQuizRequest request) {
+        Quiz quiz = quizRepository.findById(quizId)
+                .orElseThrow(() -> new NotFoundException("Quiz introuvable."));
+        QuizScope scope = resolveScope(request);
+        boolean isModuleQuiz = request.quizType() == QuizType.FIN_MODULE;
+
+        quiz.setTitle(request.title().trim());
+        quiz.setQuizType(request.quizType());
+        quiz.setLesson(scope.lesson());
+        quiz.setModule(scope.module());
+        quiz.setFormation(scope.formation());
+        quiz.setUfCode(scope.ufCode());
+        quiz.setYearNumber(scope.yearNumber());
+        quiz.setPassingScore(request.passingScore() != null
+                ? request.passingScore()
+                : (isModuleQuiz
+                ? quizProperties.getDefaultModulePassingScore()
+                : quizProperties.getDefaultSectionPassingScore()));
+        quiz.setMaxAttempts(request.maxAttempts() != null
+                ? request.maxAttempts()
+                : (isModuleQuiz ? quizProperties.getDefaultModuleMaxAttempts() : 5));
+        quiz.setTimeLimitSeconds(request.timeLimitSeconds() != null
+                ? request.timeLimitSeconds()
+                : (isModuleQuiz ? quizProperties.getDefaultModuleTimeLimitSeconds() : 0));
+        quiz.setRandomizeQuestions(request.randomizeQuestions() == null || request.randomizeQuestions());
+        quiz.setRandomizeOptions(request.randomizeOptions() == null || request.randomizeOptions());
+        quiz.setRetryDelayMinutes(request.retryDelayMinutes() != null
+                ? request.retryDelayMinutes()
+                : quizProperties.getDefaultRetryDelayMinutes());
+        quiz.setBlocking(request.blocking() != null ? request.blocking() : isModuleQuiz);
+        quiz.setPublished(Boolean.TRUE.equals(request.published()));
+        quiz.setProctoringEnabled(Boolean.TRUE.equals(request.proctoringEnabled()));
+        quiz.setFocusLossDetection(Boolean.TRUE.equals(request.focusLossDetection()));
+        quiz.setCopyProtection(Boolean.TRUE.equals(request.copyProtection()));
+        quiz.setLockdownMode(Boolean.TRUE.equals(request.lockdownMode()));
+        quizRepository.save(quiz);
+
+        return toAdmin(quiz);
+    }
+
+    private record QuizScope(Lesson lesson, ModuleEntity module, Formation formation, String ufCode, Integer yearNumber) {
+    }
+
+    private QuizScope resolveScope(CreateQuizRequest request) {
         Lesson lesson = null;
         ModuleEntity module = null;
         Formation formation = null;
@@ -175,42 +266,7 @@ public class QuizService {
                         .orElseThrow(() -> new NotFoundException("Formation introuvable."));
             }
         }
-
-        boolean isModuleQuiz = request.quizType() == QuizType.FIN_MODULE;
-        Quiz quiz = Quiz.builder()
-                .title(request.title().trim())
-                .quizType(request.quizType())
-                .lesson(lesson)
-                .module(module)
-                .formation(formation)
-                .ufCode(ufCode)
-                .yearNumber(yearNumber)
-                .passingScore(request.passingScore() != null
-                        ? request.passingScore()
-                        : (isModuleQuiz
-                        ? quizProperties.getDefaultModulePassingScore()
-                        : quizProperties.getDefaultSectionPassingScore()))
-                .maxAttempts(request.maxAttempts() != null
-                        ? request.maxAttempts()
-                        : (isModuleQuiz ? quizProperties.getDefaultModuleMaxAttempts() : 5))
-                .timeLimitSeconds(request.timeLimitSeconds() != null
-                        ? request.timeLimitSeconds()
-                        : (isModuleQuiz ? quizProperties.getDefaultModuleTimeLimitSeconds() : 0))
-                .randomizeQuestions(request.randomizeQuestions() == null || request.randomizeQuestions())
-                .randomizeOptions(request.randomizeOptions() == null || request.randomizeOptions())
-                .retryDelayHours(request.retryDelayHours() != null
-                        ? request.retryDelayHours()
-                        : quizProperties.getDefaultRetryDelayHours())
-                .blocking(request.blocking() != null ? request.blocking() : isModuleQuiz)
-                .published(Boolean.TRUE.equals(request.published()))
-                .proctoringEnabled(Boolean.TRUE.equals(request.proctoringEnabled()))
-                .focusLossDetection(Boolean.TRUE.equals(request.focusLossDetection()))
-                .copyProtection(Boolean.TRUE.equals(request.copyProtection()))
-                .lockdownMode(Boolean.TRUE.equals(request.lockdownMode()))
-                .build();
-        quizRepository.save(quiz);
-
-        return toAdmin(quiz);
+        return new QuizScope(lesson, module, formation, ufCode, yearNumber);
     }
 
     /** Fin d'UF quiz for the sidebar — null if none is configured for this UF. */
@@ -251,7 +307,7 @@ public class QuizService {
                 .timeLimitSeconds(source.getTimeLimitSeconds())
                 .randomizeQuestions(source.isRandomizeQuestions())
                 .randomizeOptions(source.isRandomizeOptions())
-                .retryDelayHours(source.getRetryDelayHours())
+                .retryDelayMinutes(source.getRetryDelayMinutes())
                 .blocking(source.isBlocking())
                 .published(false)
                 .proctoringEnabled(source.isProctoringEnabled())
@@ -306,7 +362,7 @@ public class QuizService {
                 quiz.getTimeLimitSeconds(),
                 quiz.isRandomizeQuestions(),
                 quiz.isRandomizeOptions(),
-                quiz.getRetryDelayHours(),
+                quiz.getRetryDelayMinutes(),
                 quiz.isBlocking(),
                 quiz.isPublished(),
                 quiz.isProctoringEnabled(),

@@ -6,6 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 import { api } from "@/lib/api";
 import { QuizTimer } from "@/components/QuizTimer";
 import { AssetImage } from "@/components/AssetImage";
+import { QuizAttemptReview } from "@/components/learner/QuizAttemptReview";
 import { btn } from "@/lib/ui";
 
 type Option = { id: string; label: string; orderIndex: number };
@@ -45,6 +46,7 @@ export default function QuizTakingPage() {
   const [result, setResult] = useState<SubmitResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showReview, setShowReview] = useState(false);
 
   useEffect(() => {
     if (!params.id) return;
@@ -122,9 +124,17 @@ export default function QuizTakingPage() {
         >
           {result.passed ? "Réussi" : "Échoué"} — {result.status}
         </p>
-        <Link href="/app" className={`${btn.primarySm} mt-6 inline-block`}>
-          Retour au tableau de bord
-        </Link>
+        <div className="mt-6 flex flex-wrap gap-2">
+          <Link href="/app" className={btn.primarySm}>
+            Retour au tableau de bord
+          </Link>
+          {!result.preview && session && (
+            <button type="button" className={btn.neutralSm} onClick={() => setShowReview((v) => !v)}>
+              {showReview ? "Masquer mes réponses" : "Voir mes réponses"}
+            </button>
+          )}
+        </div>
+        {showReview && !result.preview && session && <QuizAttemptReview attemptId={session.attemptId} />}
       </main>
     );
   }

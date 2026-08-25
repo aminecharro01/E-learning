@@ -104,7 +104,7 @@ app:
     default-module-passing-score: 60
     default-module-max-attempts: 2
     default-module-time-limit-seconds: 5400
-    default-retry-delay-hours: 24
+    default-retry-delay-minutes: 1440
     section-completion-video-percent: 90
   demo:
     # Remet progression / certificats / validations UF à chaque démarrage (scénarios démo)

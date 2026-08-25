@@ -20,7 +20,7 @@ public record CreateQuizRequest(
         Integer timeLimitSeconds,
         Boolean randomizeQuestions,
         Boolean randomizeOptions,
-        Integer retryDelayHours,
+        Integer retryDelayMinutes,
         Boolean blocking,
         Boolean published,
         Boolean proctoringEnabled,

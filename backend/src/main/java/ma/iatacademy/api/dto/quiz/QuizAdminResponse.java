@@ -17,7 +17,7 @@ public record QuizAdminResponse(
         int timeLimitSeconds,
         boolean randomizeQuestions,
         boolean randomizeOptions,
-        int retryDelayHours,
+        int retryDelayMinutes,
         boolean blocking,
         boolean published,
         boolean proctoringEnabled,
