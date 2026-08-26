@@ -3,10 +3,11 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { getMe } from "@/lib/api";
-import type { User } from "@/types/domain";
+import { getMe, getMyCertificate } from "@/lib/api";
+import type { Certificate, User } from "@/types/domain";
 import { LearnerAppHeader } from "@/components/learner/LearnerAppHeader";
 import { AccountSettingsPanel } from "@/components/account/AccountSettingsPanel";
+import { IconWing } from "@/components/brand/IatIcons";
 import { btn } from "@/lib/ui";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { BadgeStrip } from "@/components/ui/BadgeStrip";
@@ -21,6 +22,7 @@ export default function ProfilePage() {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [certificate, setCertificate] = useState<Certificate | null>(null);
 
   useEffect(() => {
     getMe()
@@ -29,6 +31,9 @@ export default function ProfilePage() {
         setError("Connexion requise.");
         router.push("/login");
       });
+    getMyCertificate()
+      .then(setCertificate)
+      .catch(() => setCertificate(null));
   }, [router]);
 
   if (!user && !error) {
@@ -53,6 +58,41 @@ export default function ProfilePage() {
         {user && (
           <>
             <AccountSettingsPanel user={user} onUserChange={setUser} />
+
+            <section className="card-theme rounded-2xl p-6">
+              <p className="text-sm font-semibold text-primary">Attestation</p>
+              {certificate ? (
+                <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex items-start gap-3">
+                    <IconWing size={22} />
+                    <div>
+                      <p className="text-sm font-medium text-heading">Parcours terminé</p>
+                      <p className="mt-1 text-xs text-muted">
+                        Code de vérification : {certificate.verificationCode}
+                        <br />
+                        {certificate.physicallyDelivered
+                          ? "Déjà remise en main propre par l'école."
+                          : "Remise en main propre par l'école — le PDF n'est pas téléchargeable en ligne."}
+                      </p>
+                    </div>
+                  </div>
+                  <a
+                    href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(
+                      `${typeof window !== "undefined" ? window.location.origin : ""}/verify/${certificate.verificationCode}`
+                    )}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-[#0A66C2] px-3 py-1.5 text-xs font-medium text-white hover:opacity-90"
+                  >
+                    Partager sur LinkedIn
+                  </a>
+                </div>
+              ) : (
+                <p className="mt-1 text-xs text-muted">
+                  Disponible une fois les 36 modules du cycle (2 ans) validés.
+                </p>
+              )}
+            </section>
 
             <section className="card-theme rounded-2xl p-6">
               <p className="text-sm font-semibold text-primary">Badges</p>
@@ -146,6 +186,12 @@ export default function ProfilePage() {
                   <dt className="text-muted">Année d&apos;inscription</dt>
                   <dd className="font-medium text-heading">{user.enrollmentYear ?? "—"}</dd>
                 </div>
+                {user.groupName && (
+                  <div>
+                    <dt className="text-muted">Cohorte / promotion</dt>
+                    <dd className="font-medium text-heading">{user.groupName}</dd>
+                  </div>
+                )}
               </dl>
             </section>
           </>
