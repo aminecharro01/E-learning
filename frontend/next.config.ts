@@ -14,7 +14,10 @@ const csp = [
   `media-src 'self' blob: ${API_URL}`,
   `connect-src 'self' ${API_URL}`,
   "font-src 'self' data:",
-  "frame-src 'self' https://iframe.mediadelivery.net",
+  // PdfViewer.tsx embeds the API's own /api/assets/{id}/file in an <iframe> -
+  // without API_URL here the frame-src check blocks it before the request
+  // ever reaches the backend's own frame-ancestors check.
+  `frame-src 'self' ${API_URL} https://iframe.mediadelivery.net`,
   "frame-ancestors 'none'",
   "base-uri 'self'",
   "form-action 'self'",
