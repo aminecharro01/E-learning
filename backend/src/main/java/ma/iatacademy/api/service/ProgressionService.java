@@ -9,14 +9,18 @@ import ma.iatacademy.api.domain.entity.ModuleEntity;
 import ma.iatacademy.api.domain.entity.User;
 import ma.iatacademy.api.domain.enums.AttemptStatus;
 import ma.iatacademy.api.domain.enums.BadgeCode;
+import ma.iatacademy.api.domain.enums.BlockType;
 import ma.iatacademy.api.domain.enums.ModuleLearnerStatus;
 import ma.iatacademy.api.domain.enums.NotificationType;
 import ma.iatacademy.api.domain.enums.QuizType;
 import ma.iatacademy.api.domain.enums.Role;
 import ma.iatacademy.api.dto.progress.LessonProgressResponse;
+import ma.iatacademy.api.exception.ApiException;
 import ma.iatacademy.api.exception.ForbiddenException;
 import ma.iatacademy.api.exception.NotFoundException;
+import ma.iatacademy.api.repository.AssetDownloadRepository;
 import ma.iatacademy.api.repository.GroupContentAssignmentRepository;
+import ma.iatacademy.api.repository.LessonBlockRepository;
 import ma.iatacademy.api.repository.LessonProgressRepository;
 import ma.iatacademy.api.repository.LessonRepository;
 import ma.iatacademy.api.repository.ModuleRepository;
@@ -53,6 +57,8 @@ public class ProgressionService {
     private final NotificationService notificationService;
     private final BadgeService badgeService;
     private final GroupContentAssignmentRepository assignmentRepository;
+    private final LessonBlockRepository lessonBlockRepository;
+    private final AssetDownloadRepository assetDownloadRepository;
 
     @Transactional
     public LessonProgressResponse updateLessonProgress(UUID userId, UUID lessonId, int videoWatchedPercent) {
@@ -70,6 +76,7 @@ public class ProgressionService {
         progress.setVideoWatchedPercent(Math.max(progress.getVideoWatchedPercent(), videoWatchedPercent));
         if (!progress.isCompleted()
                 && progress.getVideoWatchedPercent() >= quizProperties.getSectionCompletionVideoPercent()) {
+            assertRequiredDownloadsComplete(userId, lesson);
             progress.setCompleted(true);
             progress.setCompletedAt(Instant.now());
         }
@@ -90,6 +97,34 @@ public class ProgressionService {
                 progress.isCompleted(),
                 progress.getCompletedAt()
         );
+    }
+
+    /**
+     * A lesson can't complete until every PDF block flagged required:true (default
+     * when the key is absent) has a matching asset_downloads row for this user - see
+     * MediaService#recordDownloadAndSign, the only place that writes one. Keyed on
+     * (user, asset), not lesson: the same asset reused across two lessons only needs
+     * downloading once.
+     */
+    private void assertRequiredDownloadsComplete(UUID userId, Lesson lesson) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("Utilisateur introuvable."));
+        if (user.getRole().isStaff()) {
+            return;
+        }
+        List<String> missing = lessonBlockRepository.findByLessonIdOrderByOrderIndexAsc(lesson.getId()).stream()
+                .filter(block -> block.getBlockType() == BlockType.PDF)
+                .filter(block -> !Boolean.FALSE.equals(block.getContent().get("required")))
+                .filter(block -> {
+                    Object assetId = block.getContent().get("assetId");
+                    return assetId != null
+                            && !assetDownloadRepository.existsByUserIdAndAssetId(userId, UUID.fromString(String.valueOf(assetId)));
+                })
+                .map(block -> String.valueOf(block.getContent().getOrDefault("title", "Document PDF")))
+                .toList();
+        if (!missing.isEmpty()) {
+            throw new ApiException("Téléchargez d'abord : " + String.join(", ", missing) + ".");
+        }
     }
 
     @Transactional(readOnly = true)

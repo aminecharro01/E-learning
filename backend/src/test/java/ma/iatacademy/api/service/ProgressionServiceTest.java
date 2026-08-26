@@ -2,15 +2,21 @@ package ma.iatacademy.api.service;
 
 import ma.iatacademy.api.config.QuizProperties;
 import ma.iatacademy.api.domain.entity.Lesson;
+import ma.iatacademy.api.domain.entity.LessonBlock;
 import ma.iatacademy.api.domain.entity.LessonProgress;
 import ma.iatacademy.api.domain.entity.ModuleEntity;
 import ma.iatacademy.api.domain.entity.Quiz;
 import ma.iatacademy.api.domain.entity.QuizAttempt;
 import ma.iatacademy.api.domain.entity.User;
 import ma.iatacademy.api.domain.enums.AttemptStatus;
+import ma.iatacademy.api.domain.enums.BlockType;
 import ma.iatacademy.api.domain.enums.QuizType;
+import ma.iatacademy.api.domain.enums.Role;
 import ma.iatacademy.api.dto.progress.LessonProgressResponse;
+import ma.iatacademy.api.exception.ApiException;
+import ma.iatacademy.api.repository.AssetDownloadRepository;
 import ma.iatacademy.api.repository.GroupContentAssignmentRepository;
+import ma.iatacademy.api.repository.LessonBlockRepository;
 import ma.iatacademy.api.repository.LessonProgressRepository;
 import ma.iatacademy.api.repository.LessonRepository;
 import ma.iatacademy.api.repository.ModuleRepository;
@@ -24,10 +30,12 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.lenient;
@@ -60,6 +68,10 @@ class ProgressionServiceTest {
     private BadgeService badgeService;
     @Mock
     private GroupContentAssignmentRepository assignmentRepository;
+    @Mock
+    private LessonBlockRepository lessonBlockRepository;
+    @Mock
+    private AssetDownloadRepository assetDownloadRepository;
 
     private QuizProperties quizProperties;
     private ProgressionService progressionService;
@@ -69,7 +81,8 @@ class ProgressionServiceTest {
         quizProperties = new QuizProperties();
         progressionService = new ProgressionService(moduleRepository, lessonRepository, lessonProgressRepository,
                 quizRepository, quizAttemptRepository, userRepository, quizProperties, appSettingsService,
-                ufValidationService, notificationService, badgeService, assignmentRepository);
+                ufValidationService, notificationService, badgeService, assignmentRepository,
+                lessonBlockRepository, assetDownloadRepository);
     }
 
     @Test
@@ -151,6 +164,9 @@ class ProgressionServiceTest {
         lenient().when(quizRepository.findByModuleIdAndQuizType(module.getId(), QuizType.FIN_MODULE))
                 .thenReturn(Optional.empty());
         lenient().when(userRepository.getReferenceById(userId)).thenReturn(User.builder().id(userId).build());
+        lenient().when(userRepository.findById(userId))
+                .thenReturn(Optional.of(User.builder().id(userId).role(Role.ETUDIANT).build()));
+        lenient().when(lessonBlockRepository.findByLessonIdOrderByOrderIndexAsc(lessonId)).thenReturn(List.of());
 
         LessonProgressResponse response = progressionService.updateLessonProgress(userId, lessonId, 95);
 
@@ -185,5 +201,93 @@ class ProgressionServiceTest {
 
         assertTrue(progressionService.isModuleAccessible(userId, module));
         verify(moduleRepository, times(0)).findByFormationIdOrderByOrderIndexAsc(any());
+    }
+
+    @Test
+    void completingLessonBlockedWhenRequiredPdfNotDownloaded() {
+        UUID userId = UUID.randomUUID();
+        UUID lessonId = UUID.randomUUID();
+        UUID assetId = UUID.randomUUID();
+        ModuleEntity module = ModuleEntity.builder().id(UUID.randomUUID()).build();
+        Lesson lesson = Lesson.builder().id(lessonId).module(module).build();
+        LessonBlock pdfBlock = LessonBlock.builder().id(UUID.randomUUID()).blockType(BlockType.PDF)
+                .content(Map.of("assetId", assetId.toString(), "title", "Fiche technique", "required", true))
+                .build();
+
+        when(lessonRepository.findById(lessonId)).thenReturn(Optional.of(lesson));
+        when(lessonProgressRepository.findByUserIdAndLessonId(userId, lessonId)).thenReturn(Optional.empty());
+        when(lessonRepository.findByModuleIdOrderByOrderIndexAsc(module.getId())).thenReturn(List.of(lesson));
+        when(userRepository.getReferenceById(userId)).thenReturn(User.builder().id(userId).build());
+        when(userRepository.findById(userId)).thenReturn(Optional.of(User.builder().id(userId).role(Role.ETUDIANT).build()));
+        when(lessonBlockRepository.findByLessonIdOrderByOrderIndexAsc(lessonId)).thenReturn(List.of(pdfBlock));
+        when(assetDownloadRepository.existsByUserIdAndAssetId(userId, assetId)).thenReturn(false);
+
+        assertThrows(ApiException.class,
+                () -> progressionService.updateLessonProgress(userId, lessonId, 100));
+    }
+
+    @Test
+    void completingLessonSucceedsWhenRequiredPdfDownloaded() {
+        UUID userId = UUID.randomUUID();
+        UUID lessonId = UUID.randomUUID();
+        UUID assetId = UUID.randomUUID();
+        ModuleEntity module = ModuleEntity.builder().id(UUID.randomUUID()).build();
+        Lesson lesson = Lesson.builder().id(lessonId).module(module).build();
+        LessonBlock pdfBlock = LessonBlock.builder().id(UUID.randomUUID()).blockType(BlockType.PDF)
+                .content(Map.of("assetId", assetId.toString(), "title", "Fiche technique", "required", true))
+                .build();
+
+        when(lessonRepository.findById(lessonId)).thenReturn(Optional.of(lesson));
+        when(lessonProgressRepository.findByUserIdAndLessonId(userId, lessonId)).thenReturn(Optional.empty());
+        when(lessonRepository.findByModuleIdOrderByOrderIndexAsc(module.getId())).thenReturn(List.of(lesson));
+        when(userRepository.getReferenceById(userId)).thenReturn(User.builder().id(userId).build());
+        when(userRepository.findById(userId)).thenReturn(Optional.of(User.builder().id(userId).role(Role.ETUDIANT).build()));
+        when(lessonBlockRepository.findByLessonIdOrderByOrderIndexAsc(lessonId)).thenReturn(List.of(pdfBlock));
+        when(assetDownloadRepository.existsByUserIdAndAssetId(userId, assetId)).thenReturn(true);
+
+        LessonProgressResponse response = progressionService.updateLessonProgress(userId, lessonId, 100);
+
+        assertTrue(response.completed());
+    }
+
+    @Test
+    void completingLessonIgnoresOptionalPdf() {
+        UUID userId = UUID.randomUUID();
+        UUID lessonId = UUID.randomUUID();
+        UUID assetId = UUID.randomUUID();
+        ModuleEntity module = ModuleEntity.builder().id(UUID.randomUUID()).build();
+        Lesson lesson = Lesson.builder().id(lessonId).module(module).build();
+        LessonBlock pdfBlock = LessonBlock.builder().id(UUID.randomUUID()).blockType(BlockType.PDF)
+                .content(Map.of("assetId", assetId.toString(), "title", "Annexe", "required", false))
+                .build();
+
+        when(lessonRepository.findById(lessonId)).thenReturn(Optional.of(lesson));
+        when(lessonProgressRepository.findByUserIdAndLessonId(userId, lessonId)).thenReturn(Optional.empty());
+        when(lessonRepository.findByModuleIdOrderByOrderIndexAsc(module.getId())).thenReturn(List.of(lesson));
+        when(userRepository.getReferenceById(userId)).thenReturn(User.builder().id(userId).build());
+        when(userRepository.findById(userId)).thenReturn(Optional.of(User.builder().id(userId).role(Role.ETUDIANT).build()));
+        when(lessonBlockRepository.findByLessonIdOrderByOrderIndexAsc(lessonId)).thenReturn(List.of(pdfBlock));
+
+        LessonProgressResponse response = progressionService.updateLessonProgress(userId, lessonId, 100);
+
+        assertTrue(response.completed());
+    }
+
+    @Test
+    void completingLessonBypassesGateForStaff() {
+        UUID userId = UUID.randomUUID();
+        UUID lessonId = UUID.randomUUID();
+        ModuleEntity module = ModuleEntity.builder().id(UUID.randomUUID()).build();
+        Lesson lesson = Lesson.builder().id(lessonId).module(module).build();
+
+        when(lessonRepository.findById(lessonId)).thenReturn(Optional.of(lesson));
+        when(lessonProgressRepository.findByUserIdAndLessonId(userId, lessonId)).thenReturn(Optional.empty());
+        when(lessonRepository.findByModuleIdOrderByOrderIndexAsc(module.getId())).thenReturn(List.of(lesson));
+        when(userRepository.getReferenceById(userId)).thenReturn(User.builder().id(userId).build());
+        when(userRepository.findById(userId)).thenReturn(Optional.of(User.builder().id(userId).role(Role.FORMATEUR).build()));
+
+        LessonProgressResponse response = progressionService.updateLessonProgress(userId, lessonId, 100);
+
+        assertTrue(response.completed());
     }
 }
