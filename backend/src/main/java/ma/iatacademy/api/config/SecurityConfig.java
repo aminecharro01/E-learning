@@ -49,6 +49,12 @@ public class SecurityConfig {
         List<String> publicPaths = new java.util.ArrayList<>(List.of(
                 "/api/auth/register",
                 "/api/auth/login",
+                // Called with only the short-lived pendingToken from login()'s
+                // TotpRequiredException, never a full session cookie - the caller isn't
+                // authenticated yet, so this must stay public or the security filter
+                // rejects it with a 403 before the code is ever checked (see
+                // AuthService#verifyLoginTotp, which validates the pendingToken itself).
+                "/api/auth/verify-2fa",
                 "/api/auth/forgot-password",
                 "/api/auth/reset-password",
                 "/api/auth/verify-email",
