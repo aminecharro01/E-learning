@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import ma.iatacademy.api.domain.entity.Asset;
 import ma.iatacademy.api.dto.common.PageResponse;
 import ma.iatacademy.api.dto.media.AssetResponse;
+import ma.iatacademy.api.dto.media.DownloadAssetRequest;
 import ma.iatacademy.api.dto.media.MoveAssetRequest;
 import ma.iatacademy.api.dto.media.SignedStreamResponse;
 import ma.iatacademy.api.security.UserPrincipal;
@@ -75,15 +76,27 @@ public class AssetController {
         return ResponseEntity.ok(mediaService.createSignedStream(id, principal));
     }
 
+    /** Records a download-audit row (who/what/when) before signing - see MediaService#recordDownloadAndSign. */
+    @PostMapping("/{id}/download")
+    public ResponseEntity<SignedStreamResponse> download(
+            @PathVariable UUID id,
+            @RequestBody(required = false) DownloadAssetRequest request,
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        UUID lessonId = request != null ? request.lessonId() : null;
+        return ResponseEntity.ok(mediaService.recordDownloadAndSign(id, principal, lessonId));
+    }
+
     @GetMapping("/{id}/file")
     public ResponseEntity<Resource> file(
             @PathVariable UUID id,
             @RequestParam long expires,
-            @RequestParam String sig
+            @RequestParam String sig,
+            @RequestParam(value = "disposition", required = false) String dispositionParam
     ) {
         Resource resource = mediaService.loadSignedFile(id, expires, sig);
         Asset asset = mediaService.getAsset(id);
-        boolean renderInline = switch (asset.getAssetKind()) {
+        boolean renderInline = !"attachment".equals(dispositionParam) && switch (asset.getAssetKind()) {
             case "IMAGE", "VIDEO", "PDF" -> true;
             default -> false;
         };

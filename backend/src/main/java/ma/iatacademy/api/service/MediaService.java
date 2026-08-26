@@ -5,6 +5,8 @@ import ma.iatacademy.api.config.BunnyStreamProperties;
 import ma.iatacademy.api.config.JwtProperties;
 import ma.iatacademy.api.config.MediaProperties;
 import ma.iatacademy.api.domain.entity.Asset;
+import ma.iatacademy.api.domain.entity.AssetDownload;
+import ma.iatacademy.api.domain.entity.Lesson;
 import ma.iatacademy.api.dto.common.PageResponse;
 import ma.iatacademy.api.dto.media.AssetResponse;
 import ma.iatacademy.api.dto.media.SignedStreamResponse;
@@ -12,8 +14,11 @@ import ma.iatacademy.api.domain.enums.Role;
 import ma.iatacademy.api.exception.ApiException;
 import ma.iatacademy.api.exception.ForbiddenException;
 import ma.iatacademy.api.exception.NotFoundException;
+import ma.iatacademy.api.repository.AssetDownloadRepository;
 import ma.iatacademy.api.repository.AssetRepository;
+import ma.iatacademy.api.repository.LessonRepository;
 import ma.iatacademy.api.repository.MediaFolderRepository;
+import ma.iatacademy.api.repository.UserRepository;
 import ma.iatacademy.api.security.UserPrincipal;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -91,6 +96,9 @@ public class MediaService {
     private final JwtProperties jwtProperties;
     private final BunnyStreamProperties bunnyStreamProperties;
     private final BunnyStreamClient bunnyStreamClient;
+    private final AssetDownloadRepository assetDownloadRepository;
+    private final UserRepository userRepository;
+    private final LessonRepository lessonRepository;
 
     @Transactional
     public AssetResponse upload(MultipartFile file, String kindHint) {
@@ -218,7 +226,7 @@ public class MediaService {
         Asset asset = assetRepository.findById(assetId)
                 .orElseThrow(() -> new NotFoundException("Média introuvable."));
         assertReadable(asset, requester);
-        return signStream(asset);
+        return signStream(asset, false);
     }
 
     /**
@@ -231,10 +239,32 @@ public class MediaService {
     public SignedStreamResponse createSignedStreamTrusted(UUID assetId) {
         Asset asset = assetRepository.findById(assetId)
                 .orElseThrow(() -> new NotFoundException("Média introuvable."));
-        return signStream(asset);
+        return signStream(asset, false);
     }
 
-    private SignedStreamResponse signStream(Asset asset) {
+    /**
+     * Records a download-audit row before signing so the ProgressionService gate
+     * (asset_downloads existsByUserIdAndAssetId) sees it immediately. Separate from
+     * createSignedStream on purpose: /stream is also called by VideoPlayer, AssetImage,
+     * and admin previews - piggy-backing here would log every inline preview as a
+     * "download".
+     */
+    @Transactional
+    public SignedStreamResponse recordDownloadAndSign(UUID assetId, UserPrincipal requester, UUID lessonId) {
+        Asset asset = assetRepository.findById(assetId)
+                .orElseThrow(() -> new NotFoundException("Média introuvable."));
+        assertReadable(asset, requester);
+        AssetDownload.AssetDownloadBuilder download = AssetDownload.builder()
+                .user(userRepository.getReferenceById(requester.getId()))
+                .asset(asset);
+        if (lessonId != null) {
+            download.lesson(lessonRepository.getReferenceById(lessonId));
+        }
+        assetDownloadRepository.save(download.build());
+        return signStream(asset, true);
+    }
+
+    private SignedStreamResponse signStream(Asset asset, boolean forceDownload) {
         long expires = System.currentTimeMillis() / 1000L + mediaProperties.getSignedUrlTtlSeconds();
         if (asset.getStoragePath().startsWith(BUNNY_STORAGE_PREFIX)) {
             // Bunny serves and access-controls this itself — hand back its own hosted
@@ -244,7 +274,8 @@ public class MediaService {
             return new SignedStreamResponse(bunnyStreamClient.embedUrl(guid), expires);
         }
         String sig = sign(asset.getId(), expires);
-        String url = "/api/assets/" + asset.getId() + "/file?expires=" + expires + "&sig=" + sig;
+        String url = "/api/assets/" + asset.getId() + "/file?expires=" + expires + "&sig=" + sig
+                + (forceDownload ? "&disposition=attachment" : "");
         return new SignedStreamResponse(url, expires);
     }
 
