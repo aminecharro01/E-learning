@@ -81,7 +81,8 @@ export function TwoFactorSection() {
     <section className="card-theme rounded-2xl p-6">
       <p className="text-sm font-semibold text-primary">Authentification à deux facteurs</p>
       <p className="mt-1 text-xs text-muted">
-        Optionnelle — code à 6 chiffres depuis une application type Google Authenticator.
+        Optionnelle — code à 6 chiffres depuis Google Authenticator, Microsoft Authenticator, Authy ou toute
+        application compatible TOTP.
       </p>
       {msg && <p className="mt-2 text-xs">{msg}</p>}
 
