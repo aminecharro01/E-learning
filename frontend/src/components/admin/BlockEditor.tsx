@@ -157,10 +157,12 @@ function TextBlockEditor({
 function SortableBlock({
   block,
   onUpdateText,
+  onToggleRequired,
   onDelete,
 }: {
   block: BlockItem;
   onUpdateText: (id: string, text: string) => void;
+  onToggleRequired: (id: string, required: boolean) => void;
   onDelete: (id: string) => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({
@@ -205,7 +207,17 @@ function SortableBlock({
         ))}
       {block.blockType === "PDF" &&
         (block.content.assetId ? (
-          <PdfViewer assetId={String(block.content.assetId)} title={String(block.content.title ?? "")} />
+          <div className="space-y-2">
+            <PdfViewer assetId={String(block.content.assetId)} title={String(block.content.title ?? "")} />
+            <label className="flex items-center gap-2 text-sm text-body">
+              <input
+                type="checkbox"
+                checked={block.content.required !== false}
+                onChange={(e) => void onToggleRequired(block.id, e.target.checked)}
+              />
+              Obligatoire (téléchargement requis pour continuer)
+            </label>
+          </div>
         ) : (
           <p className="text-sm text-muted">Aucun document.</p>
         ))}
@@ -300,6 +312,7 @@ export function BlockEditor({ lessonId, initialBlocks, onChange }: Props) {
           assetId: asset.id,
           title: file.name,
           alt: file.name,
+          ...(kind === "PDF" ? { required: true } : {}),
         },
         orderIndex: blocks.length,
       });
@@ -321,6 +334,21 @@ export function BlockEditor({ lessonId, initialBlocks, onChange }: Props) {
       );
     } catch {
       setMessage("Échec de sauvegarde du texte.");
+    }
+  }
+
+  async function onToggleRequired(id: string, required: boolean) {
+    const block = blocks.find((b) => b.id === id);
+    if (!block) return;
+    try {
+      await apiClient.put(`/api/lessons/${lessonId}/blocks/${id}`, {
+        content: { ...block.content, required },
+      });
+      setBlocks((prev) =>
+        prev.map((b) => (b.id === id ? { ...b, content: { ...b.content, required } } : b))
+      );
+    } catch {
+      setMessage("Échec de mise à jour.");
     }
   }
 
@@ -397,6 +425,7 @@ export function BlockEditor({ lessonId, initialBlocks, onChange }: Props) {
                 key={block.id}
                 block={block}
                 onUpdateText={onUpdateText}
+                onToggleRequired={onToggleRequired}
                 onDelete={onDelete}
               />
             ))}
