@@ -266,6 +266,14 @@ export async function markLessonComplete(lessonId: string) {
   return data;
 }
 
+export async function downloadAsset(assetId: string, lessonId?: string) {
+  const { data } = await apiClient.post<{ url: string; expiresAtEpochSeconds: number }>(
+    `/api/assets/${assetId}/download`,
+    lessonId ? { lessonId } : {}
+  );
+  return data;
+}
+
 export async function getLesson(lessonId: string) {
   const { data } = await apiClient.get<Lesson>(`/api/lessons/${lessonId}`);
   return data;

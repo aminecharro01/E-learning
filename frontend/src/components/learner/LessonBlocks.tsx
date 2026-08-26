@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import { VideoPlayer } from "@/components/VideoPlayer";
-import { PdfViewer } from "@/components/PdfViewer";
+import { PdfDownloadBlock } from "@/components/learner/PdfDownloadBlock";
 import { RichHtmlContent } from "@/components/RichHtmlContent";
 import type { LessonBlock } from "@/types/domain";
 
@@ -47,10 +47,12 @@ export function LessonBlocks({ blocks, lessonId, onVideoProgress }: Props) {
               onProgress={reportProgress}
             />
           )}
-          {block.blockType === "PDF" && (
-            <PdfViewer
-              assetId={block.content.assetId ? String(block.content.assetId) : undefined}
+          {block.blockType === "PDF" && Boolean(block.content.assetId) && (
+            <PdfDownloadBlock
+              assetId={String(block.content.assetId)}
               title={String(block.content.title ?? "Document PDF")}
+              required={block.content.required !== false}
+              lessonId={lessonId}
             />
           )}
           {block.blockType === "IMAGE" && typeof block.content.assetId === "string" && (
