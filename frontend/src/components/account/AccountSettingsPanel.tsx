@@ -8,6 +8,7 @@ import { resolveAssetUrl } from "@/lib/media";
 import { btn, inputClass } from "@/lib/ui";
 import { Loader } from "@/components/ui/Loader";
 import { TwoFactorSection } from "./TwoFactorSection";
+import { AvatarCropModal } from "./AvatarCropModal";
 
 type Props = {
   user: User;
@@ -26,6 +27,7 @@ export function AccountSettingsPanel({ user, onUserChange }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [changingPwd, setChangingPwd] = useState(false);
+  const [pendingAvatarFile, setPendingAvatarFile] = useState<File | null>(null);
 
   useEffect(() => {
     if (!user.avatarAssetId) {
@@ -45,24 +47,29 @@ export function AccountSettingsPanel({ user, onUserChange }: Props) {
     };
   }, [user.avatarAssetId]);
 
-  async function onAvatarChange(file: File | undefined) {
+  function onAvatarChange(file: File | undefined) {
+    if (fileRef.current) fileRef.current.value = "";
     if (!file) return;
     if (!file.type.startsWith("image/")) {
       setError("Choisissez une image (PNG, JPG, WEBP…).");
       return;
     }
-    setUploading(true);
     setError(null);
     setMessage(null);
+    setPendingAvatarFile(file);
+  }
+
+  async function onAvatarCropped(croppedFile: File) {
+    setUploading(true);
     try {
-      const updated = await uploadMyAvatar(file);
+      const updated = await uploadMyAvatar(croppedFile);
       onUserChange(updated);
       setMessage("Photo de profil mise à jour.");
     } catch (err) {
       setError(err instanceof ApiClientError ? err.message : "Envoi impossible.");
     } finally {
       setUploading(false);
-      if (fileRef.current) fileRef.current.value = "";
+      setPendingAvatarFile(null);
     }
   }
 
@@ -124,7 +131,7 @@ export function AccountSettingsPanel({ user, onUserChange }: Props) {
                 type="file"
                 accept="image/png,image/jpeg,image/webp,image/gif"
                 className="sr-only"
-                onChange={(e) => void onAvatarChange(e.target.files?.[0])}
+                onChange={(e) => onAvatarChange(e.target.files?.[0])}
               />
               <button
                 type="button"
@@ -139,6 +146,13 @@ export function AccountSettingsPanel({ user, onUserChange }: Props) {
           </div>
         </div>
       </section>
+
+      <AvatarCropModal
+        file={pendingAvatarFile}
+        busy={uploading}
+        onCancel={() => setPendingAvatarFile(null)}
+        onCropped={(croppedFile) => void onAvatarCropped(croppedFile)}
+      />
 
       <TwoFactorSection />
 
