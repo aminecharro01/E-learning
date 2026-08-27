@@ -99,6 +99,7 @@ public class MediaService {
     private final AssetDownloadRepository assetDownloadRepository;
     private final UserRepository userRepository;
     private final LessonRepository lessonRepository;
+    private final PdfThumbnailBackfillWriter pdfThumbnailBackfillWriter;
 
     @Transactional
     public AssetResponse upload(MultipartFile file, String kindHint) {
@@ -466,13 +467,26 @@ public class MediaService {
      * have no rendering pipeline) gets null and falls back to a generic icon.
      */
     private String thumbnailUrl(Asset asset) {
+        long expires = System.currentTimeMillis() / 1000L + mediaProperties.getSignedUrlTtlSeconds();
         if (asset.getStoragePath().startsWith(BUNNY_STORAGE_PREFIX)) {
-            return bunnyStreamClient.thumbnailUrl(asset.getStoragePath().substring(BUNNY_STORAGE_PREFIX.length()));
+            return bunnyStreamClient.thumbnailUrl(asset.getStoragePath().substring(BUNNY_STORAGE_PREFIX.length()), expires);
         }
         if (asset.getThumbnailPath() == null) {
-            return null;
+            if (!"PDF".equals(asset.getAssetKind())) {
+                return null;
+            }
+            // Backfill for PDFs uploaded before thumbnail generation existed — render once,
+            // lazily, on first read instead of leaving them stuck as a generic icon forever.
+            // Rendering happens here (no transaction needed); the write is delegated to a
+            // REQUIRES_NEW bean since this method runs inside the caller's read-only tx.
+            Path storagePath = Path.of(asset.getStoragePath());
+            String rendered = renderPdfThumbnail(storagePath, asset.getId(), storagePath.getParent());
+            if (rendered == null) {
+                return null;
+            }
+            asset.setThumbnailPath(rendered);
+            pdfThumbnailBackfillWriter.persist(asset.getId(), rendered);
         }
-        long expires = System.currentTimeMillis() / 1000L + mediaProperties.getSignedUrlTtlSeconds();
         String sig = sign(asset.getId(), expires);
         return "/api/assets/" + asset.getId() + "/thumbnail?expires=" + expires + "&sig=" + sig;
     }

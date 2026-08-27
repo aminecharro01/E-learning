@@ -43,6 +43,7 @@ class MediaServiceTest {
     @Mock private AssetDownloadRepository assetDownloadRepository;
     @Mock private UserRepository userRepository;
     @Mock private LessonRepository lessonRepository;
+    @Mock private PdfThumbnailBackfillWriter pdfThumbnailBackfillWriter;
 
     private MediaService mediaService;
 
@@ -50,7 +51,7 @@ class MediaServiceTest {
     void setUp() {
         mediaService = new MediaService(assetRepository, mediaFolderRepository, mediaProperties,
                 jwtProperties, bunnyStreamProperties, bunnyStreamClient, assetDownloadRepository,
-                userRepository, lessonRepository);
+                userRepository, lessonRepository, pdfThumbnailBackfillWriter);
         when(mediaProperties.getSigningSecret()).thenReturn("test-signing-secret-of-sufficient-length");
         when(mediaProperties.getSignedUrlTtlSeconds()).thenReturn(3600L);
     }

@@ -69,6 +69,9 @@ app:
     library-id: ${BUNNY_LIBRARY_ID:}
     api-key: ${BUNNY_API_KEY:}
     pull-zone-hostname: ${BUNNY_PULL_ZONE_HOSTNAME:}
+    # Stream Library → Security tab → "Token Authentication Key". Required whenever the
+    # library has Token Authentication on (the default) — otherwise thumbnail/CDN URLs 403.
+    token-auth-key: ${BUNNY_TOKEN_AUTH_KEY:}
   ai:
     # Génération de questions par IA (banque de quiz) — Gemini en priorité, Grok en repli.
     # Off tant qu'aucune clé n'est fournie, voir AiProviderProperties/QuestionGenerationService.

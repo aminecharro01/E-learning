@@ -71,11 +71,35 @@ public class BunnyStreamClient {
         return "https://iframe.mediadelivery.net/embed/" + properties.getLibraryId() + "/" + guid;
     }
 
-    /** Bunny auto-generates a poster frame for every video, served straight from the
-     * public pull zone/CDN — no signing needed, safe to use directly as an &lt;img src&gt;
-     * in the media library grid. */
-    public String thumbnailUrl(String guid) {
-        return "https://" + properties.getPullZoneHostname() + "/" + guid + "/thumbnail.jpg";
+    /**
+     * Bunny auto-generates a poster frame for every video. When the pull zone has Token
+     * Authentication enabled (the default on a fresh Stream library — an unsigned request
+     * 403s), the URL is signed with Bunny's CDN token-auth scheme:
+     * token = base64url(SHA256(securityKey + urlPath + expires)), appended as
+     * ?token=...&expires=.... Left unsigned when no key is configured.
+     */
+    public String thumbnailUrl(String guid, long expires) {
+        String path = "/" + guid + "/thumbnail.jpg";
+        String base = "https://" + properties.getPullZoneHostname() + path;
+        if (properties.getTokenAuthKey() == null || properties.getTokenAuthKey().isBlank()) {
+            return base;
+        }
+        String token = signToken(path, expires);
+        return base + "?token=" + token + "&expires=" + expires;
+    }
+
+    private String signToken(String path, long expires) {
+        String hashable = properties.getTokenAuthKey() + path + expires;
+        try {
+            java.security.MessageDigest digest = java.security.MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(hashable.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            return java.util.Base64.getEncoder().encodeToString(hash)
+                    .replace("+", "-")
+                    .replace("/", "_")
+                    .replace("=", "");
+        } catch (java.security.NoSuchAlgorithmException e) {
+            throw new IllegalStateException("SHA-256 indisponible.", e);
+        }
     }
 
     /** Permanently deletes a video from the library — used by the media file manager. */
