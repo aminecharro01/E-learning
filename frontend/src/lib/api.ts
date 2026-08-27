@@ -20,6 +20,7 @@ import type {
   ProgressResponse,
   Question,
   Quiz,
+  Role,
   SearchResultItem,
   SignoffInviteView,
   User,
@@ -817,9 +818,9 @@ export async function getAdminStats() {
   return data;
 }
 
-export async function listUsersPaged(page: number, size = 10, q?: string) {
+export async function listUsersPaged(page: number, size = 10, q?: string, role?: Role) {
   const { data } = await apiClient.get<PageResponse<User>>("/api/admin/users/paged", {
-    params: { page, size, ...(q ? { q } : {}) },
+    params: { page, size, ...(q ? { q } : {}), ...(role ? { role } : {}) },
   });
   return data;
 }

@@ -20,6 +20,31 @@ import type { Module, Role, User } from "@/types/domain";
 import { ApiClientError } from "@/lib/api-client";
 import { btn } from "@/lib/ui";
 
+const ROLE_FILTER_OPTIONS: { value: Role | ""; label: string }[] = [
+  { value: "", label: "Tous les rôles" },
+  { value: "ETUDIANT", label: "Apprenants" },
+  { value: "FORMATEUR", label: "Formateurs" },
+  { value: "ADMIN", label: "Directeurs" },
+  { value: "SUPER_ADMIN", label: "Super Admins" },
+  { value: "SUPPORT", label: "Support" },
+];
+
+const ROLE_LABEL: Record<Role, string> = {
+  ETUDIANT: "Apprenant",
+  FORMATEUR: "Formateur",
+  ADMIN: "Directeur",
+  SUPER_ADMIN: "Super Admin",
+  SUPPORT: "Support",
+};
+
+const ROLE_BADGE_COLOR: Record<Role, "info" | "primary" | "warning" | "dark" | "light"> = {
+  ETUDIANT: "info",
+  FORMATEUR: "primary",
+  ADMIN: "warning",
+  SUPER_ADMIN: "dark",
+  SUPPORT: "light",
+};
+
 export default function AdminUsersPage() {
   const { isAdmin, isSuperAdmin } = useAuth();
   const [users, setUsers] = useState<User[]>([]);
@@ -37,6 +62,8 @@ export default function AdminUsersPage() {
   const [unlock, setUnlock] = useState<{ userId: string; moduleId: string } | null>(null);
   const [busy, setBusy] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [roleFilter, setRoleFilter] = useState<Role | "">("");
+  const [pendingRole, setPendingRole] = useState<{ user: User; role: Role } | null>(null);
 
   function toggleSelected(id: string) {
     setSelected((prev) => {
@@ -63,9 +90,9 @@ export default function AdminUsersPage() {
     }
   }
 
-  const reload = useCallback(async (p: number, q: string) => {
+  const reload = useCallback(async (p: number, q: string, role: Role | "" = roleFilter) => {
     const [u, prog] = await Promise.all([
-      listUsersPaged(p, 10, q || undefined),
+      listUsersPaged(p, 10, q || undefined, role || undefined),
       getMyProgress(),
     ]);
     setUsers(u.content);
@@ -76,14 +103,15 @@ export default function AdminUsersPage() {
       totalPages: u.totalPages,
     });
     setModules(prog.modules);
-  }, []);
+  }, [roleFilter]);
 
   useEffect(() => {
     if (!isAdmin) return;
-    reload(0, "")
+    reload(0, query, roleFilter)
       .catch((err) => setError(err instanceof ApiClientError ? err.message : "Erreur."))
       .finally(() => setLoading(false));
-  }, [isAdmin, reload]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAdmin, roleFilter]);
 
   useEffect(() => {
     if (!isAdmin) return;
@@ -121,25 +149,29 @@ export default function AdminUsersPage() {
       key: "role",
       header: "Rôle",
       render: (u) => (
-        <select
-          value={u.role}
-          className="select-theme"
-          disabled={!isSuperAdmin && (u.role === "ADMIN" || u.role === "SUPER_ADMIN")}
-          onChange={(e) => {
-            void updateUserRole(u.id, e.target.value as Role)
-              .then(() => reload(page, query))
-              .catch((err) =>
-                setError(err instanceof ApiClientError ? err.message : "Erreur rôle.")
-              );
-          }}
-        >
-          <option value="ETUDIANT">Apprenant</option>
-          <option value="FORMATEUR">Formateur</option>
-          {(isSuperAdmin || u.role === "ADMIN") && <option value="ADMIN">Directeur</option>}
-          {(isSuperAdmin || u.role === "SUPER_ADMIN") && (
-            <option value="SUPER_ADMIN">Super Admin</option>
-          )}
-        </select>
+        <div className="flex items-center gap-2">
+          <Badge size="sm" color={ROLE_BADGE_COLOR[u.role]}>
+            {ROLE_LABEL[u.role]}
+          </Badge>
+          <select
+            value={u.role}
+            aria-label={`Changer le rôle de ${u.email}`}
+            className="select-theme text-xs"
+            disabled={!isSuperAdmin && (u.role === "ADMIN" || u.role === "SUPER_ADMIN")}
+            onChange={(e) => {
+              const nextRole = e.target.value as Role;
+              e.target.value = u.role;
+              if (nextRole !== u.role) setPendingRole({ user: u, role: nextRole });
+            }}
+          >
+            <option value="ETUDIANT">Apprenant</option>
+            <option value="FORMATEUR">Formateur</option>
+            {(isSuperAdmin || u.role === "ADMIN") && <option value="ADMIN">Directeur</option>}
+            {(isSuperAdmin || u.role === "SUPER_ADMIN") && (
+              <option value="SUPER_ADMIN">Super Admin</option>
+            )}
+          </select>
+        </div>
       ),
     },
     {
@@ -264,6 +296,22 @@ export default function AdminUsersPage() {
           Ouvrir année 2 (tous actifs)
         </button>
       </div>
+
+      <label className="block w-full max-w-xs text-sm">
+        <span className="mb-1 block text-xs font-medium text-muted">Filtrer par rôle</span>
+        <select
+          className="select-theme w-full"
+          value={roleFilter}
+          onChange={(e) => setRoleFilter(e.target.value as Role | "")}
+        >
+          {ROLE_FILTER_OPTIONS.map((opt) => (
+            <option key={opt.value} value={opt.value}>
+              {opt.label}
+            </option>
+          ))}
+        </select>
+      </label>
+
       {error && <p className="alert alert-error">{error}</p>}
       {msg && <p className="alert alert-success">{msg}</p>}
 
@@ -293,6 +341,33 @@ export default function AdminUsersPage() {
         onPageChange={(p) => {
           setPage(p);
           void reload(p, query);
+        }}
+      />
+
+      <ConfirmDialog
+        open={!!pendingRole}
+        title="Changer le rôle de cet utilisateur ?"
+        description={
+          pendingRole
+            ? `${pendingRole.user.fullName || pendingRole.user.email} passera de « ${ROLE_LABEL[pendingRole.user.role]} » à « ${ROLE_LABEL[pendingRole.role]} ».`
+            : ""
+        }
+        danger
+        busy={busy}
+        confirmLabel="Changer le rôle"
+        onClose={() => setPendingRole(null)}
+        onConfirm={() => {
+          if (!pendingRole) return;
+          setBusy(true);
+          setError(null);
+          void updateUserRole(pendingRole.user.id, pendingRole.role)
+            .then(() => reload(page, query))
+            .then(() => {
+              setMsg(`Rôle de ${pendingRole.user.email} changé en ${ROLE_LABEL[pendingRole.role]}.`);
+              setPendingRole(null);
+            })
+            .catch((err) => setError(err instanceof ApiClientError ? err.message : "Erreur rôle."))
+            .finally(() => setBusy(false));
         }}
       />
 

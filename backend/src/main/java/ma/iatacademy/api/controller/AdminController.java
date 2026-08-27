@@ -6,6 +6,7 @@ import ma.iatacademy.api.dto.MessageResponse;
 import ma.iatacademy.api.dto.UserResponse;
 import ma.iatacademy.api.dto.admin.*;
 import ma.iatacademy.api.dto.common.PageResponse;
+import ma.iatacademy.api.domain.enums.Role;
 import ma.iatacademy.api.security.UserPrincipal;
 import ma.iatacademy.api.service.AdminService;
 import ma.iatacademy.api.service.AppSettingsService;
@@ -42,9 +43,10 @@ public class AdminController {
     public ResponseEntity<PageResponse<UserResponse>> usersPaged(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
-            @RequestParam(required = false) String q
+            @RequestParam(required = false) String q,
+            @RequestParam(required = false) Role role
     ) {
-        return ResponseEntity.ok(adminService.listUsersPaged(page, size, q));
+        return ResponseEntity.ok(adminService.listUsersPaged(page, size, q, role));
     }
 
     @GetMapping("/learners")

@@ -73,15 +73,22 @@ public class AdminService {
     }
 
     @Transactional(readOnly = true)
-    public PageResponse<UserResponse> listUsersPaged(int page, int size, String q) {
+    public PageResponse<UserResponse> listUsersPaged(int page, int size, String q, Role role) {
         int safePage = Math.max(page, 0);
         int safeSize = Math.min(Math.max(size, 1), 100);
         Pageable pageable = PageRequest.of(safePage, safeSize, Sort.by("email"));
-        if (q != null && !q.isBlank()) {
-            Page<User> matches = userRepository.searchByQuery(q.trim(), pageable);
-            return PageResponse.from(matches.map(this::toUserResponse));
+        boolean hasQuery = q != null && !q.isBlank();
+        Page<User> result;
+        if (role != null && hasQuery) {
+            result = userRepository.searchByRoleAndQuery(role, q.trim(), pageable);
+        } else if (role != null) {
+            result = userRepository.findByRole(role, pageable);
+        } else if (hasQuery) {
+            result = userRepository.searchByQuery(q.trim(), pageable);
+        } else {
+            result = userRepository.findAll(pageable);
         }
-        return PageResponse.from(userRepository.findAll(pageable).map(this::toUserResponse));
+        return PageResponse.from(result.map(this::toUserResponse));
     }
 
     @Transactional(readOnly = true)
