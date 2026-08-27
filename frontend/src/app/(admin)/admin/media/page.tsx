@@ -309,8 +309,13 @@ export default function AdminMediaPage() {
             {uploading.map((u) => (
               <div key={u.name} className="flex items-center gap-2 text-xs text-muted">
                 <span className="w-40 truncate">{u.name}</span>
-                <div className="progress-track h-1.5 flex-1">
-                  <div className="progress-fill h-full" style={{ width: `${u.percent}%` }} />
+                {/* .progress-track/.progress-fill are scoped to .app-horizon (learner shell
+                    only) and render invisibly here in the admin shell - built inline instead. */}
+                <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-surface-2">
+                  <div
+                    className="h-full rounded-full bg-primary transition-all"
+                    style={{ width: `${u.percent}%` }}
+                  />
                 </div>
               </div>
             ))}
