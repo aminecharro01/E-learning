@@ -202,6 +202,17 @@ export function StageDossierPanel({ dossier, mode, onChanged }: Props) {
                   </div>
                 }
               >
+                {canUpload(slot.owner) && slot.docType === "CONVENTION_ENTREPRISE" && (
+                  <p className="mt-2 text-xs text-muted">
+                    <a
+                      href={`${API_URL}/documents/convention-de-stage-modele.docx`}
+                      className="font-medium text-primary hover:underline"
+                    >
+                      Télécharger le modèle de convention
+                    </a>{" "}
+                    · faites-le signer par l&apos;entreprise puis déposez-le ici.
+                  </p>
+                )}
                 {canUpload(slot.owner) && (
                   <p className="mt-2 text-xs text-muted">
                     {slot.docType === "PRESENTATION_SOUTENANCE"

@@ -65,6 +65,10 @@ public class SecurityConfig {
                 "/api/certificates/verify/**",
                 "/api/assets/*/file",
                 "/api/assets/*/thumbnail",
+                // Static, non-sensitive downloadable templates (e.g. the blank Convention
+                // de stage) shipped with the app under resources/static/documents/ — not
+                // user data, safe to serve unauthenticated same as any other static asset.
+                "/documents/**",
                 "/actuator/health"
         ));
         if (swaggerEnabled) {
