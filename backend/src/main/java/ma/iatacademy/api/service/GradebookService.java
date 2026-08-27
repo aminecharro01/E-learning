@@ -7,10 +7,12 @@ import ma.iatacademy.api.domain.entity.Quiz;
 import ma.iatacademy.api.domain.entity.QuizAttempt;
 import ma.iatacademy.api.domain.entity.Submission;
 import ma.iatacademy.api.domain.entity.User;
+import ma.iatacademy.api.domain.entity.ModuleEntity;
 import ma.iatacademy.api.domain.enums.AttemptStatus;
 import ma.iatacademy.api.domain.enums.Role;
 import ma.iatacademy.api.dto.assignment.CreateGradeAdjustmentRequest;
 import ma.iatacademy.api.dto.gradebook.GradebookResponse;
+import ma.iatacademy.api.dto.gradebook.LearnerBulletinResponse;
 import ma.iatacademy.api.exception.NotFoundException;
 import ma.iatacademy.api.repository.AssignmentRepository;
 import ma.iatacademy.api.repository.GradeAdjustmentRepository;
@@ -30,6 +32,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+
+import static ma.iatacademy.api.config.FormationDefaults.DEFAULT_FORMATION_ID;
 
 /**
  * Vue agrégée en lecture (aucune table de faits dédiée) : Étudiants × Évaluations,
@@ -99,6 +103,77 @@ public class GradebookService {
         }
         rows.sort(Comparator.comparing(GradebookResponse.StudentRow::fullName));
         return new GradebookResponse(evaluations, rows);
+    }
+
+    /**
+     * The learner's own report card across every module - self-scoped by studentId,
+     * never a client-supplied one (see GradebookController). Skips modules with no
+     * gradable content yet, same as build() does per-student, so an early learner
+     * doesn't see 35 empty rows.
+     */
+    @Transactional(readOnly = true)
+    public LearnerBulletinResponse buildForStudent(UUID studentId) {
+        User student = userRepository.findById(studentId)
+                .orElseThrow(() -> new NotFoundException("Utilisateur introuvable."));
+        List<ModuleEntity> allModules = moduleRepository.findByFormationIdOrderByOrderIndexAsc(DEFAULT_FORMATION_ID);
+
+        List<LearnerBulletinResponse.ModuleBulletin> moduleBulletins = new ArrayList<>();
+        List<BigDecimal> moduleAverages = new ArrayList<>();
+
+        for (ModuleEntity module : allModules) {
+            List<Quiz> quizzes = quizRepository.findByModuleIdOrderByCreatedAtDesc(module.getId());
+            List<Assignment> assignments = assignmentRepository.findByModuleIdOrderByDueAtAsc(module.getId());
+
+            List<LearnerBulletinResponse.EvaluationScore> evaluations = new ArrayList<>();
+            List<BigDecimal> gradable = new ArrayList<>();
+
+            for (Quiz q : quizzes) {
+                BigDecimal best = bestQuizScore(studentId, q.getId());
+                if (best != null) {
+                    gradable.add(best);
+                    evaluations.add(new LearnerBulletinResponse.EvaluationScore(
+                            q.getId(), q.getTitle(), "QUIZ", best, BigDecimal.valueOf(100),
+                            q.getPassingScore(), best.compareTo(BigDecimal.valueOf(q.getPassingScore())) >= 0));
+                }
+            }
+            for (Assignment a : assignments) {
+                submissionRepository.findByAssignmentIdAndUserId(a.getId(), studentId)
+                        .map(Submission::getGrade)
+                        .filter(g -> g != null)
+                        .ifPresent(g -> {
+                            gradable.add(g);
+                            evaluations.add(new LearnerBulletinResponse.EvaluationScore(
+                                    a.getId(), a.getTitle(), "ASSIGNMENT", g, a.getMaxScore(), null, null));
+                        });
+            }
+
+            BigDecimal bonus = gradeAdjustmentRepository.findByUserIdAndModuleId(studentId, module.getId()).stream()
+                    .map(GradeAdjustment::getPoints)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+            if (evaluations.isEmpty() && bonus.compareTo(BigDecimal.ZERO) == 0) {
+                continue;
+            }
+            BigDecimal average = gradable.isEmpty()
+                    ? null
+                    : gradable.stream().reduce(BigDecimal.ZERO, BigDecimal::add)
+                            .divide(BigDecimal.valueOf(gradable.size()), 2, RoundingMode.HALF_UP)
+                            .add(bonus);
+            if (average != null) {
+                moduleAverages.add(average);
+            }
+            moduleBulletins.add(new LearnerBulletinResponse.ModuleBulletin(
+                    module.getId(), module.getTitle(), evaluations, bonus, average));
+        }
+
+        BigDecimal overallAverage = moduleAverages.isEmpty()
+                ? null
+                : moduleAverages.stream().reduce(BigDecimal.ZERO, BigDecimal::add)
+                        .divide(BigDecimal.valueOf(moduleAverages.size()), 2, RoundingMode.HALF_UP);
+
+        return new LearnerBulletinResponse(
+                student.getFullName() != null ? student.getFullName() : student.getEmail(),
+                overallAverage,
+                moduleBulletins);
     }
 
     @Transactional

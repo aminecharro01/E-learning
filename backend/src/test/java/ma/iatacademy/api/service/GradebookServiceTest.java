@@ -10,6 +10,7 @@ import ma.iatacademy.api.domain.entity.User;
 import ma.iatacademy.api.domain.enums.AttemptStatus;
 import ma.iatacademy.api.domain.enums.Role;
 import ma.iatacademy.api.dto.gradebook.GradebookResponse;
+import ma.iatacademy.api.dto.gradebook.LearnerBulletinResponse;
 import ma.iatacademy.api.exception.NotFoundException;
 import ma.iatacademy.api.repository.AssignmentRepository;
 import ma.iatacademy.api.repository.GradeAdjustmentRepository;
@@ -115,6 +116,69 @@ class GradebookServiceTest {
         assertEquals(0, BigDecimal.valueOf(5).compareTo(row.bonus()));
         // average of best quiz score (90) and assignment grade (70) = 80, plus bonus 5 = 85
         assertEquals(0, BigDecimal.valueOf(85).compareTo(row.average()));
+    }
+
+    @Test
+    void buildForStudentThrowsNotFoundWhenUserMissing() {
+        UUID studentId = UUID.randomUUID();
+        when(userRepository.findById(studentId)).thenReturn(Optional.empty());
+
+        assertThrows(NotFoundException.class, () -> gradebookService.buildForStudent(studentId));
+    }
+
+    @Test
+    void buildForStudentSkipsModulesWithNoGradableContent() {
+        UUID studentId = UUID.randomUUID();
+        ModuleEntity module = ModuleEntity.builder().id(UUID.randomUUID()).title("Module vide").build();
+        User student = User.builder().id(studentId).fullName("Bob").build();
+
+        when(userRepository.findById(studentId)).thenReturn(Optional.of(student));
+        when(moduleRepository.findByFormationIdOrderByOrderIndexAsc(any())).thenReturn(List.of(module));
+        when(quizRepository.findByModuleIdOrderByCreatedAtDesc(module.getId())).thenReturn(List.of());
+        when(assignmentRepository.findByModuleIdOrderByDueAtAsc(module.getId())).thenReturn(List.of());
+        when(gradeAdjustmentRepository.findByUserIdAndModuleId(studentId, module.getId())).thenReturn(List.of());
+
+        LearnerBulletinResponse response = gradebookService.buildForStudent(studentId);
+
+        assertTrue(response.modules().isEmpty());
+        assertEquals(null, response.overallAverage());
+    }
+
+    @Test
+    void buildForStudentComputesModuleAverageAndOverallAverage() {
+        UUID studentId = UUID.randomUUID();
+        ModuleEntity module = ModuleEntity.builder().id(UUID.randomUUID()).title("Techniques de communication").build();
+        User student = User.builder().id(studentId).fullName("Alice").build();
+        Quiz quiz = Quiz.builder().id(UUID.randomUUID()).title("Quiz 1").passingScore(60).build();
+        Assignment assignment = Assignment.builder().id(UUID.randomUUID()).title("Devoir 1")
+                .maxScore(BigDecimal.valueOf(100)).build();
+
+        when(userRepository.findById(studentId)).thenReturn(Optional.of(student));
+        when(moduleRepository.findByFormationIdOrderByOrderIndexAsc(any())).thenReturn(List.of(module));
+        when(quizRepository.findByModuleIdOrderByCreatedAtDesc(module.getId())).thenReturn(List.of(quiz));
+        when(assignmentRepository.findByModuleIdOrderByDueAtAsc(module.getId())).thenReturn(List.of(assignment));
+
+        QuizAttempt attempt = QuizAttempt.builder().status(AttemptStatus.PASSED).score(BigDecimal.valueOf(90)).build();
+        when(quizAttemptRepository.findByUserIdAndQuizIdOrderByStartedAtDesc(studentId, quiz.getId()))
+                .thenReturn(List.of(attempt));
+        Submission submission = Submission.builder().grade(BigDecimal.valueOf(70)).build();
+        when(submissionRepository.findByAssignmentIdAndUserId(assignment.getId(), studentId))
+                .thenReturn(Optional.of(submission));
+        when(gradeAdjustmentRepository.findByUserIdAndModuleId(studentId, module.getId())).thenReturn(List.of());
+
+        LearnerBulletinResponse response = gradebookService.buildForStudent(studentId);
+
+        assertEquals("Alice", response.studentName());
+        assertEquals(1, response.modules().size());
+        LearnerBulletinResponse.ModuleBulletin moduleBulletin = response.modules().get(0);
+        assertEquals(2, moduleBulletin.evaluations().size());
+        // average of quiz (90) and assignment (70) = 80, no bonus
+        assertEquals(0, BigDecimal.valueOf(80).compareTo(moduleBulletin.average()));
+        assertEquals(0, BigDecimal.valueOf(80).compareTo(response.overallAverage()));
+
+        LearnerBulletinResponse.EvaluationScore quizScore = moduleBulletin.evaluations().stream()
+                .filter(e -> "QUIZ".equals(e.type())).findFirst().orElseThrow();
+        assertTrue(quizScore.passed());
     }
 
     @Test

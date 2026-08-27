@@ -730,6 +730,35 @@ export async function listMyAssignments(moduleId: string) {
   return data;
 }
 
+export type BulletinEvaluation = {
+  id: string;
+  label: string;
+  type: "QUIZ" | "ASSIGNMENT";
+  score: number;
+  maxScore: number;
+  passingScore: number | null;
+  passed: boolean | null;
+};
+
+export type BulletinModule = {
+  moduleId: string;
+  moduleTitle: string;
+  evaluations: BulletinEvaluation[];
+  bonus: number;
+  average: number | null;
+};
+
+export type LearnerBulletin = {
+  studentName: string;
+  overallAverage: number | null;
+  modules: BulletinModule[];
+};
+
+export async function getMyBulletin() {
+  const { data } = await apiClient.get<LearnerBulletin>("/api/gradebook/me");
+  return data;
+}
+
 export async function createAssignment(payload: {
   moduleId: string;
   title: string;
