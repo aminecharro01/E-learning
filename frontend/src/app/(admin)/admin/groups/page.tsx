@@ -26,11 +26,26 @@ import type {
 } from "@/types/domain";
 import { ApiClientError } from "@/lib/api-client";
 import { useAuth } from "@/hooks/useAuth";
+import { ChevronDown, ChevronRight } from "lucide-react";
 import { ComponentCard } from "@/components/admin/ui/ComponentCard";
 import { ConfirmDialog } from "@/components/admin/ConfirmDialog";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { toast } from "@/lib/toast-store";
 import { btn, inputClass } from "@/lib/ui";
+
+function CollapseToggle({ open, onToggle }: { open: boolean; onToggle: () => void }) {
+  return (
+    <button
+      type="button"
+      className={btn.neutralXs}
+      aria-expanded={open}
+      onClick={onToggle}
+    >
+      {open ? <ChevronDown size={14} aria-hidden /> : <ChevronRight size={14} aria-hidden />}
+      {open ? "Réduire" : "Ouvrir"}
+    </button>
+  );
+}
 
 function formatDateTime(iso: string | null): string {
   if (!iso) return "—";
@@ -59,6 +74,14 @@ export default function AdminGroupsPage() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [confirmDeleteGroup, setConfirmDeleteGroup] = useState(false);
+  const [confirmRemoveMember, setConfirmRemoveMember] = useState<GroupMember | null>(null);
+  const [confirmRevokeAssignment, setConfirmRevokeAssignment] = useState<GroupAssignment | null>(null);
+
+  // Create/Import stay collapsed by default so the groups list is visible without
+  // scrolling past two big forms first (the top complaint about this page's layout).
+  const [createOpen, setCreateOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
+  const [groupSearch, setGroupSearch] = useState("");
 
   // Création / import
   const [newName, setNewName] = useState("");
@@ -94,6 +117,14 @@ export default function AdminGroupsPage() {
     });
     return Array.from(seen.entries());
   }, [modules]);
+
+  const filteredGroups = useMemo(() => {
+    const q = groupSearch.trim().toLowerCase();
+    if (!q) return groups;
+    return groups.filter(
+      (g) => g.name.toLowerCase().includes(q) || (g.code ?? "").toLowerCase().includes(q)
+    );
+  }, [groups, groupSearch]);
 
   const reloadGroups = useCallback(async () => {
     const list = await listGroups();
@@ -184,7 +215,12 @@ export default function AdminGroupsPage() {
       <div className="grid gap-6 lg:grid-cols-[320px_1fr]">
         {/* ---------------------------------------------- Colonne gauche */}
         <div className="space-y-4">
-          <ComponentCard title="Créer un groupe" desc="Groupe vide — vous y ajouterez des apprenants existants">
+          <ComponentCard
+            title="Créer un groupe"
+            desc="Groupe vide — vous y ajouterez des apprenants existants"
+            action={<CollapseToggle open={createOpen} onToggle={() => setCreateOpen((v) => !v)} />}
+          >
+            {createOpen && (
             <div className="space-y-2">
               <input
                 className={inputClass}
@@ -238,6 +274,7 @@ export default function AdminGroupsPage() {
                     setNewEndDate("");
                     await reloadGroups();
                     setSelectedId(created.id);
+                    setCreateOpen(false);
                     toast.success("Groupe créé.");
                   })
                 }
@@ -245,12 +282,15 @@ export default function AdminGroupsPage() {
                 Créer
               </button>
             </div>
+            )}
           </ComponentCard>
 
           <ComponentCard
             title="Importer un groupe (Excel)"
             desc="Colonnes : Nom complet | CIN/Matricule | Téléphone (avec ligne d'en-tête)"
+            action={<CollapseToggle open={importOpen} onToggle={() => setImportOpen((v) => !v)} />}
           >
+            {importOpen && (
             <div className="space-y-2">
               <input
                 className={inputClass}
@@ -283,6 +323,7 @@ export default function AdminGroupsPage() {
                 {busy ? "Import…" : "Importer"}
               </button>
             </div>
+            )}
 
             {importResult && (
               <div className="mt-3 space-y-2 text-xs">
@@ -308,13 +349,23 @@ export default function AdminGroupsPage() {
           </ComponentCard>
 
           <ComponentCard title="Groupes" desc={`${groups.length} groupe(s)`}>
+            {groups.length > 3 && (
+              <input
+                className={`${inputClass} mb-3`}
+                placeholder="Rechercher un groupe (nom ou code)…"
+                value={groupSearch}
+                onChange={(e) => setGroupSearch(e.target.value)}
+              />
+            )}
             {loading ? (
               <Skeleton className="h-32 rounded-xl" />
             ) : groups.length === 0 ? (
               <p className="text-sm text-muted">Aucun groupe pour le moment.</p>
+            ) : filteredGroups.length === 0 ? (
+              <p className="text-sm text-muted">Aucun groupe ne correspond à « {groupSearch} ».</p>
             ) : (
               <ul className="space-y-2">
-                {groups.map((g) => (
+                {filteredGroups.map((g) => (
                   <li key={g.id}>
                     <button
                       type="button"
@@ -323,9 +374,15 @@ export default function AdminGroupsPage() {
                         g.id === selectedId ? "bg-surface-2 ring-2 ring-[var(--ring)]" : ""
                       }`}
                     >
-                      <span className="block font-medium text-heading">{g.name}</span>
-                      <span className="block text-xs text-muted">
-                        {g.memberCount} apprenant(s)
+                      <span className="flex items-center gap-2">
+                        <span className="truncate font-medium text-heading">{g.name}</span>
+                        {g.code && <span className="badge-inline badge-navy shrink-0">{g.code}</span>}
+                      </span>
+                      <span className="mt-1 flex items-center gap-2 text-xs text-muted">
+                        <span className={`badge-inline ${g.enrollmentMode === "EN_LIGNE" ? "badge-success" : "badge-gold"}`}>
+                          {g.enrollmentMode === "EN_LIGNE" ? "En ligne" : "Hybride"}
+                        </span>
+                        <span>{g.memberCount} apprenant(s)</span>
                       </span>
                     </button>
                   </li>
@@ -345,20 +402,29 @@ export default function AdminGroupsPage() {
             <>
               <ComponentCard
                 title={selected.code ? `${selected.name} (${selected.code})` : selected.name}
-                desc={`${members.length} apprenant(s) — ${assignments.length} contenu(s) affecté(s) — ${
-                  selected.enrollmentMode === "EN_LIGNE" ? "En ligne" : "Hybride"
-                }${selected.startDate ? ` — du ${formatDateTime(selected.startDate)}` : ""}${
-                  selected.endDate ? ` au ${formatDateTime(selected.endDate)}` : ""
-                }`}
+                desc=""
+                action={
+                  <button
+                    type="button"
+                    className={btn.dangerSm}
+                    disabled={busy}
+                    onClick={() => setConfirmDeleteGroup(true)}
+                  >
+                    Supprimer le groupe
+                  </button>
+                }
               >
-                <button
-                  type="button"
-                  className={btn.dangerSm}
-                  disabled={busy}
-                  onClick={() => setConfirmDeleteGroup(true)}
-                >
-                  Supprimer le groupe
-                </button>
+                <div className="flex flex-wrap items-center gap-2 text-xs">
+                  <span className={`badge-inline ${selected.enrollmentMode === "EN_LIGNE" ? "badge-success" : "badge-gold"}`}>
+                    {selected.enrollmentMode === "EN_LIGNE" ? "En ligne" : "Hybride"}
+                  </span>
+                  <span className="badge-inline badge-navy">{members.length} apprenant(s)</span>
+                  <span className="badge-inline badge-navy">{assignments.length} contenu(s) affecté(s)</span>
+                  {selected.startDate && (
+                    <span className="text-muted">Du {formatDateTime(selected.startDate)}</span>
+                  )}
+                  {selected.endDate && <span className="text-muted">au {formatDateTime(selected.endDate)}</span>}
+                </div>
               </ComponentCard>
 
               <ComponentCard
@@ -485,13 +551,7 @@ export default function AdminGroupsPage() {
                               type="button"
                               className={btn.dangerXs}
                               disabled={busy}
-                              onClick={() =>
-                                void run(async () => {
-                                  await revokeGroupAssignment(selected.id, a.id);
-                                  setAssignments(await listGroupAssignments(selected.id));
-                                  toast.success("Affectation retirée.");
-                                })
-                              }
+                              onClick={() => setConfirmRevokeAssignment(a)}
                             >
                               Retirer
                             </button>
@@ -598,13 +658,7 @@ export default function AdminGroupsPage() {
                               type="button"
                               className={btn.dangerXs}
                               disabled={busy}
-                              onClick={() =>
-                                void run(async () => {
-                                  await removeGroupMember(selected.id, m.id);
-                                  await Promise.all([reloadGroups(), reloadDetail(selected.id)]);
-                                  toast.success("Apprenant retiré du groupe.");
-                                })
-                              }
+                              onClick={() => setConfirmRemoveMember(m)}
                             >
                               Retirer
                             </button>
@@ -636,6 +690,44 @@ export default function AdminGroupsPage() {
             await reloadGroups();
             toast.success("Groupe supprimé. Les apprenants redeviennent 100 % en ligne.");
             setConfirmDeleteGroup(false);
+          })
+        }
+      />
+
+      <ConfirmDialog
+        open={!!confirmRemoveMember}
+        title="Retirer cet apprenant du groupe ?"
+        description={`« ${confirmRemoveMember?.fullName || confirmRemoveMember?.email || ""} » redeviendra 100 % en ligne et perdra l'accès au contenu programmé ici.`}
+        danger
+        busy={busy}
+        confirmLabel="Retirer"
+        onClose={() => setConfirmRemoveMember(null)}
+        onConfirm={() =>
+          void run(async () => {
+            if (!selected || !confirmRemoveMember) return;
+            await removeGroupMember(selected.id, confirmRemoveMember.id);
+            await Promise.all([reloadGroups(), reloadDetail(selected.id)]);
+            toast.success("Apprenant retiré du groupe.");
+            setConfirmRemoveMember(null);
+          })
+        }
+      />
+
+      <ConfirmDialog
+        open={!!confirmRevokeAssignment}
+        title="Retirer cette affectation de contenu ?"
+        description={`« ${confirmRevokeAssignment?.moduleTitle ?? ""} » redeviendra verrouillé pour ce groupe.`}
+        danger
+        busy={busy}
+        confirmLabel="Retirer"
+        onClose={() => setConfirmRevokeAssignment(null)}
+        onConfirm={() =>
+          void run(async () => {
+            if (!selected || !confirmRevokeAssignment) return;
+            await revokeGroupAssignment(selected.id, confirmRevokeAssignment.id);
+            setAssignments(await listGroupAssignments(selected.id));
+            toast.success("Affectation retirée.");
+            setConfirmRevokeAssignment(null);
           })
         }
       />
