@@ -10,6 +10,9 @@ public record AppSettingsRequest(
         @NotBlank @Size(min = 8, max = 100) String defaultResetPassword,
         /** Date ISO yyyy-MM-dd ou vide pour désactiver l'ouverture auto. */
         String year2OpeningDate,
-        @NotBlank String themeVariant
+        @NotBlank String themeVariant,
+        /** Fenêtre annuelle stage & soutenance (ISO yyyy-MM-dd), vide = pas de restriction. */
+        String stageStartDate,
+        String stageEndDate
 ) {
 }

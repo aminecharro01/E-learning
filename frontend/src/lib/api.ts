@@ -885,6 +885,8 @@ export type AppSettings = {
   defaultResetPassword: string;
   year2OpeningDate?: string | null;
   themeVariant: string;
+  stageStartDate?: string | null;
+  stageEndDate?: string | null;
 };
 
 export async function getAppSettings() {

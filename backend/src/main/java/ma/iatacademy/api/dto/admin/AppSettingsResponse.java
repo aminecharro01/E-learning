@@ -6,6 +6,8 @@ public record AppSettingsResponse(
         boolean registrationEnabled,
         String defaultResetPassword,
         String year2OpeningDate,
-        String themeVariant
+        String themeVariant,
+        String stageStartDate,
+        String stageEndDate
 ) {
 }

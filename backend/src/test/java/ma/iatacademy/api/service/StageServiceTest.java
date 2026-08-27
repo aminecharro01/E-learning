@@ -43,6 +43,8 @@ class StageServiceTest {
     private AssetRepository assetRepository;
     @Mock
     private MediaService mediaService;
+    @Mock
+    private AppSettingsService appSettingsService;
 
     @InjectMocks
     private StageService stageService;
@@ -117,6 +119,7 @@ class StageServiceTest {
                 User.builder().id(learnerId).role(Role.ETUDIANT).build()));
         Asset asset = Asset.builder().id(assetId).filename("presentation.docx").mimeType("application/msword").build();
         when(assetRepository.findById(assetId)).thenReturn(Optional.of(asset));
+        when(appSettingsService.isWithinStagePeriod()).thenReturn(true);
 
         User learner = User.builder().id(learnerId).role(Role.ETUDIANT).build();
         UploadLearnerDocumentRequest request = new UploadLearnerDocumentRequest(
@@ -124,6 +127,45 @@ class StageServiceTest {
 
         assertThrows(ApiException.class,
                 () -> stageService.upload(learnerId, request, new UserPrincipal(learner)));
+    }
+
+    @Test
+    void learnerCannotUploadOutsideStagePeriod() {
+        UUID learnerId = UUID.randomUUID();
+        UUID assetId = UUID.randomUUID();
+        when(userRepository.findById(learnerId)).thenReturn(Optional.of(
+                User.builder().id(learnerId).role(Role.ETUDIANT).build()));
+        when(appSettingsService.isWithinStagePeriod()).thenReturn(false);
+
+        User learner = User.builder().id(learnerId).role(Role.ETUDIANT).build();
+        UploadLearnerDocumentRequest request = new UploadLearnerDocumentRequest(
+                LearnerDocType.RAPPORT_STAGE, assetId, null);
+
+        assertThrows(ForbiddenException.class,
+                () -> stageService.upload(learnerId, request, new UserPrincipal(learner)));
+    }
+
+    @Test
+    void staffCanUploadLearnerDocumentOutsideStagePeriod() {
+        UUID learnerId = UUID.randomUUID();
+        UUID staffId = UUID.randomUUID();
+        UUID assetId = UUID.randomUUID();
+        when(userRepository.findById(learnerId)).thenReturn(Optional.of(
+                User.builder().id(learnerId).role(Role.ETUDIANT).build()));
+        when(userRepository.findById(staffId)).thenReturn(Optional.of(
+                User.builder().id(staffId).role(Role.ADMIN).build()));
+        Asset asset = Asset.builder().id(assetId).filename("rapport.pdf").mimeType("application/pdf").build();
+        when(assetRepository.findById(assetId)).thenReturn(Optional.of(asset));
+        when(documentRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(mediaService.createSignedStreamTrusted(assetId)).thenReturn(new SignedStreamResponse("/url", 0));
+
+        User staff = User.builder().id(staffId).role(Role.ADMIN).build();
+        UploadLearnerDocumentRequest request = new UploadLearnerDocumentRequest(
+                LearnerDocType.RAPPORT_STAGE, assetId, null);
+
+        stageService.upload(learnerId, request, new UserPrincipal(staff));
+
+        verify(documentRepository, times(1)).save(any(LearnerDocument.class));
     }
 
     @Test

@@ -45,6 +45,19 @@ public class AppSettingsService {
         } catch (DateTimeParseException e) {
             throw new IllegalArgumentException("Date de rentrée année 2 invalide (format AAAA-MM-JJ).");
         }
+        String stageStart;
+        String stageEnd;
+        try {
+            stageStart = normalizeDate(request.stageStartDate());
+            stageEnd = normalizeDate(request.stageEndDate());
+        } catch (DateTimeParseException e) {
+            throw new IllegalArgumentException("Date de stage & soutenance invalide (format AAAA-MM-JJ).");
+        }
+        if (stageStart != null && stageEnd != null && LocalDate.parse(stageEnd).isBefore(LocalDate.parse(stageStart))) {
+            throw new IllegalArgumentException("La date de fin de la période stage & soutenance doit être après la date de début.");
+        }
+        properties.setStageStartDate(stageStart);
+        properties.setStageEndDate(stageEnd);
         if (!THEME_VARIANTS.contains(request.themeVariant())) {
             throw new IllegalArgumentException("Thème inconnu : " + request.themeVariant());
         }
@@ -88,6 +101,42 @@ public class AppSettingsService {
         return properties.getYear2OpeningDate();
     }
 
+    /**
+     * True when no stage/soutenance window is configured (no restriction) or today
+     * falls within [stageStartDate, stageEndDate] inclusive. Used by StageService to
+     * gate learner document uploads to the configured annual period.
+     */
+    public boolean isWithinStagePeriod() {
+        loadFromRedisIfPresent();
+        String startRaw = properties.getStageStartDate();
+        String endRaw = properties.getStageEndDate();
+        if ((startRaw == null || startRaw.isBlank()) && (endRaw == null || endRaw.isBlank())) {
+            return true;
+        }
+        LocalDate today = LocalDate.now();
+        try {
+            if (startRaw != null && !startRaw.isBlank() && today.isBefore(LocalDate.parse(startRaw.trim()))) {
+                return false;
+            }
+            if (endRaw != null && !endRaw.isBlank() && today.isAfter(LocalDate.parse(endRaw.trim()))) {
+                return false;
+            }
+            return true;
+        } catch (DateTimeParseException e) {
+            return true;
+        }
+    }
+
+    public String getStageStartDate() {
+        loadFromRedisIfPresent();
+        return properties.getStageStartDate();
+    }
+
+    public String getStageEndDate() {
+        loadFromRedisIfPresent();
+        return properties.getStageEndDate();
+    }
+
     private static String normalizeDate(String value) {
         if (value == null || value.isBlank()) {
             return null;
@@ -104,7 +153,9 @@ public class AppSettingsService {
                 properties.isRegistrationEnabled(),
                 properties.getDefaultResetPassword(),
                 properties.getYear2OpeningDate(),
-                properties.getThemeVariant()
+                properties.getThemeVariant(),
+                properties.getStageStartDate(),
+                properties.getStageEndDate()
         );
     }
 
@@ -130,6 +181,8 @@ public class AppSettingsService {
             if (stored.year2OpeningDate() != null) {
                 properties.setYear2OpeningDate(stored.year2OpeningDate());
             }
+            properties.setStageStartDate(stored.stageStartDate());
+            properties.setStageEndDate(stored.stageEndDate());
             if (stored.themeVariant() != null && THEME_VARIANTS.contains(stored.themeVariant())) {
                 properties.setThemeVariant(stored.themeVariant());
             }

@@ -44,6 +44,7 @@ public class StageService {
     private final UserRepository userRepository;
     private final AssetRepository assetRepository;
     private final MediaService mediaService;
+    private final AppSettingsService appSettingsService;
 
     @Transactional(readOnly = true)
     public LearnerDossierResponse getMyDossier(UserPrincipal principal) {
@@ -152,14 +153,32 @@ public class StageService {
         }
         if (LEARNER_TYPES.contains(type)) {
             if (staff) {
-                return; // staff may help upload for learner
+                return; // staff may help upload for learner, any time
             }
             if (!principal.getId().equals(learnerId) || principal.getRole() != Role.ETUDIANT) {
                 throw new ForbiddenException("Seul l'apprenant concerné peut déposer ce document.");
             }
+            if (!appSettingsService.isWithinStagePeriod()) {
+                throw new ForbiddenException(stagePeriodClosedMessage());
+            }
             return;
         }
         throw new ApiException("Type de document inconnu.");
+    }
+
+    private String stagePeriodClosedMessage() {
+        String start = appSettingsService.getStageStartDate();
+        String end = appSettingsService.getStageEndDate();
+        if (start != null && !start.isBlank() && end != null && !end.isBlank()) {
+            return "Le dépôt des documents de stage n'est ouvert que du " + start + " au " + end + ".";
+        }
+        if (start != null && !start.isBlank()) {
+            return "Le dépôt des documents de stage n'ouvre que le " + start + ".";
+        }
+        if (end != null && !end.isBlank()) {
+            return "Le dépôt des documents de stage est clos depuis le " + end + ".";
+        }
+        return "Le dépôt des documents de stage n'est pas ouvert actuellement.";
     }
 
     private User requireLearner(UUID learnerId) {

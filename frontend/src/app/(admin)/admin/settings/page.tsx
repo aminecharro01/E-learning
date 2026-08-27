@@ -53,6 +53,18 @@ const appSchema = z.object({
     .transform((v) => (v && v.trim() ? v.trim() : null))
     .refine((v) => v === null || /^\d{4}-\d{2}-\d{2}$/.test(v), "Date invalide (AAAA-MM-JJ)"),
   themeVariant: z.string().min(1),
+  stageStartDate: z
+    .string()
+    .optional()
+    .nullable()
+    .transform((v) => (v && v.trim() ? v.trim() : null))
+    .refine((v) => v === null || /^\d{4}-\d{2}-\d{2}$/.test(v), "Date invalide (AAAA-MM-JJ)"),
+  stageEndDate: z
+    .string()
+    .optional()
+    .nullable()
+    .transform((v) => (v && v.trim() ? v.trim() : null))
+    .refine((v) => v === null || /^\d{4}-\d{2}-\d{2}$/.test(v), "Date invalide (AAAA-MM-JJ)"),
 });
 
 type AppValues = z.infer<typeof appSchema>;
@@ -254,6 +266,30 @@ export default function AdminSettingsPage() {
                   {...appForm.register("year2OpeningDate")}
                 />
               </FormField>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <FormField
+                  label="Stage & soutenance — début"
+                  error={appForm.formState.errors.stageStartDate}
+                  hint="Aucun dépôt de document apprenant (convention entreprise, rapport, présentation) n'est accepté avant cette date."
+                >
+                  <input
+                    type="date"
+                    className={inputClass}
+                    {...appForm.register("stageStartDate")}
+                  />
+                </FormField>
+                <FormField
+                  label="Stage & soutenance — fin"
+                  error={appForm.formState.errors.stageEndDate}
+                  hint="Laisser les deux dates vides pour ne poser aucune restriction. Le directeur/formateur n'est jamais bloqué."
+                >
+                  <input
+                    type="date"
+                    className={inputClass}
+                    {...appForm.register("stageEndDate")}
+                  />
+                </FormField>
+              </div>
               <FormField
                 label="Mot de passe temporaire (reset apprenant)"
                 error={appForm.formState.errors.defaultResetPassword}
