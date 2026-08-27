@@ -359,7 +359,8 @@ public class AdminService {
                 u.isEnabled(),
                 percent,
                 completed,
-                totalModules
+                totalModules,
+                u.getAvatarAssetId()
         );
     }
 

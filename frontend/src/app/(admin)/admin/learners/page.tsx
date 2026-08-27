@@ -12,6 +12,7 @@ import { DataTable, type DataTableColumn, type PageMeta } from "@/components/adm
 import { Modal } from "@/components/admin/Modal";
 import { Badge } from "@/components/admin/ui/Badge";
 import { ApiClientError } from "@/lib/api-client";
+import { resolveAssetUrl } from "@/lib/media";
 
 const statusFr: Record<string, string> = {
   LOCKED: "Verrouillé",
@@ -28,6 +29,51 @@ function initialsOf(fullName: string | null, email: string) {
       .slice(0, 2)
       .map((p) => p[0]?.toUpperCase())
       .join("") || "?"
+  );
+}
+
+// Real uploaded photo when the learner has one, falling back to an initials
+// circle — resolveAssetUrl also fails gracefully (403/deleted asset) into the
+// same fallback rather than getting stuck on AssetImage's "Chargement…" text.
+function LearnerAvatar({
+  avatarAssetId,
+  fullName,
+  email,
+  className,
+}: {
+  avatarAssetId: string | null;
+  fullName: string | null;
+  email: string;
+  className: string;
+}) {
+  const [url, setUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!avatarAssetId) {
+      setUrl(null);
+      return;
+    }
+    let cancelled = false;
+    resolveAssetUrl(avatarAssetId)
+      .then((u) => {
+        if (!cancelled) setUrl(u);
+      })
+      .catch(() => {
+        if (!cancelled) setUrl(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [avatarAssetId]);
+
+  if (url) {
+    // eslint-disable-next-line @next/next/no-img-element
+    return <img src={url} alt={fullName || email} className={`${className} object-cover`} />;
+  }
+  return (
+    <span className={`${className} flex items-center justify-center bg-surface-2 font-bold text-primary`}>
+      {initialsOf(fullName, email)}
+    </span>
   );
 }
 
@@ -54,6 +100,7 @@ export default function AdminLearnersPage() {
   const [error, setError] = useState<string | null>(null);
   const [detail, setDetail] = useState<LearnerProgressDetail | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [detailAvatarAssetId, setDetailAvatarAssetId] = useState<string | null>(null);
 
   const load = useCallback(async (p: number, q: string) => {
     setLoading(true);
@@ -87,6 +134,7 @@ export default function AdminLearnersPage() {
 
   function openDetail(row: LearnerSummary) {
     setDetailLoading(true);
+    setDetailAvatarAssetId(row.avatarAssetId);
     setError(null);
     getLearnerProgress(row.id)
       .then(setDetail)
@@ -100,9 +148,12 @@ export default function AdminLearnersPage() {
       header: "Apprenant",
       render: (r) => (
         <div className="flex items-center gap-3">
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-surface-2 text-xs font-bold text-primary">
-            {initialsOf(r.fullName, r.email)}
-          </span>
+          <LearnerAvatar
+            avatarAssetId={r.avatarAssetId}
+            fullName={r.fullName}
+            email={r.email}
+            className="h-9 w-9 shrink-0 rounded-full text-xs"
+          />
           <div className="min-w-0">
             <p className="truncate font-medium text-heading">{r.fullName || "—"}</p>
             <p className="truncate text-xs text-muted">{r.email}</p>
@@ -161,7 +212,10 @@ export default function AdminLearnersPage() {
       <Modal
         open={detailLoading || !!detail}
         title={detail ? detail.fullName || detail.email : "Détail apprenant"}
-        onClose={() => setDetail(null)}
+        onClose={() => {
+          setDetail(null);
+          setDetailAvatarAssetId(null);
+        }}
         size="lg"
       >
         {detailLoading && !detail ? (
@@ -169,9 +223,12 @@ export default function AdminLearnersPage() {
         ) : detail ? (
           <div className="space-y-4">
             <div className="flex items-center gap-4 rounded-xl bg-surface-2 p-4">
-              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-primary text-lg font-bold text-[var(--primary-fg)]">
-                {initialsOf(detail.fullName, detail.email)}
-              </div>
+              <LearnerAvatar
+                avatarAssetId={detailAvatarAssetId}
+                fullName={detail.fullName}
+                email={detail.email}
+                className="h-14 w-14 shrink-0 rounded-full text-lg"
+              />
               <div className="min-w-0 flex-1">
                 <p className="text-sm text-muted">{detail.formationTitle}</p>
                 <div className="mt-1 flex items-center gap-2">

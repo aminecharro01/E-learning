@@ -47,6 +47,7 @@ export type LearnerSummary = {
   completionPercent: number;
   completedModules: number;
   totalModules: number;
+  avatarAssetId: string | null;
 };
 
 export type LearnerProgressDetail = {

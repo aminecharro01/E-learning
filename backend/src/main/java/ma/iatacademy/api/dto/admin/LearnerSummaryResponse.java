@@ -9,6 +9,7 @@ public record LearnerSummaryResponse(
         boolean enabled,
         double completionPercent,
         int completedModules,
-        int totalModules
+        int totalModules,
+        UUID avatarAssetId
 ) {
 }
