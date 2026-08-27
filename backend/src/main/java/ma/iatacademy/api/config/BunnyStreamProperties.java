@@ -25,13 +25,6 @@ public class BunnyStreamProperties {
     private String apiKey = "";
     /** Per-library CDN hostname shown in the Bunny dashboard, e.g. "vz-xxxxxxxx-abc.b-cdn.net". */
     private String pullZoneHostname = "";
-    /**
-     * Pull zone "Token Authentication Key" (Stream Library → Security tab). When blank,
-     * thumbnail/CDN URLs are built unsigned — fine only if the pull zone has Token
-     * Authentication disabled. When Token Authentication is on (the default for a
-     * freshly-created Stream library), an unsigned URL 403s, so this must be set.
-     */
-    private String tokenAuthKey = "";
 
     /**
      * Tolerates the pull zone being pasted as a full URL ("https://vz-xxx.b-cdn.net/")

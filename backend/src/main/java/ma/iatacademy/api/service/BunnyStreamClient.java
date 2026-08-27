@@ -72,33 +72,23 @@ public class BunnyStreamClient {
     }
 
     /**
-     * Bunny auto-generates a poster frame for every video. When the pull zone has Token
-     * Authentication enabled (the default on a fresh Stream library — an unsigned request
-     * 403s), the URL is signed with Bunny's CDN token-auth scheme:
-     * token = base64url(SHA256(securityKey + urlPath + expires)), appended as
-     * ?token=...&expires=.... Left unsigned when no key is configured.
+     * Bunny auto-generates a poster frame for every video, but the pull zone has
+     * referrer/hotlink protection that 403s a direct browser request (confirmed live —
+     * an unsigned request 403s, the exact same request with
+     * {@code Referer: https://iframe.mediadelivery.net/} returns 200). No token or
+     * signing scheme gets around that from the browser side, so the backend fetches the
+     * bytes itself with that Referer and streams them back through our own signed
+     * /thumbnail endpoint — see MediaService.loadSignedThumbnail's Bunny branch.
      */
-    public String thumbnailUrl(String guid, long expires) {
-        String path = "/" + guid + "/thumbnail.jpg";
-        String base = "https://" + properties.getPullZoneHostname() + path;
-        if (properties.getTokenAuthKey() == null || properties.getTokenAuthKey().isBlank()) {
-            return base;
-        }
-        String token = signToken(path, expires);
-        return base + "?token=" + token + "&expires=" + expires;
-    }
-
-    private String signToken(String path, long expires) {
-        String hashable = properties.getTokenAuthKey() + path + expires;
+    public byte[] fetchThumbnailBytes(String guid) {
         try {
-            java.security.MessageDigest digest = java.security.MessageDigest.getInstance("SHA-256");
-            byte[] hash = digest.digest(hashable.getBytes(java.nio.charset.StandardCharsets.UTF_8));
-            return java.util.Base64.getEncoder().encodeToString(hash)
-                    .replace("+", "-")
-                    .replace("/", "_")
-                    .replace("=", "");
-        } catch (java.security.NoSuchAlgorithmException e) {
-            throw new IllegalStateException("SHA-256 indisponible.", e);
+            return restClient.get()
+                    .uri("https://{host}/{guid}/thumbnail.jpg", properties.getPullZoneHostname(), guid)
+                    .header("Referer", "https://iframe.mediadelivery.net/")
+                    .retrieve()
+                    .body(byte[].class);
+        } catch (RestClientException e) {
+            throw new ApiException("Échec de la récupération de la miniature Bunny : " + e.getMessage());
         }
     }
 

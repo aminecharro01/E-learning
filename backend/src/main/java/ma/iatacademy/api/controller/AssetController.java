@@ -117,11 +117,11 @@ public class AssetController {
             @RequestParam long expires,
             @RequestParam String sig
     ) {
-        Resource resource = mediaService.loadSignedThumbnail(id, expires, sig);
+        MediaService.SignedThumbnail thumbnail = mediaService.loadSignedThumbnail(id, expires, sig);
         return ResponseEntity.ok()
                 .header("X-Content-Type-Options", "nosniff")
-                .contentType(MediaType.IMAGE_PNG)
-                .body(resource);
+                .contentType(MediaType.parseMediaType(thumbnail.contentType()))
+                .body(thumbnail.resource());
     }
 
     private String sanitizeFilename(String filename) {

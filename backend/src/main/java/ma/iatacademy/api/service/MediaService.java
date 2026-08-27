@@ -468,10 +468,8 @@ public class MediaService {
      */
     private String thumbnailUrl(Asset asset) {
         long expires = System.currentTimeMillis() / 1000L + mediaProperties.getSignedUrlTtlSeconds();
-        if (asset.getStoragePath().startsWith(BUNNY_STORAGE_PREFIX)) {
-            return bunnyStreamClient.thumbnailUrl(asset.getStoragePath().substring(BUNNY_STORAGE_PREFIX.length()), expires);
-        }
-        if (asset.getThumbnailPath() == null) {
+        boolean isBunnyVideo = asset.getStoragePath().startsWith(BUNNY_STORAGE_PREFIX);
+        if (!isBunnyVideo && asset.getThumbnailPath() == null) {
             if (!"PDF".equals(asset.getAssetKind())) {
                 return null;
             }
@@ -487,12 +485,21 @@ public class MediaService {
             asset.setThumbnailPath(rendered);
             pdfThumbnailBackfillWriter.persist(asset.getId(), rendered);
         }
+        // Bunny's pull zone has referrer/hotlink protection, so the raw CDN thumbnail URL
+        // 403s from a browser <img> tag — proxy it through this same signed endpoint
+        // instead (see loadSignedThumbnail's Bunny branch), which fetches the bytes
+        // server-side with the right Referer.
         String sig = sign(asset.getId(), expires);
         return "/api/assets/" + asset.getId() + "/thumbnail?expires=" + expires + "&sig=" + sig;
     }
 
+    /** Bunny video posters are JPEG; PDF-rendered posters are PNG — the controller needs
+     * the right Content-Type since it sets X-Content-Type-Options: nosniff (a mismatched
+     * declared type makes the browser refuse to render the image instead of sniffing it). */
+    public record SignedThumbnail(Resource resource, String contentType) {}
+
     @Transactional(readOnly = true)
-    public Resource loadSignedThumbnail(UUID assetId, long expires, String sig) {
+    public SignedThumbnail loadSignedThumbnail(UUID assetId, long expires, String sig) {
         if (System.currentTimeMillis() / 1000L > expires) {
             throw new ForbiddenException("Lien média expiré.");
         }
@@ -501,6 +508,11 @@ public class MediaService {
             throw new ForbiddenException("Signature média invalide.");
         }
         Asset asset = getAsset(assetId);
+        if (asset.getStoragePath().startsWith(BUNNY_STORAGE_PREFIX)) {
+            String guid = asset.getStoragePath().substring(BUNNY_STORAGE_PREFIX.length());
+            byte[] bytes = bunnyStreamClient.fetchThumbnailBytes(guid);
+            return new SignedThumbnail(new org.springframework.core.io.ByteArrayResource(bytes), "image/jpeg");
+        }
         if (asset.getThumbnailPath() == null) {
             throw new NotFoundException("Aucune miniature pour ce fichier.");
         }
@@ -508,7 +520,7 @@ public class MediaService {
         if (!Files.exists(path)) {
             throw new NotFoundException("Miniature manquante sur le disque.");
         }
-        return new FileSystemResource(path);
+        return new SignedThumbnail(new FileSystemResource(path), "image/png");
     }
 
     private String sign(UUID assetId, long expires) {
