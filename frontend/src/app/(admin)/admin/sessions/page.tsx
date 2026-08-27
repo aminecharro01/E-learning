@@ -114,7 +114,15 @@ export default function AdminSessionsPage() {
             <option value="TEAMS">Microsoft Teams</option>
           </select>
           <input className={inputClass} placeholder="Lien de la session" value={joinUrl} onChange={(e) => setJoinUrl(e.target.value)} />
-          <input type="datetime-local" className={inputClass} value={scheduledAt} onChange={(e) => setScheduledAt(e.target.value)} />
+          <label className="block text-sm font-medium text-heading">
+            Date et heure de la session
+            <input
+              type="datetime-local"
+              className={`${inputClass} mt-1`}
+              value={scheduledAt}
+              onChange={(e) => setScheduledAt(e.target.value)}
+            />
+          </label>
           <input type="number" className={inputClass} placeholder="Durée (min)" value={duration} onChange={(e) => setDuration(e.target.value)} />
         </div>
         <button
