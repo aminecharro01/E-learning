@@ -16,7 +16,7 @@ type Props = {
 
 export function FolderTile({ folder, isAdmin, view, onOpen, onRename, onDelete }: Props) {
   const { setNodeRef, isOver } = useDroppable({ id: folder.id, data: { type: "folder" } });
-  const dropClass = isOver ? "ring-2 ring-[var(--accent)] bg-[var(--surface-muted)]" : "";
+  const dropClass = isOver ? "ring-2 ring-[var(--ring)] bg-[var(--surface-2)]" : "";
 
   const actions = isAdmin && (
     <div className="flex gap-1">
@@ -51,10 +51,10 @@ export function FolderTile({ folder, isAdmin, view, onOpen, onRename, onDelete }
     return (
       <div
         ref={setNodeRef}
-        className={`flex cursor-pointer items-center gap-3 rounded-lg px-2 py-1.5 hover:bg-[var(--surface-muted)] ${dropClass}`}
+        className={`flex cursor-pointer items-center gap-3 rounded-lg px-2 py-1.5 hover:bg-[var(--surface-2)] ${dropClass}`}
         onClick={onOpen}
       >
-        <Folder className="h-5 w-5 shrink-0 text-[var(--accent)]" />
+        <Folder className="h-5 w-5 shrink-0 text-[var(--ring)]" />
         <span className="flex-1 truncate text-sm font-medium text-heading">{folder.name}</span>
         <span className="w-24 shrink-0 text-xs text-muted">Dossier</span>
         <span className="w-20 shrink-0 text-xs text-muted">—</span>
@@ -66,7 +66,7 @@ export function FolderTile({ folder, isAdmin, view, onOpen, onRename, onDelete }
   return (
     <div ref={setNodeRef} className={`group relative card-theme rounded-xl p-3 ${dropClass}`}>
       <button type="button" onClick={onOpen} className="flex w-full flex-col items-center gap-2 text-center">
-        <Folder className="h-10 w-10 text-[var(--accent)]" />
+        <Folder className="h-10 w-10 text-[var(--ring)]" />
         <span className="w-full truncate text-sm font-medium text-heading" title={folder.name}>
           {folder.name}
         </span>

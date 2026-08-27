@@ -44,12 +44,15 @@ import { inferKindFromFilename, formatFileSize } from "@/components/admin/media/
 
 const KIND_OPTIONS = [
   { value: "", label: "Tous les types" },
-  { value: "VIDEO", label: "Vidéo" },
-  { value: "PDF", label: "PDF" },
-  { value: "IMAGE", label: "Image" },
-  { value: "SLIDE", label: "Diapositive" },
-  { value: "DOCUMENT", label: "Document" },
+  { value: "VIDEO", label: "Vidéos" },
+  { value: "DOCUMENTS", label: "Documents" },
+  { value: "IMAGE", label: "Images" },
 ];
+
+// "Documents" groups Word/Docs, PDF and PowerPoint/PPT into one filter option -
+// the backend's browse endpoint only matches a single exact kind, so this group
+// is applied client-side over the unfiltered listing (see load()/documentAssets below).
+const DOCUMENT_KINDS = new Set(["PDF", "DOCUMENT", "SLIDE"]);
 
 const ROOT_DROP_ID = "__root__";
 type SortKey = "name" | "size";
@@ -93,7 +96,10 @@ export default function AdminMediaPage() {
   const load = useCallback(() => {
     setLoading(true);
     setError(null);
-    browseMedia(folderId ?? undefined, kind || undefined, 0, 60)
+    // The synthetic "DOCUMENTS" group has no single backend kind to match, so it
+    // fetches everything and the grouping filter is applied client-side below.
+    const backendKind = kind === "DOCUMENTS" ? undefined : kind || undefined;
+    browseMedia(folderId ?? undefined, backendKind, 0, 60)
       .then((res) => {
         setData(res);
         setSelectedIds(new Set());
@@ -114,11 +120,13 @@ export default function AdminMediaPage() {
   const sortedAssets = useMemo(() => {
     if (!data) return [];
     const factor = sortDir === "asc" ? 1 : -1;
-    return [...data.assets.content].sort((a, b) => {
+    const filtered =
+      kind === "DOCUMENTS" ? data.assets.content.filter((a) => DOCUMENT_KINDS.has(a.assetKind)) : data.assets.content;
+    return [...filtered].sort((a, b) => {
       if (sortKey === "size") return (a.sizeBytes - b.sizeBytes) * factor;
       return a.filename.localeCompare(b.filename) * factor;
     });
-  }, [data, sortKey, sortDir]);
+  }, [data, kind, sortKey, sortDir]);
 
   async function uploadFiles(files: FileList | File[]) {
     const list = Array.from(files);
@@ -239,7 +247,7 @@ export default function AdminMediaPage() {
             <div className="flex overflow-hidden rounded-lg border border-theme">
               <button
                 type="button"
-                className={`p-1.5 ${view === "grid" ? "bg-[var(--surface-muted)]" : ""}`}
+                className={`p-1.5 ${view === "grid" ? "bg-[var(--surface-2)]" : ""}`}
                 title="Vue grille"
                 aria-label="Vue grille"
                 onClick={() => setView("grid")}
@@ -248,7 +256,7 @@ export default function AdminMediaPage() {
               </button>
               <button
                 type="button"
-                className={`p-1.5 ${view === "list" ? "bg-[var(--surface-muted)]" : ""}`}
+                className={`p-1.5 ${view === "list" ? "bg-[var(--surface-2)]" : ""}`}
                 title="Vue liste"
                 aria-label="Vue liste"
                 onClick={() => setView("list")}
@@ -278,7 +286,7 @@ export default function AdminMediaPage() {
         </div>
 
         {selectedIds.size > 0 && (
-          <div className="flex items-center justify-between rounded-xl border border-theme bg-[var(--surface-muted)] px-4 py-2">
+          <div className="flex items-center justify-between rounded-xl border border-theme bg-[var(--surface-2)] px-4 py-2">
             <span className="text-sm font-medium text-heading">{selectedIds.size} sélectionné(s)</span>
             <div className="flex gap-2">
               <button type="button" className={btn.neutralSm} onClick={() => setMoveAssets(selectedAssets)}>
@@ -311,7 +319,7 @@ export default function AdminMediaPage() {
 
         <div
           className={`rounded-xl border-2 border-dashed p-3 transition ${
-            dragOver ? "border-[var(--accent)] bg-[var(--surface-muted)]" : "border-transparent"
+            dragOver ? "border-[var(--ring)] bg-[var(--surface-2)]" : "border-transparent"
           }`}
         >
           {loading ? (

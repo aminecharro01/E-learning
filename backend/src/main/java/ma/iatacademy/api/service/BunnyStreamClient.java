@@ -71,6 +71,13 @@ public class BunnyStreamClient {
         return "https://iframe.mediadelivery.net/embed/" + properties.getLibraryId() + "/" + guid;
     }
 
+    /** Bunny auto-generates a poster frame for every video, served straight from the
+     * public pull zone/CDN — no signing needed, safe to use directly as an &lt;img src&gt;
+     * in the media library grid. */
+    public String thumbnailUrl(String guid) {
+        return "https://" + properties.getPullZoneHostname() + "/" + guid + "/thumbnail.jpg";
+    }
+
     /** Permanently deletes a video from the library — used by the media file manager. */
     public void deleteVideo(String guid) {
         try {

@@ -10,6 +10,7 @@ public record AssetResponse(
         String assetKind,
         Integer durationSec,
         String streamPath,
-        UUID folderId
+        UUID folderId,
+        String thumbnailUrl
 ) {
 }

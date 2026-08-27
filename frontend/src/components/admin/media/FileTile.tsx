@@ -7,6 +7,13 @@ import { AssetImage } from "@/components/AssetImage";
 import { btn } from "@/lib/ui";
 import { KindIcon, KIND_LABEL, formatFileSize } from "./kindIcons";
 
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+
+function resolveThumbnailSrc(thumbnailUrl?: string | null): string | null {
+  if (!thumbnailUrl) return null;
+  return thumbnailUrl.startsWith("http") ? thumbnailUrl : `${API_BASE}${thumbnailUrl}`;
+}
+
 type Props = {
   asset: AssetSummary;
   isAdmin: boolean;
@@ -35,7 +42,7 @@ export function FileTile({ asset, isAdmin, view, selected, onToggleSelect, onOpe
       onClick={(e) => e.stopPropagation()}
       onChange={onToggleSelect}
       aria-label={`Sélectionner ${asset.filename}`}
-      className="h-4 w-4 shrink-0 cursor-pointer accent-[var(--accent)]"
+      className="h-4 w-4 shrink-0 cursor-pointer accent-[var(--ring)]"
     />
   );
 
@@ -77,13 +84,22 @@ export function FileTile({ asset, isAdmin, view, selected, onToggleSelect, onOpe
         style={dragStyle}
         {...listeners}
         {...attributes}
-        className={`flex cursor-pointer items-center gap-3 rounded-lg px-2 py-1.5 hover:bg-[var(--surface-muted)] ${
-          selected ? "bg-[var(--surface-muted)]" : ""
+        className={`flex cursor-pointer items-center gap-3 rounded-lg px-2 py-1.5 hover:bg-[var(--surface-2)] ${
+          selected ? "bg-[var(--surface-2)]" : ""
         }`}
         onClick={onOpen}
       >
         {checkbox}
-        <KindIcon kind={asset.assetKind} className="h-5 w-5 shrink-0 text-muted" />
+        {resolveThumbnailSrc(asset.thumbnailUrl) ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={resolveThumbnailSrc(asset.thumbnailUrl)!}
+            alt=""
+            className="h-8 w-8 shrink-0 rounded object-cover"
+          />
+        ) : (
+          <KindIcon kind={asset.assetKind} className="h-5 w-5 shrink-0 text-muted" />
+        )}
         <span className="flex-1 truncate text-sm font-medium text-heading" title={asset.filename}>
           {asset.filename}
         </span>
@@ -98,13 +114,20 @@ export function FileTile({ asset, isAdmin, view, selected, onToggleSelect, onOpe
     <div
       ref={setNodeRef}
       style={dragStyle}
-      className={`group relative card-theme overflow-hidden rounded-xl ${selected ? "ring-2 ring-[var(--accent)]" : ""}`}
+      className={`group relative card-theme overflow-hidden rounded-xl ${selected ? "ring-2 ring-[var(--ring)]" : ""}`}
     >
       {isAdmin && <div className="absolute left-2 top-2 z-10">{checkbox}</div>}
       <div {...listeners} {...attributes} onClick={onOpen} className="flex w-full cursor-pointer flex-col text-left">
-        <div className="flex aspect-square w-full items-center justify-center bg-[var(--surface-muted)]">
+        <div className="flex aspect-square w-full items-center justify-center overflow-hidden bg-[var(--surface-2)]">
           {asset.assetKind === "IMAGE" ? (
             <AssetImage assetId={asset.id} alt={asset.filename} className="h-full w-full object-cover" />
+          ) : resolveThumbnailSrc(asset.thumbnailUrl) ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={resolveThumbnailSrc(asset.thumbnailUrl)!}
+              alt={asset.filename}
+              className="h-full w-full object-cover"
+            />
           ) : (
             <KindIcon kind={asset.assetKind} className="h-10 w-10 text-muted" />
           )}

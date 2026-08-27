@@ -64,6 +64,7 @@ public class SecurityConfig {
                 "/api/public/stage-signoff/**",
                 "/api/certificates/verify/**",
                 "/api/assets/*/file",
+                "/api/assets/*/thumbnail",
                 "/actuator/health"
         ));
         if (swaggerEnabled) {

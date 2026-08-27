@@ -169,6 +169,7 @@ public class MediaService {
             asset.setStoragePath(dest.toString());
             if (kind.equals("PDF")) {
                 asset.setExtractedText(extractPdfText(dest));
+                asset.setThumbnailPath(renderPdfThumbnail(dest, asset.getId(), tempDir));
             }
             assetRepository.save(asset);
         } catch (IOException e) {
@@ -188,6 +189,27 @@ public class MediaService {
             return new org.apache.pdfbox.text.PDFTextStripper().getText(doc);
         } catch (Exception e) {
             log.warn("PDF text extraction failed for {}: {}", pdfPath, e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Renders the PDF's first page to a PNG so the media library grid can show a real
+     * preview instead of a generic icon. Best-effort like extractPdfText above — a
+     * render failure must never fail the upload, just leaves thumbnailPath null.
+     */
+    private String renderPdfThumbnail(Path pdfPath, UUID assetId, Path folder) {
+        try (org.apache.pdfbox.pdmodel.PDDocument doc = org.apache.pdfbox.Loader.loadPDF(pdfPath.toFile())) {
+            if (doc.getNumberOfPages() == 0) {
+                return null;
+            }
+            var renderer = new org.apache.pdfbox.rendering.PDFRenderer(doc);
+            var image = renderer.renderImageWithDPI(0, 96, org.apache.pdfbox.rendering.ImageType.RGB);
+            Path thumbPath = folder.resolve(assetId + "-thumb.png");
+            javax.imageio.ImageIO.write(image, "png", thumbPath.toFile());
+            return thumbPath.toString();
+        } catch (Exception e) {
+            log.warn("PDF thumbnail rendering failed for {}: {}", pdfPath, e.getMessage());
             return null;
         }
     }
@@ -401,6 +423,13 @@ public class MediaService {
                 log.warn("Local file delete failed for asset {}: {}", id, e.getMessage());
             }
         }
+        if (asset.getThumbnailPath() != null) {
+            try {
+                Files.deleteIfExists(Path.of(asset.getThumbnailPath()));
+            } catch (IOException e) {
+                log.warn("Thumbnail delete failed for asset {}: {}", id, e.getMessage());
+            }
+        }
         assetRepository.delete(asset);
     }
 
@@ -424,8 +453,48 @@ public class MediaService {
                 asset.getAssetKind(),
                 asset.getDurationSec(),
                 "/api/assets/" + asset.getId() + "/stream",
-                asset.getFolderId()
+                asset.getFolderId(),
+                thumbnailUrl(asset)
         );
+    }
+
+    /**
+     * VIDEO: Bunny already generates a poster frame, served straight from its public
+     * CDN - no signing needed. PDF: a pre-rendered first-page PNG (see
+     * renderPdfThumbnail), served through the signed /thumbnail endpoint the same way
+     * /file is signed. Everything else (IMAGE renders itself directly, DOCUMENT/SLIDE
+     * have no rendering pipeline) gets null and falls back to a generic icon.
+     */
+    private String thumbnailUrl(Asset asset) {
+        if (asset.getStoragePath().startsWith(BUNNY_STORAGE_PREFIX)) {
+            return bunnyStreamClient.thumbnailUrl(asset.getStoragePath().substring(BUNNY_STORAGE_PREFIX.length()));
+        }
+        if (asset.getThumbnailPath() == null) {
+            return null;
+        }
+        long expires = System.currentTimeMillis() / 1000L + mediaProperties.getSignedUrlTtlSeconds();
+        String sig = sign(asset.getId(), expires);
+        return "/api/assets/" + asset.getId() + "/thumbnail?expires=" + expires + "&sig=" + sig;
+    }
+
+    @Transactional(readOnly = true)
+    public Resource loadSignedThumbnail(UUID assetId, long expires, String sig) {
+        if (System.currentTimeMillis() / 1000L > expires) {
+            throw new ForbiddenException("Lien média expiré.");
+        }
+        if (!MessageDigest.isEqual(sign(assetId, expires).getBytes(StandardCharsets.UTF_8),
+                sig != null ? sig.getBytes(StandardCharsets.UTF_8) : new byte[0])) {
+            throw new ForbiddenException("Signature média invalide.");
+        }
+        Asset asset = getAsset(assetId);
+        if (asset.getThumbnailPath() == null) {
+            throw new NotFoundException("Aucune miniature pour ce fichier.");
+        }
+        Path path = Path.of(asset.getThumbnailPath());
+        if (!Files.exists(path)) {
+            throw new NotFoundException("Miniature manquante sur le disque.");
+        }
+        return new FileSystemResource(path);
     }
 
     private String sign(UUID assetId, long expires) {

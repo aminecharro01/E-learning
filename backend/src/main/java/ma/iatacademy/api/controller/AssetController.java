@@ -108,6 +108,22 @@ public class AssetController {
                 .body(resource);
     }
 
+    /** Signed the same way as /file, over the same (assetId, expires) pair - see
+     * MediaService#thumbnailUrl. Public: media library grid thumbnails render as plain
+     * &lt;img src&gt; with no auth header. */
+    @GetMapping("/{id}/thumbnail")
+    public ResponseEntity<Resource> thumbnail(
+            @PathVariable UUID id,
+            @RequestParam long expires,
+            @RequestParam String sig
+    ) {
+        Resource resource = mediaService.loadSignedThumbnail(id, expires, sig);
+        return ResponseEntity.ok()
+                .header("X-Content-Type-Options", "nosniff")
+                .contentType(MediaType.IMAGE_PNG)
+                .body(resource);
+    }
+
     private String sanitizeFilename(String filename) {
         if (filename == null) {
             return "file";

@@ -86,7 +86,7 @@ class AssignmentServiceTest {
                 .dueAt(Instant.now().minus(1, ChronoUnit.DAYS)).build();
         when(assignmentRepository.findById(assignmentId)).thenReturn(Optional.of(assignment));
         when(mediaService.upload(any(), eq("DOCUMENT"), any()))
-                .thenReturn(new AssetResponse(UUID.randomUUID(), "file.pdf", "application/pdf", 100L, "DOCUMENT", null, null, null));
+                .thenReturn(new AssetResponse(UUID.randomUUID(), "file.pdf", "application/pdf", 100L, "DOCUMENT", null, null, null, null));
         UUID userId = UUID.randomUUID();
         when(submissionRepository.findByAssignmentIdAndUserId(assignmentId, userId)).thenReturn(Optional.empty());
         when(userRepository.getReferenceById(userId)).thenReturn(User.builder().id(userId).build());

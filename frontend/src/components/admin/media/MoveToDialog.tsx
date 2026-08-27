@@ -81,10 +81,10 @@ export function MoveToDialog({ open, assetIds, onClose, onMoved }: Props) {
               <button
                 key={f.id}
                 type="button"
-                className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm hover:bg-[var(--surface-muted)]"
+                className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm hover:bg-[var(--surface-2)]"
                 onClick={() => setFolderId(f.id)}
               >
-                <Folder className="h-4 w-4 text-[var(--accent)]" />
+                <Folder className="h-4 w-4 text-[var(--ring)]" />
                 {f.name}
               </button>
             ))

@@ -19,7 +19,7 @@ export function BreadcrumbCrumb({ id, onClick, children }: Props) {
       type="button"
       onClick={onClick}
       className={`flex items-center gap-1 rounded px-1 hover:underline ${
-        isOver ? "bg-[var(--surface-muted)] ring-1 ring-[var(--accent)]" : ""
+        isOver ? "bg-[var(--surface-2)] ring-1 ring-[var(--ring)]" : ""
       }`}
     >
       {children}

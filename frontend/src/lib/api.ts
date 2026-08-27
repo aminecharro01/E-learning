@@ -136,6 +136,7 @@ export type AssetSummary = {
   durationSec: number | null;
   streamUrl: string;
   folderId?: string | null;
+  thumbnailUrl?: string | null;
 };
 
 export async function listAssets(kind: "IMAGE" | "VIDEO" | "PDF" | "SLIDE" = "IMAGE", page = 0, size = 24) {

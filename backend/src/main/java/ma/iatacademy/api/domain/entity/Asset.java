@@ -51,4 +51,11 @@ public class Asset extends AuditableEntity {
     // global search. Null for every other asset kind, or if extraction failed.
     @Column(name = "extracted_text", columnDefinition = "TEXT")
     private String extractedText;
+
+    // Best-effort rendered first-page preview for PDFs only (see MediaService#upload),
+    // used for the media library grid thumbnail. Null for every other kind, or if
+    // rendering failed. VIDEO thumbnails come from Bunny Stream directly and don't
+    // need this - see MediaService#toResponse.
+    @Column(name = "thumbnail_path", length = 500)
+    private String thumbnailPath;
 }
