@@ -10,7 +10,7 @@ export function LandingHero() {
       <div className="landing-hero-horizon" aria-hidden />
 
       <div className="landing-container relative z-[1] grid items-center gap-12 pt-28 pb-20 lg:grid-cols-12 lg:gap-10 lg:pt-36 lg:pb-28">
-        <div className="flex flex-col gap-7 lg:col-span-6">
+        <div className="landing-hero-enter flex flex-col gap-7 lg:col-span-6">
           <p className="landing-eyebrow landing-eyebrow-glass">
             <AirplaneIcon className="landing-eyebrow-plane" />
             Aviation · Maritime · Tourisme
@@ -40,7 +40,7 @@ export function LandingHero() {
           </ul>
         </div>
 
-        <div className="relative lg:col-span-6">
+        <div className="landing-hero-enter landing-hero-enter-delay relative lg:col-span-6">
           <div className="landing-hero-photos">
             <div className="landing-hero-photo-main">
               <Image

@@ -1,11 +1,61 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
 import { iat } from "./content";
-import { AirplaneIcon, FlightPathDecor } from "./icons/Airplane";
+import { AirplaneIcon, AirplaneSilhouette, FlightPathDecor } from "./icons/Airplane";
 import { Reveal } from "./Reveal";
 
+const CARDS = [
+  {
+    eyebrow: "Notre école",
+    text: iat.about,
+    stub: "IAT",
+    link: false,
+  },
+  {
+    eyebrow: "Ce que vous développez",
+    text: iat.coursesApproach,
+    stub: "SKL",
+    link: false,
+  },
+  {
+    eyebrow: "Pédagogie",
+    text: iat.method,
+    stub: "MTD",
+    link: true,
+  },
+] as const;
+
 export function LandingAbout() {
+  const planeRef = useRef<HTMLDivElement>(null);
+  const [planeVisible, setPlaneVisible] = useState(false);
+
+  useEffect(() => {
+    const el = planeRef.current;
+    if (!el) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      setPlaneVisible(true);
+      return;
+    }
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setPlaneVisible(true);
+          io.disconnect();
+        }
+      },
+      { threshold: 0.2 }
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+
   return (
-    <section id="about" className="landing-section scroll-mt-20 landing-about">
+    <section id="about" className="landing-section scroll-mt-20 landing-about iat-board">
       <FlightPathDecor className="landing-about-paths" />
+      <div ref={planeRef} className={`landing-about-plane ${planeVisible ? "is-visible" : ""}`} aria-hidden="true">
+        <AirplaneSilhouette className="h-full w-full" ariaHidden />
+      </div>
       <div className="landing-container relative z-[1]">
         <Reveal>
           <p className="landing-section-kicker">
@@ -19,37 +69,63 @@ export function LandingAbout() {
             <blockquote className="landing-about-quote">
               <p>{iat.mission}</p>
             </blockquote>
-            <div className="landing-about-grid mt-6">
-              {iat.journey.map((step) => (
-                <div key={step.title} className="landing-glass-card">
-                  <h3 className="landing-glass-card-title">{step.title}</h3>
-                  <p className="landing-glass-card-text">{step.description}</p>
-                </div>
+            <div className="landing-about-cards mt-6">
+              {iat.journey.map((step, index) => (
+                <Reveal key={step.title} delayMs={index * 90}>
+                  <article className="boarding-pass">
+                    <div className="bp-main">
+                      <p className="bp-eyebrow">
+                        <AirplaneIcon className="landing-kicker-plane" />
+                        Parcours
+                      </p>
+                      <h3 className="bp-title" style={{ fontSize: "1.35rem" }}>
+                        {step.title}
+                      </h3>
+                      <p className="bp-sub">{step.description}</p>
+                    </div>
+                    <div className="bp-stub">
+                      <span className="bp-gate">
+                        <span>Année</span>
+                        {String(index + 1).padStart(2, "0")}
+                      </span>
+                      <span className="bp-barcode" aria-hidden="true" />
+                    </div>
+                  </article>
+                </Reveal>
               ))}
             </div>
           </Reveal>
           <Reveal delayMs={140} className="lg:col-span-7">
-            <div className="landing-about-grid">
-              <div className="landing-glass-card">
-                <h3 className="landing-glass-card-title">Notre école</h3>
-                <p className="landing-glass-card-text">{iat.about}</p>
-              </div>
-              <div className="landing-glass-card">
-                <h3 className="landing-glass-card-title">Ce que vous développez</h3>
-                <p className="landing-glass-card-text">{iat.coursesApproach}</p>
-              </div>
-              <div className="landing-glass-card landing-glass-card-accent">
-                <h3 className="landing-glass-card-title">Pédagogie</h3>
-                <p className="landing-glass-card-text">{iat.method}</p>
-                <a
-                  href={iat.website}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="landing-about-link"
-                >
-                  iat-academie.com →
-                </a>
-              </div>
+            <div className="landing-about-cards">
+              {CARDS.map((card, index) => (
+                <Reveal key={card.eyebrow} delayMs={index * 90}>
+                  <article className="boarding-pass">
+                    <div className="bp-main">
+                      <p className="bp-eyebrow">
+                        <AirplaneIcon className="landing-kicker-plane" />
+                        {card.eyebrow}
+                      </p>
+                      <p className="bp-sub" style={{ marginBottom: card.link ? "0.5rem" : 0 }}>
+                        {card.text}
+                      </p>
+                      {card.link && (
+                        <a
+                          href={iat.website}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="landing-about-link"
+                        >
+                          iat-academie.com →
+                        </a>
+                      )}
+                    </div>
+                    <div className="bp-stub">
+                      <AirplaneIcon className="bp-stub-plane" ariaHidden />
+                      <span className="bp-stub-label">{card.stub}</span>
+                    </div>
+                  </article>
+                </Reveal>
+              ))}
             </div>
           </Reveal>
         </div>

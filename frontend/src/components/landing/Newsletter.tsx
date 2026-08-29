@@ -4,6 +4,7 @@ import { FormEvent, useState } from "react";
 import { subscribeNewsletter } from "@/lib/api";
 import { ApiClientError } from "@/lib/api-client";
 import { AirplaneIcon } from "./icons/Airplane";
+import { Reveal } from "./Reveal";
 
 export function LandingNewsletter() {
   const [loading, setLoading] = useState(false);
@@ -40,7 +41,7 @@ export function LandingNewsletter() {
   return (
     <section className="landing-newsletter" aria-labelledby="newsletter-heading">
       <div className="landing-container">
-        <div className="landing-newsletter-card">
+        <Reveal className="landing-newsletter-card">
           <div className="landing-newsletter-copy">
             <p className="landing-section-kicker">
               <AirplaneIcon className="landing-kicker-plane" />
@@ -89,7 +90,7 @@ export function LandingNewsletter() {
               </p>
             )}
           </form>
-        </div>
+        </Reveal>
       </div>
     </section>
   );

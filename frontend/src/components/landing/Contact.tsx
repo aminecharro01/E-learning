@@ -4,6 +4,7 @@ import { FormEvent, useState } from "react";
 import { submitContactMessage } from "@/lib/api";
 import { ApiClientError } from "@/lib/api-client";
 import { iat } from "./content";
+import { Reveal } from "./Reveal";
 
 export function LandingContact() {
   const [loading, setLoading] = useState(false);
@@ -41,10 +42,12 @@ export function LandingContact() {
   return (
     <section id="contact" className="landing-section scroll-mt-20 landing-contact">
       <div className="landing-container">
-        <p className="landing-section-kicker">Contact</p>
-        <h2 className="landing-h2">Parlons de votre projet</h2>
+        <Reveal>
+          <p className="landing-section-kicker">Contact</p>
+          <h2 className="landing-h2">Parlons de votre projet</h2>
+        </Reveal>
         <div className="mt-10 grid gap-10 lg:grid-cols-5">
-          <div className="space-y-5 lg:col-span-2">
+          <Reveal delayMs={80} className="space-y-5 lg:col-span-2">
             <a href={iat.phoneHref} className="landing-contact-row">
               <span className="landing-contact-label">Téléphone</span>
               <span>{iat.phone}</span>
@@ -62,9 +65,10 @@ export function LandingContact() {
               <span className="landing-contact-label">Site web</span>
               <span>iat-academie.com</span>
             </a>
-          </div>
+          </Reveal>
 
-          <form onSubmit={onSubmit} className="landing-form lg:col-span-3" noValidate>
+          <Reveal delayMs={140} className="lg:col-span-3">
+          <form onSubmit={onSubmit} className="landing-form" noValidate>
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="landing-field">
                 <span>Prénom</span>
@@ -142,6 +146,7 @@ export function LandingContact() {
               </p>
             )}
           </form>
+          </Reveal>
         </div>
       </div>
     </section>

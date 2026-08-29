@@ -20,6 +20,21 @@ export function AirplaneIcon({ className = "", ariaHidden = true, style }: Props
   );
 }
 
+/** Recognizable top-down airplane silhouette, for large decorative use (unlike AirplaneIcon's sparkle glyph, this one actually reads as a plane at scale) */
+export function AirplaneSilhouette({ className = "", ariaHidden = true, style }: Props) {
+  return (
+    <svg
+      className={className}
+      style={style}
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      aria-hidden={ariaHidden}
+    >
+      <path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2.5 1.5V22l4-1 4 1v-1.5L13 19v-5.5z" />
+    </svg>
+  );
+}
+
 export function FlightPathDecor({ className = "" }: { className?: string }) {
   return (
     <svg
