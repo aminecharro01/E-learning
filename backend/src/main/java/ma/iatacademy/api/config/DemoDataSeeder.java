@@ -6,6 +6,8 @@ import lombok.extern.slf4j.Slf4j;
 import ma.iatacademy.api.domain.entity.*;
 import ma.iatacademy.api.domain.enums.*;
 import ma.iatacademy.api.repository.*;
+import ma.iatacademy.api.service.CertificateService;
+import ma.iatacademy.api.service.MessagingService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
@@ -14,7 +16,11 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.IOException;
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.Year;
@@ -47,6 +53,19 @@ public class DemoDataSeeder implements ApplicationRunner {
     private final PasswordEncoder passwordEncoder;
     private final EntityManager entityManager;
 
+    // --- Demo coverage: groups/sessions/devoirs/stage dossier/certificate/messaging ---
+    private final LearnerGroupRepository groupRepository;
+    private final VirtualSessionRepository virtualSessionRepository;
+    private final AssignmentRepository assignmentRepository;
+    private final SubmissionRepository submissionRepository;
+    private final AssetRepository assetRepository;
+    private final LearnerDocumentRepository learnerDocumentRepository;
+    private final CertificateService certificateService;
+    private final MessagingService messagingService;
+    private final MessageRepository messageRepository;
+    private final ConversationRepository conversationRepository;
+    private final MediaProperties mediaProperties;
+
     @Value("${app.demo.reset-progress-on-startup:true}")
     private boolean resetProgressOnStartup;
 
@@ -54,6 +73,7 @@ public class DemoDataSeeder implements ApplicationRunner {
     @Transactional
     public void run(ApplicationArguments args) {
         ensureStaffUsers();
+        ensureAdditionalStaff();
         ensureDemoLearners();
 
         List<ModuleEntity> modules = moduleRepository.findByFormationIdOrderByOrderIndexAsc(FORMATION_ID);
@@ -77,16 +97,31 @@ public class DemoDataSeeder implements ApplicationRunner {
             log.warn("Resetting learner progress + seeding demo scenarios…");
             wipeLearnerState();
             seedScenarios(modules);
+            seedStageDossiers();
         }
+
+        // Persistent across restarts (not wiped by wipeLearnerState) — idempotent via
+        // existence checks inside each method, safe to call on every boot.
+        seedGroupsAndSessions();
+        seedAssignmentsAndSubmissions(modules);
+        seedMessaging();
 
         log.warn("""
                 Demo ready — scénarios:
-                  apprenant@iat-academy.local / Apprenant@123  → UF1 en cours (module 1 validé)
-                  amina.benali@demo.local / Demo@1234          → UF1 terminée, UF2 démarrée
-                  youssef.idrissi@demo.local / Demo@1234       → débutant (1 section)
-                  lina.cherkaoui@demo.local / Demo@1234        → zéro progression
-                  salma.naji@demo.local / Demo@1234            → année 2 ouverte
-                  karim.ouafi@demo.local / Demo@1234           → paiement / activation en attente
+                  apprenant@iat-academy.local / Apprenant@123     → UF1 en cours (module 1 validé), dossier stage entamé
+                  amina.benali@demo.local / Demo@1234             → UF1 terminée, UF2 démarrée
+                  youssef.idrissi@demo.local / Demo@1234          → débutant (1 section)
+                  lina.cherkaoui@demo.local / Demo@1234           → zéro progression
+                  salma.naji@demo.local / Demo@1234               → année 2 ouverte
+                  karim.ouafi@demo.local / Demo@1234              → paiement / activation en attente
+                  khadija.mansouri@demo.local / Demo@1234         → dossier stage & soutenance complets, certificat émis
+                  admin@iat-academy.local / Admin@123             → Directeur (ADMIN)
+                  superadmin@iat-academy.local / SuperAdmin@123   → Super Admin
+                  formateur@iat-academy.local / Formateur@123     → Formateur
+                  support@demo.local / Demo@1234                  → Support
+                Groupes : Cohorte 2026-A (avec membres + sessions live), Cohorte 2027-A (en attente, vide)
+                Devoirs : 1 devoir avec 1 copie à corriger + 1 copie déjà notée
+                Messagerie : conversation directe apprenant ↔ formateur pré-remplie
                 """);
     }
 
@@ -147,6 +182,18 @@ public class DemoDataSeeder implements ApplicationRunner {
                 Role.FORMATEUR, PaymentStatus.EXEMPTED, true, false, null);
     }
 
+    /** Enrichit les comptes staff déjà créés par DataInitializer (admin/superadmin — mots
+     *  de passe inchangés) avec un nom réel, plus un compte SUPPORT — aucun des 3 rôles
+     *  staff n'était différencié au-delà du seul "Sara Formateur" jusqu'ici. */
+    private void ensureAdditionalStaff() {
+        upsertUser("admin@iat-academy.local", "Admin@123", "Karim Bensouda — Directeur pédagogique",
+                Role.ADMIN, PaymentStatus.EXEMPTED, true, false, null);
+        upsertUser("superadmin@iat-academy.local", "SuperAdmin@123", "Yasmine Aloui — Super Admin",
+                Role.SUPER_ADMIN, PaymentStatus.EXEMPTED, true, false, null);
+        upsertUser("support@demo.local", "Demo@1234", "Sami Radi — Support",
+                Role.SUPPORT, PaymentStatus.EXEMPTED, true, false, null);
+    }
+
     private void ensureDemoLearners() {
         int year = Year.now().getValue();
         upsertLearner("apprenant@iat-academy.local", "Apprenant@123", "Nora El Amrani",
@@ -162,9 +209,12 @@ public class DemoDataSeeder implements ApplicationRunner {
         // Pending activation — visible in admin users list
         upsertUser("karim.ouafi@demo.local", "Demo@1234", "Karim Ouafi",
                 Role.ETUDIANT, PaymentStatus.PENDING, false, false, year);
+        // Stage & soutenance complets — voir seedScenarios/seedStageDossiers.
+        upsertLearner("khadija.mansouri@demo.local", "Demo@1234", "Khadija Mansouri",
+                year - 1, true, true, "0612006600", "BM778899", LocalDate.of(2000, 3, 5));
     }
 
-    private void upsertLearner(
+    private User upsertLearner(
             String email, String password, String fullName,
             int enrollmentYear, boolean activated, boolean year2,
             String phone, String cin, LocalDate birthDate
@@ -188,7 +238,7 @@ public class DemoDataSeeder implements ApplicationRunner {
         user.setCin(cin);
         user.setBirthDate(birthDate);
         user.setAddress("Casablanca — Maroc");
-        userRepository.save(user);
+        return userRepository.save(user);
     }
 
     private void upsertUser(
@@ -266,6 +316,20 @@ public class DemoDataSeeder implements ApplicationRunner {
         }
         salma.setYear2AccessEnabled(true);
         userRepository.save(salma);
+
+        // Khadija — parcours complet + soutenance validée (voir seedStageDossiers pour le
+        // dossier de stage et le certificat émis).
+        User khadija = requireUser("khadija.mansouri@demo.local");
+        for (int i = 0; i < Math.min(18, modules.size()); i++) {
+            ModuleEntity mod = modules.get(i);
+            if (!lessonsOf(mod).isEmpty()) {
+                completeModule(khadija, mod);
+            }
+        }
+        if (admin != null) {
+            validateUf(khadija, "UF 5", admin, "Stage validé.");
+            validateUf(khadija, "Soutenance", admin, "Soutenance validée — dossier complet.");
+        }
     }
 
     private User requireUser(String email) {
@@ -327,6 +391,261 @@ public class DemoDataSeeder implements ApplicationRunner {
         row.setValidatedBy(director);
         row.setNote(note);
         ufValidationRepository.save(row);
+    }
+
+    // ------------------------------------------------------------------
+    // Stage & Soutenance : dossier en cours (Nora) + dossier complet + certificat (Khadija).
+    // LearnerDocument/Certificate sont wipés à chaque redémarrage (wipeLearnerState) donc
+    // pas de garde d'idempotence nécessaire ici, comme pour completeLesson/passQuiz.
+    // ------------------------------------------------------------------
+
+    private void seedStageDossiers() {
+        User admin = userRepository.findByEmailIgnoreCase("admin@iat-academy.local").orElse(null);
+        if (admin == null) {
+            log.warn("No admin user — skip stage dossier demo seed.");
+            return;
+        }
+
+        // Nora — dossier en cours : convention école déjà déposée par la direction,
+        // rien encore côté apprenant (elle peut illustrer le dépôt en direct pendant la démo).
+        User nora = requireUser("apprenant@iat-academy.local");
+        saveLearnerDocument(nora, LearnerDocType.CONVENTION_ECOLE,
+                ensureDemoAsset("convention-ecole-nora.pdf", "stage"), admin, "Signée par la direction.");
+
+        // Khadija — dossier complet (5 documents) + soutenance validée + certificat émis.
+        User khadija = requireUser("khadija.mansouri@demo.local");
+        saveLearnerDocument(khadija, LearnerDocType.CONVENTION_ECOLE,
+                ensureDemoAsset("convention-ecole-khadija.pdf", "stage"), admin, "Signée par la direction.");
+        saveLearnerDocument(khadija, LearnerDocType.ASSURANCE,
+                ensureDemoAsset("attestation-assurance-khadija.pdf", "stage"), admin, "Assurance stage validée.");
+        saveLearnerDocument(khadija, LearnerDocType.CONVENTION_ENTREPRISE,
+                ensureDemoAsset("convention-entreprise-khadija.pdf", "stage"), khadija, "Signée par l'entreprise d'accueil.");
+        saveLearnerDocument(khadija, LearnerDocType.RAPPORT_STAGE,
+                ensureDemoAsset("rapport-stage-khadija.pdf", "stage"), khadija, null);
+        saveLearnerDocument(khadija, LearnerDocType.PRESENTATION_SOUTENANCE,
+                ensureDemoAsset("presentation-soutenance-khadija.pdf", "stage"), khadija, null);
+
+        certificateService.issue(khadija.getId(), FORMATION_ID);
+    }
+
+    private void saveLearnerDocument(User learner, LearnerDocType type, Asset asset, User uploadedBy, String notes) {
+        learnerDocumentRepository.save(LearnerDocument.builder()
+                .learner(learner)
+                .docType(type)
+                .asset(asset)
+                .uploadedBy(uploadedBy)
+                .notes(notes)
+                .status(LearnerDocStatus.SUBMITTED)
+                .build());
+    }
+
+    // ------------------------------------------------------------------
+    // Groupes / Sessions live — persistants (non wipés), donc idempotence par vérification
+    // d'existence plutôt que par table wipée à chaque boot.
+    // ------------------------------------------------------------------
+
+    private void seedGroupsAndSessions() {
+        LearnerGroup cohortA = ensureGroup("Cohorte 2026-A", "2026-A", EnrollmentMode.HYBRIDE);
+        ensureGroup("Cohorte 2027-A (en attente)", "2027-A", EnrollmentMode.EN_LIGNE); // volontairement vide
+
+        assignToGroupIfUnassigned("apprenant@iat-academy.local", cohortA);
+        assignToGroupIfUnassigned("amina.benali@demo.local", cohortA);
+        assignToGroupIfUnassigned("youssef.idrissi@demo.local", cohortA);
+
+        User formateur = requireUser("formateur@iat-academy.local");
+        ensureSession(cohortA, "Point d'étape UF1", SessionProvider.GOOGLE_MEET,
+                "https://meet.google.com/demo-iat-academy", Instant.now().minusSeconds(86400L * 3), 45, formateur);
+        ensureSession(cohortA, "Atelier anglais aviation", SessionProvider.ZOOM,
+                "https://zoom.us/j/0000000000", Instant.now().plusSeconds(86400L * 2), 60, formateur);
+    }
+
+    private LearnerGroup ensureGroup(String name, String code, EnrollmentMode mode) {
+        return groupRepository.findAllByOrderByCreatedAtDesc().stream()
+                .filter(g -> g.getName().equalsIgnoreCase(name))
+                .findFirst()
+                .orElseGet(() -> {
+                    LearnerGroup group = LearnerGroup.builder()
+                            .name(name)
+                            .code(code)
+                            .enrollmentMode(mode)
+                            .build();
+                    groupRepository.save(group);
+                    messagingService.createCohortRoom(group);
+                    log.warn("Demo group created: {}", name);
+                    return group;
+                });
+    }
+
+    /** Réaffectation implicite : un apprenant n'appartient qu'à un seul groupe — ne rien
+     *  faire s'il est déjà dans un groupe (évite d'écraser un état de démo existant). */
+    private void assignToGroupIfUnassigned(String email, LearnerGroup group) {
+        User user = requireUser(email);
+        if (user.getGroup() != null) {
+            return;
+        }
+        user.setGroup(group);
+        userRepository.save(user);
+    }
+
+    private void ensureSession(
+            LearnerGroup group, String title, SessionProvider provider, String joinUrl,
+            Instant scheduledAt, int durationMinutes, User createdBy
+    ) {
+        boolean exists = virtualSessionRepository.findByGroupIdOrderByScheduledAtAsc(group.getId()).stream()
+                .anyMatch(s -> s.getTitle().equals(title));
+        if (exists) {
+            return;
+        }
+        virtualSessionRepository.save(VirtualSession.builder()
+                .group(group)
+                .title(title)
+                .provider(provider)
+                .joinUrl(joinUrl)
+                .scheduledAt(scheduledAt)
+                .durationMinutes(durationMinutes)
+                .createdBy(createdBy)
+                .build());
+    }
+
+    // ------------------------------------------------------------------
+    // Devoirs & soumissions — persistants, idempotence par titre.
+    // ------------------------------------------------------------------
+
+    private void seedAssignmentsAndSubmissions(List<ModuleEntity> modules) {
+        if (modules.isEmpty()) {
+            return;
+        }
+        Assignment assignment = ensureAssignment(modules.get(0), "Fiche réflexe accueil passager",
+                "Rédigez une fiche synthétique (1 page) sur la gestion d'un passager stressé.",
+                Instant.now().plusSeconds(86400L * 5), BigDecimal.valueOf(20));
+
+        User apprenant = requireUser("apprenant@iat-academy.local");
+        User amina = requireUser("amina.benali@demo.local");
+        User formateur = requireUser("formateur@iat-academy.local");
+        Asset submissionAsset = ensureDemoAsset("devoir-fiche-reflexe.pdf", "devoirs");
+
+        // Nora — copie déposée, pas encore corrigée (à montrer dans /admin/gradebook).
+        ensureSubmission(assignment, apprenant, submissionAsset,
+                Instant.now().minusSeconds(3600L * 6), SubmissionStatus.SUBMITTED, null, null, null);
+        // Amina — copie déjà corrigée (à montrer dans le bulletin apprenant).
+        ensureSubmission(assignment, amina, submissionAsset,
+                Instant.now().minusSeconds(86400L * 2), SubmissionStatus.GRADED,
+                BigDecimal.valueOf(17), "Bonne structure, quelques répétitions à éviter.", formateur);
+    }
+
+    private Assignment ensureAssignment(ModuleEntity module, String title, String description, Instant dueAt, BigDecimal maxScore) {
+        return assignmentRepository.findByModuleIdOrderByDueAtAsc(module.getId()).stream()
+                .filter(a -> a.getTitle().equals(title))
+                .findFirst()
+                .orElseGet(() -> assignmentRepository.save(Assignment.builder()
+                        .module(module)
+                        .title(title)
+                        .description(description)
+                        .dueAt(dueAt)
+                        .maxScore(maxScore)
+                        .build()));
+    }
+
+    private void ensureSubmission(
+            Assignment assignment, User user, Asset asset, Instant submittedAt,
+            SubmissionStatus status, BigDecimal grade, String feedback, User gradedBy
+    ) {
+        if (submissionRepository.findByAssignmentIdAndUserId(assignment.getId(), user.getId()).isPresent()) {
+            return;
+        }
+        submissionRepository.save(Submission.builder()
+                .assignment(assignment)
+                .user(user)
+                .asset(asset)
+                .submittedAt(submittedAt)
+                .status(status)
+                .grade(grade)
+                .feedback(feedback)
+                .gradedBy(gradedBy)
+                .gradedAt(gradedBy != null ? submittedAt.plusSeconds(3600) : null)
+                .build());
+    }
+
+    // ------------------------------------------------------------------
+    // Messagerie — une conversation directe apprenant ↔ formateur, pré-remplie.
+    // ------------------------------------------------------------------
+
+    private void seedMessaging() {
+        User nora = requireUser("apprenant@iat-academy.local");
+        User formateur = requireUser("formateur@iat-academy.local");
+        UUID conversationId = messagingService.getOrCreateDirect(nora.getId(), formateur.getId());
+        if (!messageRepository.findByConversationIdOrderByCreatedAtAsc(conversationId).isEmpty()) {
+            return;
+        }
+        Conversation conversation = conversationRepository.findById(conversationId)
+                .orElseThrow(() -> new IllegalStateException("Conversation démo introuvable juste après création."));
+        saveMessage(conversation, nora, "Bonjour, j'ai une question sur le devoir du module 1.");
+        saveMessage(conversation, formateur, "Bonjour Nora, bien sûr — dites-moi ce qui vous bloque.");
+        saveMessage(conversation, nora, "Je ne suis pas sûre du format attendu pour la fiche réflexe.");
+    }
+
+    private void saveMessage(Conversation conversation, User sender, String body) {
+        messageRepository.save(Message.builder().conversation(conversation).sender(sender).body(body).build());
+    }
+
+    // ------------------------------------------------------------------
+    // Fichier factice réutilisé par toutes les démos ci-dessus (devoirs + documents de
+    // stage) — un vrai PDF minimal (pas juste une ligne de texte) pour que le rendu de
+    // miniature et l'ouverture "Voir/Voir la copie" fonctionnent réellement en démo.
+    // ------------------------------------------------------------------
+
+    private static final String DEMO_PDF_TEXT = """
+            %PDF-1.4
+            1 0 obj
+            << /Type /Catalog /Pages 2 0 R >>
+            endobj
+            2 0 obj
+            << /Type /Pages /Kids [3 0 R] /Count 1 >>
+            endobj
+            3 0 obj
+            << /Type /Page /Parent 2 0 R /Resources << /Font << /F1 4 0 R >> >> /MediaBox [0 0 300 300] /Contents 5 0 R >>
+            endobj
+            4 0 obj
+            << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+            endobj
+            5 0 obj
+            << /Length 60 >>
+            stream
+            BT /F1 18 Tf 30 150 Td (Document de demonstration IAT Academy) Tj ET
+            endstream
+            endobj
+            xref
+            0 6
+            0000000000 65535 f
+            trailer
+            << /Size 6 /Root 1 0 R >>
+            startxref
+            0
+            %%EOF
+            """;
+
+    private Asset ensureDemoAsset(String filename, String subfolder) {
+        return assetRepository.findFirstByFilename(filename)
+                .orElseGet(() -> {
+                    try {
+                        Path dir = Path.of(mediaProperties.getRootPath(), "demo", subfolder).toAbsolutePath().normalize();
+                        Files.createDirectories(dir);
+                        Path file = dir.resolve(filename);
+                        byte[] bytes = DEMO_PDF_TEXT.getBytes(StandardCharsets.UTF_8);
+                        if (!Files.exists(file)) {
+                            Files.write(file, bytes);
+                        }
+                        return assetRepository.save(Asset.builder()
+                                .filename(filename)
+                                .storagePath(file.toString())
+                                .mimeType("application/pdf")
+                                .sizeBytes(bytes.length)
+                                .assetKind("PDF")
+                                .build());
+                    } catch (IOException e) {
+                        throw new IllegalStateException("Impossible de créer le fichier démo " + filename, e);
+                    }
+                });
     }
 
     private void seedModuleRich(ModuleEntity module, List<LessonSpec> specs) {

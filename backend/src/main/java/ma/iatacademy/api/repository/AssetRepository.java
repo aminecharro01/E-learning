@@ -6,9 +6,13 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 public interface AssetRepository extends JpaRepository<Asset, UUID> {
+    /** Used by DemoDataSeeder to make demo file creation idempotent (no repository method
+     *  existed to look up an asset by name before this). */
+    Optional<Asset> findFirstByFilename(String filename);
     /** ownerId IS NULL : uniquement les médias partagés (contenu pédagogique), jamais les documents privés. */
     Page<Asset> findByAssetKindAndOwnerIdIsNullOrderByCreatedAtDesc(String assetKind, Pageable pageable);
 
