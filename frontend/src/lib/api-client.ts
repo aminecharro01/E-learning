@@ -4,6 +4,15 @@ import { toast } from "@/lib/toast-store";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
+declare module "axios" {
+  export interface AxiosRequestConfig {
+    /** Caller already renders its own inline/graceful handling for this failure (e.g. a
+     *  Promise.allSettled probe like "does this learner have a certificate yet?") — skip
+     *  the global error toast so an expected, non-alarming outcome doesn't look like a bug. */
+    skipErrorToast?: boolean;
+  }
+}
+
 /**
  * Central Axios client.
  * JWT is stored in an httpOnly cookie by the Spring Boot API — never in localStorage.
@@ -51,7 +60,7 @@ apiClient.interceptors.response.use(
       if (!path.startsWith("/login") && !path.startsWith("/register")) {
         window.location.href = `/login?next=${encodeURIComponent(path)}`;
       }
-    } else {
+    } else if (!error.config?.skipErrorToast) {
       // Global safety net so an error is never silent, even if the calling code
       // doesn't render its own inline alert. 401 is excluded: the redirect above
       // navigates away immediately, so the toast would never actually be seen.

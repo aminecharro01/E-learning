@@ -832,7 +832,10 @@ export async function gradeEssay(attemptId: string, questionId: string, score: n
 }
 
 export async function getMyCertificate() {
-  const { data } = await apiClient.get<Certificate>("/api/certificates/me");
+  // Failing here (no certificate yet) is the normal case for most learners — the caller
+  // renders its own "pas encore de certificat" state, so the global error toast would
+  // just be noise on every dashboard visit.
+  const { data } = await apiClient.get<Certificate>("/api/certificates/me", { skipErrorToast: true });
   return data;
 }
 
@@ -1094,9 +1097,9 @@ export async function bulkSetUsersEnabled(userIds: string[], enabled: boolean) {
   return data;
 }
 
-export async function getAuditLog(page = 0, size = 20) {
+export async function getAuditLog(page = 0, size = 20, action?: string) {
   const { data } = await apiClient.get<PageResponse<AuditLogEntryItem>>("/api/admin/audit-log", {
-    params: { page, size },
+    params: { page, size, ...(action ? { action } : {}) },
   });
   return data;
 }

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { gradeEssay, getPendingReviewAttempts } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 import { ComponentCard } from "@/components/admin/ui/ComponentCard";
+import { AccessLocked } from "@/components/admin/ui/AccessLocked";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { toast } from "@/lib/toast-store";
 import { btn, inputClass } from "@/lib/ui";
@@ -16,7 +17,8 @@ function formatDate(iso: string) {
 }
 
 export default function AdminGradingPage() {
-  const { isAdmin } = useAuth();
+  const { hasRole } = useAuth();
+  const canGrade = hasRole("SUPER_ADMIN", "ADMIN", "FORMATEUR");
   const [attempts, setAttempts] = useState<PendingAttempt[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -36,12 +38,12 @@ export default function AdminGradingPage() {
   }, []);
 
   useEffect(() => {
-    if (!isAdmin) return;
+    if (!canGrade) return;
     void load();
-  }, [isAdmin, load]);
+  }, [canGrade, load]);
 
-  if (!isAdmin) {
-    return <p className="text-sm text-muted">Réservé aux administrateurs.</p>;
+  if (!canGrade) {
+    return <AccessLocked reason="Réservé au Directeur, au Formateur et au Super Admin." />;
   }
 
   async function onGrade(attemptId: string, questionId: string) {

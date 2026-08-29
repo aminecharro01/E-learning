@@ -19,6 +19,7 @@ import type { Module } from "@/types/domain";
 import { ApiClientError } from "@/lib/api-client";
 import { useAuth } from "@/hooks/useAuth";
 import { ComponentCard } from "@/components/admin/ui/ComponentCard";
+import { AccessLocked } from "@/components/admin/ui/AccessLocked";
 import { Badge } from "@/components/admin/ui/Badge";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { toast } from "@/lib/toast-store";
@@ -70,7 +71,8 @@ function CollapseToggle({ open, onToggle }: { open: boolean; onToggle: () => voi
 }
 
 export default function AdminGradebookPage() {
-  const { isAdmin } = useAuth();
+  const { hasRole } = useAuth();
+  const canManage = hasRole("SUPER_ADMIN", "ADMIN", "FORMATEUR");
   const [modules, setModules] = useState<Module[]>([]);
   const [moduleId, setModuleId] = useState("");
   const [assignments, setAssignments] = useState<Assignment[]>([]);
@@ -98,7 +100,7 @@ export default function AdminGradebookPage() {
   }, []);
 
   useEffect(() => {
-    if (!isAdmin) return;
+    if (!canManage) return;
     getMyProgress()
       .then((p) => {
         setModules(p.modules);
@@ -106,15 +108,15 @@ export default function AdminGradebookPage() {
       })
       .catch((err) => setError(err instanceof ApiClientError ? err.message : "Impossible de charger les modules."))
       .finally(() => setLoading(false));
-  }, [isAdmin]);
+  }, [canManage]);
 
   useEffect(() => {
     if (!moduleId) return;
     void reload(moduleId).catch((err) => setError(err instanceof ApiClientError ? err.message : "Impossible de charger le carnet de notes."));
   }, [moduleId, reload]);
 
-  if (!isAdmin) {
-    return <p className="text-sm text-muted">Réservé aux administrateurs.</p>;
+  if (!canManage) {
+    return <AccessLocked reason="Réservé au Directeur, au Formateur et au Super Admin." />;
   }
 
   async function run(action: () => Promise<void>) {

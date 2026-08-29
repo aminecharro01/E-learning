@@ -312,6 +312,7 @@ export type AuditLogEntryItem = {
   action: string;
   targetType: string | null;
   targetId: string | null;
+  targetName: string | null;
   metadata: string | null;
   createdAt: string;
 };

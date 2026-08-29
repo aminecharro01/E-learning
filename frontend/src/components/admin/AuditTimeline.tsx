@@ -45,8 +45,8 @@ export function AuditTimeline({ entries, actionLabel }: Props) {
               <p className="text-xs text-muted">{entry.actorName}</p>
               {entry.targetType && (
                 <p className="mt-1 text-xs text-muted">
-                  Cible : {entry.targetType}
-                  {entry.targetId ? ` · ${entry.targetId}` : ""}
+                  Cible : {entry.targetName ?? entry.targetType}
+                  {!entry.targetName && entry.targetId ? ` · ${entry.targetId}` : ""}
                 </p>
               )}
               {entry.metadata && <p className="mt-1 break-words text-xs text-muted">{entry.metadata}</p>}

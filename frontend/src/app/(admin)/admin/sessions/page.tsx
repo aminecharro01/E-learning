@@ -13,6 +13,7 @@ import type { LearnerGroup } from "@/types/domain";
 import { ApiClientError } from "@/lib/api-client";
 import { useAuth } from "@/hooks/useAuth";
 import { ComponentCard } from "@/components/admin/ui/ComponentCard";
+import { AccessLocked } from "@/components/admin/ui/AccessLocked";
 import { Badge } from "@/components/admin/ui/Badge";
 import { ConfirmDialog } from "@/components/admin/ConfirmDialog";
 import { Skeleton } from "@/components/ui/Skeleton";
@@ -91,7 +92,7 @@ export default function AdminSessionsPage() {
   const past = sortedSessions.filter((s) => new Date(s.scheduledAt).getTime() < now).reverse();
 
   if (!isAdmin) {
-    return <p className="text-sm text-muted">Réservé aux administrateurs.</p>;
+    return <AccessLocked reason="Réservé aux administrateurs." />;
   }
 
   async function run(action: () => Promise<void>) {

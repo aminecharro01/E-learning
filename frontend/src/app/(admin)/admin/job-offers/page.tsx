@@ -240,7 +240,9 @@ export default function AdminJobOffersPage() {
           <p className="text-sm text-muted">Aucune offre pour le moment.</p>
         ) : (
           <ul className="space-y-2">
-            {offers.map((o) => (
+            {offers.map((o) => {
+              const isExpired = !!o.expiresAt && new Date(o.expiresAt).getTime() < Date.now();
+              return (
               <li key={o.id} className="rounded-xl border border-theme p-3">
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div className="flex items-start gap-3">
@@ -251,6 +253,11 @@ export default function AdminJobOffersPage() {
                         <span className={`badge-inline ${o.published ? "badge-success" : "badge-gold"}`}>
                           {o.published ? "Publiée" : "Dépubliée"}
                         </span>
+                        {o.published && isExpired && (
+                          <span className="badge-inline badge-alert" title={`Expirée le ${new Date(o.expiresAt as string).toLocaleDateString("fr-FR")}`}>
+                            Expirée
+                          </span>
+                        )}
                       </div>
                       <p className="mt-1 text-xs text-muted">
                         {o.company} — {CONTRACT_LABEL[o.contractType]}
@@ -278,7 +285,8 @@ export default function AdminJobOffersPage() {
                   </div>
                 </div>
               </li>
-            ))}
+              );
+            })}
           </ul>
         )}
       </ComponentCard>

@@ -28,6 +28,7 @@ import { ApiClientError } from "@/lib/api-client";
 import { useAuth } from "@/hooks/useAuth";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { ComponentCard } from "@/components/admin/ui/ComponentCard";
+import { AccessLocked } from "@/components/admin/ui/AccessLocked";
 import { ConfirmDialog } from "@/components/admin/ConfirmDialog";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { toast } from "@/lib/toast-store";
@@ -184,7 +185,7 @@ export default function AdminGroupsPage() {
   }, [search, selectedId]);
 
   if (!isAdmin) {
-    return <p className="text-sm text-muted">Réservé aux administrateurs.</p>;
+    return <AccessLocked reason="Réservé aux administrateurs." />;
   }
 
   async function run(action: () => Promise<void>) {

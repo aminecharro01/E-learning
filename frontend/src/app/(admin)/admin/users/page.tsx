@@ -16,6 +16,7 @@ import { DataTable, type DataTableColumn, type PageMeta } from "@/components/adm
 import { ConfirmDialog } from "@/components/admin/ConfirmDialog";
 import { Badge } from "@/components/admin/ui/Badge";
 import { useAuth } from "@/hooks/useAuth";
+import { AccessLocked } from "@/components/admin/ui/AccessLocked";
 import type { Module, Role, User } from "@/types/domain";
 import { ApiClientError } from "@/lib/api-client";
 import { btn } from "@/lib/ui";
@@ -126,7 +127,7 @@ export default function AdminUsersPage() {
   }, [search, isAdmin, reload]);
 
   if (!isAdmin) {
-    return <p className="text-sm text-muted">Réservé aux administrateurs.</p>;
+    return <AccessLocked reason="Réservé aux administrateurs." />;
   }
 
   const columns: DataTableColumn<User>[] = [

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { getCommentModerationQueue, unhideLessonComment } from "@/lib/api";
 import { DataTable, type DataTableColumn, type PageMeta } from "@/components/admin/DataTable";
 import { useAuth } from "@/hooks/useAuth";
+import { AccessLocked } from "@/components/admin/ui/AccessLocked";
 import type { LessonComment } from "@/types/domain";
 import { ApiClientError } from "@/lib/api-client";
 import { btn } from "@/lib/ui";
@@ -48,7 +49,7 @@ export default function AdminForumModerationPage() {
   }, [isAdmin, load]);
 
   if (!isAdmin) {
-    return <p className="text-sm text-muted">Réservé aux administrateurs.</p>;
+    return <AccessLocked reason="Réservé aux administrateurs." />;
   }
 
   async function onUnhide(id: string) {

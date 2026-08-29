@@ -6,8 +6,10 @@ import type { LearnerGroup } from "@/types/domain";
 import { ApiClientError } from "@/lib/api-client";
 import { useAuth } from "@/hooks/useAuth";
 import { ComponentCard } from "@/components/admin/ui/ComponentCard";
+import { AccessLocked } from "@/components/admin/ui/AccessLocked";
 import { ConfirmDialog } from "@/components/admin/ConfirmDialog";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { CampaignRichTextEditor } from "@/components/admin/CampaignRichTextEditor";
 import { toast } from "@/lib/toast-store";
 import { btn, inputClass } from "@/lib/ui";
 
@@ -35,6 +37,10 @@ export default function AdminCampaignsPage() {
 
   const [subject, setSubject] = useState("");
   const [htmlBody, setHtmlBody] = useState("");
+  // Tiptap only reads `content` once on mount — remounting via a changing key is the
+  // simplest reliable way to clear the editor's displayed content after a successful
+  // submit, without a fragile two-way sync between parent state and editor state.
+  const [editorResetKey, setEditorResetKey] = useState(0);
   const [audience, setAudience] = useState<Campaign["targetAudience"]>("NEWSLETTER_SUBSCRIBERS");
   const [groupId, setGroupId] = useState("");
 
@@ -52,7 +58,7 @@ export default function AdminCampaignsPage() {
   }, [isAdmin]);
 
   if (!isAdmin) {
-    return <p className="text-sm text-muted">Réservé aux administrateurs (envoi de masse).</p>;
+    return <AccessLocked reason="Réservé aux administrateurs (envoi de masse)." />;
   }
 
   async function run(action: () => Promise<void>) {
@@ -81,13 +87,7 @@ export default function AdminCampaignsPage() {
       <ComponentCard title="Nouvelle campagne" desc="Brouillon — à envoyer manuellement une fois prêt">
         <div className="space-y-2">
           <input className={inputClass} placeholder="Objet" value={subject} onChange={(e) => setSubject(e.target.value)} />
-          <textarea
-            className={inputClass}
-            rows={5}
-            placeholder="Contenu (HTML autorisé)"
-            value={htmlBody}
-            onChange={(e) => setHtmlBody(e.target.value)}
-          />
+          <CampaignRichTextEditor key={editorResetKey} value={htmlBody} onChange={setHtmlBody} />
           <div className="grid gap-2 sm:grid-cols-2">
             <select className={inputClass} value={audience} onChange={(e) => setAudience(e.target.value as Campaign["targetAudience"])}>
               <option value="NEWSLETTER_SUBSCRIBERS">Abonnés infolettre</option>
@@ -119,6 +119,7 @@ export default function AdminCampaignsPage() {
                 });
                 setSubject("");
                 setHtmlBody("");
+                setEditorResetKey((k) => k + 1);
                 await reload();
                 toast.success("Brouillon créé.");
               })

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Eye, EyeOff } from "lucide-react";
 import { useForm, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -18,6 +19,7 @@ import {
 } from "@/components/admin/forms/schemas";
 import { FormField, inputClass } from "@/components/admin/forms/FormField";
 import { ComponentCard } from "@/components/admin/ui/ComponentCard";
+import { AccessLocked } from "@/components/admin/ui/AccessLocked";
 import { useAuth } from "@/hooks/useAuth";
 import { ApiClientError } from "@/lib/api-client";
 import { btn } from "@/lib/ui";
@@ -74,6 +76,7 @@ type Tab = "password" | "app" | "quiz";
 export default function AdminSettingsPage() {
   const { isAdmin, isSuperAdmin } = useAuth();
   const [tab, setTab] = useState<Tab>("password");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -186,7 +189,7 @@ export default function AdminSettingsPage() {
       {tab === "password" && (
         <ComponentCard
           title="Changer mon mot de passe"
-          desc="Accessible à ADMIN et FORMATEUR connectés"
+          desc="Accessible à Super Admin, Directeur et Formateur connectés"
         >
           <form
             onSubmit={passwordForm.handleSubmit(onChangePassword)}
@@ -196,19 +199,29 @@ export default function AdminSettingsPage() {
               label="Mot de passe actuel"
               error={passwordForm.formState.errors.currentPassword}
             >
-              <input
-                type="password"
-                autoComplete="current-password"
-                className={inputClass}
-                {...passwordForm.register("currentPassword")}
-              />
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  autoComplete="current-password"
+                  className={`${inputClass} pr-10`}
+                  {...passwordForm.register("currentPassword")}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((v) => !v)}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted hover:text-heading"
+                  aria-label={showPassword ? "Masquer les mots de passe" : "Afficher les mots de passe"}
+                >
+                  {showPassword ? <EyeOff size={16} aria-hidden /> : <Eye size={16} aria-hidden />}
+                </button>
+              </div>
             </FormField>
             <FormField
               label="Nouveau mot de passe"
               error={passwordForm.formState.errors.newPassword}
             >
               <input
-                type="password"
+                type={showPassword ? "text" : "password"}
                 autoComplete="new-password"
                 className={inputClass}
                 {...passwordForm.register("newPassword")}
@@ -219,7 +232,7 @@ export default function AdminSettingsPage() {
               error={passwordForm.formState.errors.confirmPassword}
             >
               <input
-                type="password"
+                type={showPassword ? "text" : "password"}
                 autoComplete="new-password"
                 className={inputClass}
                 {...passwordForm.register("confirmPassword")}
@@ -429,12 +442,8 @@ export default function AdminSettingsPage() {
         </ComponentCard>
       )}
 
-      {tab === "app" && !isSuperAdmin && (
-        <p className="text-sm text-muted">Réservé au Super Admin.</p>
-      )}
-      {tab === "quiz" && !isAdmin && (
-        <p className="text-sm text-muted">Réservé aux administrateurs.</p>
-      )}
+      {tab === "app" && !isSuperAdmin && <AccessLocked reason="Réservé au Super Admin." />}
+      {tab === "quiz" && !isAdmin && <AccessLocked reason="Réservé aux administrateurs." />}
     </div>
   );
 }

@@ -30,12 +30,16 @@ import { ConfirmDialog } from "@/components/admin/ConfirmDialog";
 import { QuizOutlineSidebar } from "@/components/admin/quiz/QuizOutlineSidebar";
 import { QuizQuestionList } from "@/components/admin/quiz/QuizQuestionList";
 import { QuizAttemptsPanel } from "@/components/admin/quiz/QuizAttemptsPanel";
+import { AccessLocked } from "@/components/admin/ui/AccessLocked";
+import { useAuth } from "@/hooks/useAuth";
 import type { Module, Question, Quiz } from "@/types/domain";
 import { ApiClientError } from "@/lib/api-client";
 import { btn } from "@/lib/ui";
 import { toast } from "@/lib/toast-store";
 
 export default function QuizBankPage() {
+  const { hasRole } = useAuth();
+  const allowed = hasRole("SUPER_ADMIN", "ADMIN", "FORMATEUR");
   const [modules, setModules] = useState<Module[]>([]);
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);
   const [pageMeta, setPageMeta] = useState({
@@ -162,6 +166,7 @@ export default function QuizBankPage() {
   }, []);
 
   useEffect(() => {
+    if (!allowed) return;
     getMyProgress()
       .then(async (prog) => {
         setModules(prog.modules);
@@ -170,7 +175,7 @@ export default function QuizBankPage() {
       })
       .catch((err) => setError(err instanceof ApiClientError ? err.message : "Erreur réseau."))
       .finally(() => setLoading(false));
-  }, [refreshQuizzes]);
+  }, [allowed, refreshQuizzes]);
 
   useEffect(() => {
     if (!selectedQuizId) {
@@ -320,6 +325,10 @@ export default function QuizBankPage() {
 
   const moduleTitle = (id: string | null) =>
     modules.find((m) => m.id === id)?.title ?? "—";
+
+  if (!allowed) {
+    return <AccessLocked reason="Réservé au Directeur, au Formateur et au Super Admin." />;
+  }
 
   return (
     <div className="-m-2 flex min-h-[calc(100vh-7rem)] flex-col gap-3 lg:-m-4">

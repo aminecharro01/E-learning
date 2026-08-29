@@ -18,7 +18,12 @@ export async function uploadMedia(file: File, kind: "IMAGE" | "VIDEO") {
 }
 
 export async function resolveAssetUrl(assetId: string): Promise<string> {
-  const { data } = await apiClient.get<{ url: string }>(`/api/assets/${assetId}/stream`);
+  // Callers (AssetImage, avatar components) render their own fallback on failure — a
+  // stale/deleted asset reference shouldn't surface as a global error toast, especially
+  // when several images on the same page (e.g. a table of avatars) can fail independently.
+  const { data } = await apiClient.get<{ url: string }>(`/api/assets/${assetId}/stream`, {
+    skipErrorToast: true,
+  });
   return data.url.startsWith("http") ? data.url : `${API_BASE}${data.url}`;
 }
 
