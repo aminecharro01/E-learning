@@ -1,0 +1,556 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Rejoindre IAT Academy — Candidature (aperçu statique)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+  href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap"
+  rel="stylesheet"
+/>
+<style>
+/* =============================================================================
+   Aperçu statique autonome de /rejoindre — HTML/CSS/JS pur (pas de React),
+   pour prévisualiser sans lancer `npm run dev`. Le vrai code source vit dans
+   frontend/src/app/rejoindre/ et frontend/src/components/rejoindre/.
+   ============================================================================= */
+
+:root {
+  --background: #f7f9fc;
+  --foreground: #142b4b;
+  --heading: #142b4b;
+  --muted: #3a5a84;
+  --surface: #ffffff;
+  --surface-2: #eef2f8;
+  --border: #d4deeb;
+  --gold-300: #ffd98a;
+  --gold-400: #ffc65c;
+  --gold-500: #f5a623;
+  --gold-600: #e08d1b;
+  --gold-700: #c97612;
+  --gold-800: #a65e0d;
+  --navy: #142b4b;
+  --navy-soft: #24446f;
+  --navy-muted: #3a5a84;
+  --primary: #e08d1b;
+  --primary-hover: #c97612;
+  --primary-fg: #ffffff;
+  --font-poppins: "Poppins", system-ui, sans-serif;
+  --font-inter: "Inter", system-ui, sans-serif;
+  --font-jetbrains: "JetBrains Mono", monospace;
+  --font-display: var(--font-poppins);
+  --font-body: var(--font-inter);
+  --shadow-brand: 0 12px 32px -14px rgba(20, 43, 75, 0.28);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0d1522;
+    --foreground: #e8eef6;
+    --heading: #e8eef6;
+    --muted: #9bb0cc;
+    --surface: #142033;
+    --surface-2: #0a101a;
+    --border: #243552;
+    --shadow-brand: 0 12px 32px -10px rgba(0, 0, 0, 0.55);
+    --primary: #f5a623;
+    --primary-hover: #ffc65c;
+    --primary-fg: #0d1522;
+  }
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; font-family: var(--font-body); }
+
+/* --- shared tokens (mirrors components/landing/landing.css) --- */
+.landing-root, .landing {
+  --landing-midnight: var(--background);
+  --landing-deep: var(--surface);
+  --landing-panel: var(--surface);
+  --landing-panel-2: var(--surface-2);
+  --landing-primary: var(--primary);
+  --landing-primary-glow: var(--gold-400);
+  --landing-secondary: var(--navy-soft);
+  --landing-gold: var(--gold-600);
+  --landing-ink: var(--foreground);
+  --landing-muted: var(--muted);
+  --landing-bg: var(--background);
+  --landing-surface: var(--surface);
+  --landing-cloud: var(--surface-2);
+  --landing-on-dark: var(--heading);
+  --landing-on-dark-muted: var(--muted);
+  --landing-glass: color-mix(in srgb, var(--navy) 6%, transparent);
+  --landing-glass-border: var(--border);
+  --landing-hover: color-mix(in srgb, var(--navy) 7%, transparent);
+  --landing-sky-top: #f7f9fc;
+  --landing-sky-mid: #eef2f8;
+  --landing-sky-bot: #e8eef6;
+  --landing-card-shadow: var(--shadow-brand);
+  --font-landing: var(--font-body);
+  color-scheme: light;
+  min-height: 100vh;
+  overflow-x: clip;
+  background:
+    radial-gradient(ellipse 55% 50% at 15% 0%, color-mix(in srgb, var(--gold-500) 14%, transparent), transparent 60%),
+    radial-gradient(ellipse 50% 45% at 85% 10%, color-mix(in srgb, var(--navy-soft) 12%, transparent), transparent 55%),
+    linear-gradient(180deg, #f7f9fc 0%, #eef2f8 100%);
+  color: var(--landing-ink);
+  font-family: var(--font-landing);
+}
+
+@media (prefers-color-scheme: dark) {
+  .landing-root, .landing {
+    --landing-gold: var(--gold-400);
+    --landing-glass: rgba(255, 255, 255, 0.06);
+    --landing-glass-border: rgba(255, 255, 255, 0.12);
+    --landing-hover: rgba(255, 255, 255, 0.08);
+    --landing-sky-top: #0a1220;
+    --landing-sky-mid: #0d1522;
+    --landing-sky-bot: #142033;
+    --landing-card-shadow: 0 12px 32px -10px rgba(0, 0, 0, 0.55);
+    color-scheme: dark;
+    background:
+      radial-gradient(ellipse 55% 50% at 15% 0%, color-mix(in srgb, var(--gold-500) 18%, transparent), transparent 60%),
+      radial-gradient(ellipse 50% 45% at 85% 10%, color-mix(in srgb, var(--navy-soft) 22%, transparent), transparent 55%),
+      linear-gradient(180deg, #0d1522 0%, #0a101a 100%);
+  }
+}
+
+.landing a { color: inherit; text-decoration: none; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+
+.landing-container { width: 100%; max-width: 80rem; margin-inline: auto; padding-inline: 1rem; }
+@media (min-width: 640px) { .landing-container { padding-inline: 1.5rem; } }
+
+.landing-h2 { font-size: clamp(1.65rem, 3.5vw, 2.5rem); font-weight: 700; line-height: 1.15; letter-spacing: -0.02em; color: var(--landing-on-dark); text-wrap: balance; margin: 0; }
+.landing-h2-light { color: var(--landing-on-dark); }
+.landing-section-kicker { display: inline-flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: var(--landing-muted); }
+.landing-kicker-plane { width: 1.1rem; height: 1.1rem; color: var(--landing-gold); }
+.landing-text-on-dark { color: var(--landing-on-dark); }
+.landing-text-on-dark-muted { color: var(--landing-on-dark-muted); }
+
+.landing-eyebrow { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.78rem; font-weight: 650; letter-spacing: 0.12em; text-transform: uppercase; }
+.landing-eyebrow-glass { padding: 0.45rem 0.9rem; border-radius: 9999px; background: var(--landing-glass); border: 1px solid var(--landing-glass-border); color: var(--landing-on-dark-muted); }
+
+.landing-btn-glow { display: inline-flex; align-items: center; justify-content: center; border: 0; border-radius: 9999px; background: var(--landing-primary); color: var(--primary-fg); font-weight: 650; padding: 0.6rem 1.4rem; box-shadow: var(--landing-card-shadow); touch-action: manipulation; transition: background 0.15s, transform 0.15s; cursor: pointer; }
+.landing-btn-glow:hover { background: var(--landing-primary-glow); transform: translateY(-1px); }
+.landing-btn-sm { padding: 0.45rem 1.1rem; font-size: 0.875rem; }
+.landing-btn-lg { padding: 0.85rem 1.65rem; font-size: 1rem; }
+.landing-btn-outline-light { display: inline-flex; align-items: center; justify-content: center; border-radius: 9999px; border: 1px solid var(--landing-glass-border); color: var(--landing-on-dark); font-weight: 600; padding: 0.85rem 1.65rem; touch-action: manipulation; transition: background 0.2s, border-color 0.2s; }
+.landing-btn-outline-light:hover { background: var(--landing-hover); border-color: color-mix(in srgb, var(--landing-gold) 45%, var(--landing-glass-border)); }
+
+.landing-footer { border-top: 1px solid var(--landing-glass-border); background: var(--surface-2); padding-block: 2rem; }
+@media (prefers-color-scheme: dark) { .landing-footer { background: #030712; } }
+.landing-footer-copy { text-align: center; font-size: 0.875rem; color: var(--landing-on-dark-muted); margin: 0; }
+.landing-footer-copy a { color: var(--gold-500); font-weight: 600; text-decoration: none; }
+.landing-footer-copy a:hover { text-decoration: underline; }
+
+.landing-reveal { opacity: 0; transform: translateY(24px); transition: opacity 0.6s ease, transform 0.6s ease; }
+.landing-reveal.is-visible { opacity: 1; transform: none; }
+@media (prefers-reduced-motion: reduce) {
+  .landing-reveal { opacity: 1; transform: none; transition: none; }
+}
+
+/* --- rejoindre.css (verbatim from frontend/src/components/rejoindre/rejoindre.css) --- */
+
+.rejoindre-container { width: 100%; max-width: 80rem; margin-inline: auto; padding-inline: 1rem; }
+@media (min-width: 640px) { .rejoindre-container { padding-inline: 1.5rem; } }
+.rejoindre-section { padding-block: clamp(3rem, 7vw, 5.5rem); }
+.rejoindre-page { isolation: isolate; }
+
+.rejoindre-header { position: sticky; top: 0; z-index: 40; padding-block: 0.85rem; background: color-mix(in srgb, var(--landing-bg) 78%, transparent); backdrop-filter: blur(14px); border-bottom: 1px solid var(--landing-glass-border); }
+.rejoindre-header-row { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.rejoindre-header-actions { display: flex; align-items: center; gap: 1rem; }
+.rejoindre-header-phone { display: none; font-size: 0.85rem; font-weight: 600; color: var(--landing-on-dark-muted); white-space: nowrap; }
+@media (min-width: 640px) { .rejoindre-header-phone { display: inline; } }
+.rejoindre-logo { display: inline-flex; align-items: center; gap: 0.6rem; font-family: var(--font-display); font-weight: 800; color: var(--landing-on-dark); }
+.rejoindre-logo img { height: 40px; width: auto; }
+
+.rejoindre-hero-scene { position: relative; height: 130vh; }
+@media (min-width: 768px) { .rejoindre-hero-scene { height: 170vh; } }
+.rejoindre-hero-sticky { position: sticky; top: 0; height: 100vh; min-height: 640px; overflow: hidden; }
+.rejoindre-hero-layer { position: absolute; inset: 0; }
+.rejoindre-hero-layer[aria-hidden="true"] { pointer-events: none; }
+.rejoindre-depth-4 { z-index: 4; }
+
+.rejoindre-hero-sky { position: absolute; inset: 0; background: linear-gradient(180deg, var(--landing-sky-top) 0%, var(--landing-sky-mid) 50%, var(--landing-sky-bot) 100%); opacity: 0.6; filter: brightness(calc(1 - var(--progress, 0) * 0.12)) saturate(calc(1 + var(--progress, 0) * 0.35)); }
+@media (prefers-color-scheme: dark) { .rejoindre-hero-sky { opacity: 1; } }
+
+.rejoindre-hero-glow { position: absolute; width: 42vw; height: 42vw; max-width: 620px; max-height: 620px; border-radius: 50%; filter: blur(70px); opacity: 0.35; transform: translateY(calc(var(--progress, 0) * -50px)); }
+.rejoindre-hero-glow-a { left: -10%; top: 5%; background: radial-gradient(circle, color-mix(in srgb, var(--gold-500) 55%, transparent), transparent 70%); }
+.rejoindre-hero-glow-b { right: -8%; bottom: 0%; background: radial-gradient(circle, color-mix(in srgb, var(--navy-soft) 55%, transparent), transparent 70%); }
+
+.rejoindre-hero-paths { position: absolute; inset: 0; width: 100%; height: 100%; color: var(--landing-gold); opacity: calc(0.18 + var(--progress, 0) * 0.25); transform: translateX(calc(var(--progress, 0) * 24px)); }
+.rejoindre-gate-tag { position: absolute; top: 6.5rem; right: 1.25rem; font-family: var(--font-jetbrains); font-size: 0.72rem; font-weight: 600; letter-spacing: 0.14em; padding: 0.35rem 0.7rem; border-radius: 0.4rem; color: var(--landing-gold); background: var(--landing-glass); border: 1px solid var(--landing-glass-border); }
+@media (min-width: 1024px) { .rejoindre-gate-tag { right: max(1.5rem, calc((100vw - 80rem) / 2 + 1.5rem)); top: 7rem; } }
+
+.rejoindre-boarding-pass-wrap { display: none; }
+@media (min-width: 768px) { .rejoindre-boarding-pass-wrap { display: block; position: absolute; right: max(1.5rem, calc((100vw - 80rem) / 2 + 1.5rem)); top: 50%; width: min(24rem, 34vw); animation: rejoindre-boarding-float 9s ease-in-out infinite; } }
+.rejoindre-boarding-pass { font-family: var(--font-jetbrains); border-radius: 1.1rem; padding: 1.5rem 1.5rem 1.75rem; background: var(--landing-panel); border: 1px solid var(--landing-glass-border); box-shadow: var(--landing-card-shadow); transform-origin: 60% 40%; transform: translateY(-50%) rotate(-4deg) translateY(calc(var(--progress, 0) * -12rem)) rotate(calc(var(--progress, 0) * -20deg)) scale(calc(1 - var(--progress, 0) * 0.22)); opacity: calc(1 - var(--progress, 0) * 0.85); will-change: transform, opacity; }
+.rejoindre-boarding-pass-top { display: flex; align-items: center; justify-content: space-between; padding-bottom: 0.85rem; margin-bottom: 0.85rem; border-bottom: 1px dashed var(--landing-glass-border); }
+.rejoindre-boarding-label { font-size: 0.68rem; font-weight: 700; letter-spacing: 0.14em; color: var(--landing-on-dark-muted); }
+.rejoindre-boarding-code { font-size: 0.85rem; font-weight: 700; color: var(--landing-gold); }
+.rejoindre-boarding-pass-body { display: flex; flex-direction: column; gap: 0.65rem; }
+.rejoindre-boarding-seat { font-size: 0.78rem; color: var(--landing-on-dark-muted); }
+.rejoindre-boarding-barcode { display: block; height: 2.25rem; border-radius: 0.25rem; background: repeating-linear-gradient(90deg, var(--landing-on-dark) 0, var(--landing-on-dark) 2px, transparent 2px, transparent 5px); opacity: 0.55; }
+.rejoindre-boarding-stamp { position: absolute; inset: auto 1rem 1.1rem 1rem; padding: 0.5rem 0.75rem; border-radius: 0.5rem; text-align: center; font-family: var(--font-body); font-size: 0.72rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--primary-fg); background: var(--primary); clip-path: inset(0 0 calc(100% - var(--progress, 0) * 130%) 0); }
+.rejoindre-hero-plane { display: none; }
+@media (min-width: 768px) { .rejoindre-hero-plane { display: block; position: absolute; width: 2.75rem; height: 2.75rem; left: calc(30% + var(--progress, 0) * 45vw); bottom: calc(18% + var(--progress, 0) * 55vh); color: var(--landing-gold); transform: rotate(calc(-18deg - var(--progress, 0) * 12deg)) scale(calc(1 - var(--progress, 0) * 0.3)); opacity: calc(0.85 - var(--progress, 0) * 0.85); } }
+@keyframes rejoindre-boarding-float { 0%, 100% { margin-top: 0; } 50% { margin-top: -14px; } }
+
+.rejoindre-hero-content { position: relative; height: 100%; display: flex; flex-direction: column; justify-content: center; max-width: 40rem; padding-block: 6rem; }
+.rejoindre-hero-eyebrow { margin-bottom: 1.1rem; }
+.rejoindre-hero-headline { font-size: clamp(2rem, 5.2vw, 3.4rem); font-weight: 800; line-height: 1.08; letter-spacing: -0.02em; color: var(--landing-on-dark); text-wrap: balance; margin: 0; }
+.rejoindre-hero-sub { margin-top: 1.1rem; max-width: 34rem; font-size: clamp(1rem, 1.6vw, 1.15rem); line-height: 1.6; color: var(--landing-on-dark-muted); }
+.rejoindre-hero-ctas { display: flex; flex-wrap: wrap; gap: 0.85rem; margin-top: 1.75rem; }
+
+.rejoindre-scroll-hint { position: absolute; left: 50%; bottom: 1.75rem; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 0.4rem; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--landing-on-dark-muted); opacity: clamp(0, calc(1 - var(--progress, 0) * 6), 1); }
+.rejoindre-scroll-hint-chevron { width: 0.6rem; height: 0.6rem; border-right: 2px solid var(--landing-gold); border-bottom: 2px solid var(--landing-gold); transform: rotate(45deg); animation: rejoindre-chevron-bounce 1.8s ease-in-out infinite; }
+@keyframes rejoindre-chevron-bounce { 0%, 100% { transform: rotate(45deg) translate(0, 0); } 50% { transform: rotate(45deg) translate(4px, 4px); } }
+
+.rejoindre-social-proof { padding-block: clamp(2.5rem, 5vw, 4rem); border-bottom: 1px solid var(--landing-glass-border); }
+.rejoindre-stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.5rem 1rem; }
+@media (min-width: 768px) { .rejoindre-stats-grid { grid-template-columns: repeat(4, 1fr); } }
+.rejoindre-stat { display: flex; flex-direction: column; gap: 0.25rem; text-align: center; }
+.rejoindre-stat-value { font-size: clamp(1.75rem, 3.5vw, 2.5rem); font-weight: 800; color: var(--landing-gold); font-variant-numeric: tabular-nums; }
+.rejoindre-stat-label { font-size: 0.82rem; color: var(--landing-on-dark-muted); }
+.rejoindre-social-note { margin-top: 1.75rem; max-width: 42rem; margin-inline: auto; text-align: center; font-size: 0.9rem; color: var(--landing-on-dark-muted); }
+
+.rejoindre-benefits-grid { display: grid; gap: 1.25rem; grid-template-columns: 1fr; }
+@media (min-width: 640px) { .rejoindre-benefits-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 1024px) { .rejoindre-benefits-grid { grid-template-columns: repeat(4, 1fr); } }
+.rejoindre-benefit-card { display: flex; flex-direction: column; border-radius: 1rem; overflow: hidden; background: var(--landing-panel); border: 1px solid var(--landing-glass-border); box-shadow: var(--landing-card-shadow); }
+.rejoindre-benefit-photo { position: relative; aspect-ratio: 16 / 10; }
+.rejoindre-benefit-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.rejoindre-benefit-title { margin: 1.1rem 1.1rem 0.4rem; font-size: 1.05rem; font-weight: 700; color: var(--landing-on-dark); }
+.rejoindre-benefit-desc { margin: 0 1.1rem 1.1rem; font-size: 0.9rem; line-height: 1.55; color: var(--landing-on-dark-muted); }
+
+.rejoindre-testimonials { background: var(--landing-deep); }
+.rejoindre-testimonial-grid { display: grid; gap: 1.25rem; grid-template-columns: 1fr; }
+@media (min-width: 768px) { .rejoindre-testimonial-grid { grid-template-columns: repeat(3, 1fr); } }
+.rejoindre-testimonial-card { padding: 1.5rem; border-radius: 1rem; background: var(--landing-panel); border: 1px solid var(--landing-glass-border); box-shadow: var(--landing-card-shadow); }
+.rejoindre-testimonial-quote { font-size: 0.95rem; line-height: 1.65; color: var(--landing-on-dark); margin: 0; }
+.rejoindre-testimonial-attribution { display: flex; align-items: center; gap: 0.75rem; margin-top: 1.25rem; }
+.rejoindre-testimonial-avatar { display: inline-flex; align-items: center; justify-content: center; width: 2.75rem; height: 2.75rem; flex-shrink: 0; border-radius: 50%; font-size: 0.85rem; font-weight: 700; color: var(--primary-fg); background: var(--primary); }
+.rejoindre-testimonial-name { display: block; font-size: 0.9rem; font-weight: 700; color: var(--landing-on-dark); }
+.rejoindre-testimonial-role { display: block; font-size: 0.8rem; color: var(--landing-on-dark-muted); }
+.rejoindre-testimonial-disclaimer { margin-top: 1.5rem; font-size: 0.72rem; color: var(--landing-on-dark-muted); opacity: 0.7; }
+
+.rejoindre-steps { display: grid; gap: 1.25rem; grid-template-columns: 1fr; list-style: none; padding: 0; margin: 0; }
+@media (min-width: 768px) { .rejoindre-steps { grid-template-columns: repeat(4, 1fr); } }
+.rejoindre-step { padding: 1.5rem; border-radius: 1rem; background: var(--landing-panel); border: 1px solid var(--landing-glass-border); }
+.rejoindre-step-num { display: block; font-family: var(--font-jetbrains); font-size: 1.5rem; font-weight: 700; color: var(--landing-gold); }
+.rejoindre-step-title { margin-top: 0.6rem; font-size: 1rem; font-weight: 700; color: var(--landing-on-dark); }
+.rejoindre-step-desc { margin-top: 0.4rem; font-size: 0.88rem; line-height: 1.55; color: var(--landing-on-dark-muted); }
+
+.rejoindre-faq-container { max-width: 48rem; }
+.rejoindre-faq-list { display: flex; flex-direction: column; gap: 0.75rem; }
+.rejoindre-faq-item { border-radius: 0.85rem; background: var(--landing-panel); border: 1px solid var(--landing-glass-border); overflow: hidden; }
+.rejoindre-faq-question { display: flex; align-items: center; justify-content: space-between; gap: 1rem; width: 100%; padding: 1rem 1.25rem; text-align: left; font-size: 0.95rem; font-weight: 650; color: var(--landing-on-dark); background: transparent; border: 0; cursor: pointer; touch-action: manipulation; font-family: inherit; }
+.rejoindre-faq-icon { flex-shrink: 0; font-size: 1.1rem; font-weight: 700; color: var(--landing-gold); }
+.rejoindre-faq-answer { padding: 0 1.25rem 1.1rem; font-size: 0.9rem; line-height: 1.6; color: var(--landing-on-dark-muted); margin: 0; display: none; }
+.rejoindre-faq-item.is-open .rejoindre-faq-answer { display: block; }
+
+.rejoindre-final-cta { background: var(--landing-deep); }
+.rejoindre-final-cta-inner { display: flex; flex-direction: column; align-items: flex-start; border-radius: 1.25rem; padding: clamp(2rem, 5vw, 3.5rem); background: color-mix(in srgb, var(--navy-soft) 10%, var(--landing-panel)); border: 1px solid color-mix(in srgb, var(--gold-500) 35%, var(--landing-glass-border)); box-shadow: var(--landing-card-shadow); }
+.rejoindre-final-cta-inner h2 { max-width: 42rem; }
+.rejoindre-final-cta-inner p { max-width: 34rem; margin: 0.75rem 0 0; }
+
+.rejoindre-sticky-cta { position: fixed; left: 0; right: 0; bottom: 0; z-index: 50; padding: 0.75rem 1rem calc(0.75rem + env(safe-area-inset-bottom)); background: color-mix(in srgb, var(--landing-bg) 92%, transparent); backdrop-filter: blur(14px); border-top: 1px solid var(--landing-glass-border); transform: translateY(100%); transition: transform 0.3s ease; }
+.rejoindre-sticky-cta.is-visible { transform: translateY(0); }
+.rejoindre-sticky-cta-btn { display: flex; width: 100%; justify-content: center; min-height: 44px; }
+@media (min-width: 1024px) { .rejoindre-sticky-cta { display: none; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .rejoindre-boarding-pass-wrap, .rejoindre-scroll-hint-chevron { animation: none; }
+  .rejoindre-boarding-pass, .rejoindre-hero-paths, .rejoindre-hero-glow, .rejoindre-hero-plane, .rejoindre-hero-sky, .rejoindre-sticky-cta { transition: none; }
+}
+@media (pointer: coarse) {
+  .rejoindre-boarding-pass-wrap, .rejoindre-hero-plane { display: none; }
+}
+</style>
+</head>
+<body class="landing rejoindre-page">
+
+<header class="rejoindre-header">
+  <div class="rejoindre-container rejoindre-header-row">
+    <span class="rejoindre-logo"><img src="brand/logo.png" alt="IAT Academy" /></span>
+    <div class="rejoindre-header-actions">
+      <a class="rejoindre-header-phone" href="tel:+212675096134">+212 675 096 134</a>
+      <a href="/register" class="landing-btn-glow landing-btn-sm">Je candidate</a>
+    </div>
+  </div>
+</header>
+
+<main>
+
+  <!-- HERO — la séquence cinématique unique -->
+  <section class="rejoindre-hero-scene" id="hero-scene" aria-label="Introduction">
+    <div class="rejoindre-hero-sticky">
+      <div class="rejoindre-hero-layer" aria-hidden="true"><div class="rejoindre-hero-sky"></div></div>
+      <div class="rejoindre-hero-layer" aria-hidden="true">
+        <div class="rejoindre-hero-glow rejoindre-hero-glow-a"></div>
+        <div class="rejoindre-hero-glow rejoindre-hero-glow-b"></div>
+      </div>
+      <div class="rejoindre-hero-layer" aria-hidden="true">
+        <svg class="rejoindre-hero-paths" viewBox="0 0 1200 400" fill="none" preserveAspectRatio="none">
+          <path d="M0 320 C200 280 400 360 600 300 S1000 240 1200 280" stroke="currentColor" stroke-width="1.5" stroke-dasharray="8 12" opacity="0.35" />
+          <path d="M0 200 C300 160 500 240 800 180 S1100 120 1200 160" stroke="currentColor" stroke-width="1" stroke-dasharray="4 10" opacity="0.2" />
+        </svg>
+        <span class="rejoindre-gate-tag">PORTE 02</span>
+      </div>
+      <div class="rejoindre-hero-layer" aria-hidden="true">
+        <div class="rejoindre-boarding-pass-wrap">
+          <div class="rejoindre-boarding-pass">
+            <div class="rejoindre-boarding-pass-top">
+              <span class="rejoindre-boarding-label">CARTE D'EMBARQUEMENT</span>
+              <span class="rejoindre-boarding-code">IAT-2026</span>
+            </div>
+            <div class="rejoindre-boarding-pass-body">
+              <span class="rejoindre-boarding-seat">PLACE 1 SUR 2 ANNÉES</span>
+              <span class="rejoindre-boarding-barcode"></span>
+            </div>
+            <div class="rejoindre-boarding-stamp">Embarquement confirmé</div>
+          </div>
+        </div>
+        <svg class="rejoindre-hero-plane" viewBox="0 0 64 64" fill="currentColor">
+          <path d="M32 8 37 24h16l-12 9 4 15-8-6-8 6 4-15-12-9h16L32 8Zm0 6.2L29.4 22H18l9.8 7.2-3.7 13.5L32 38.8l7.9 3.9L36.2 29.2 46 22H34.6L32 14.2Z" />
+        </svg>
+      </div>
+      <div class="rejoindre-hero-layer rejoindre-depth-4">
+        <div class="rejoindre-container rejoindre-hero-content">
+          <p class="landing-eyebrow landing-eyebrow-glass rejoindre-hero-eyebrow">
+            <svg class="landing-kicker-plane" viewBox="0 0 64 64" fill="currentColor" aria-hidden="true"><path d="M32 8 37 24h16l-12 9 4 15-8-6-8 6 4-15-12-9h16L32 8Zm0 6.2L29.4 22H18l9.8 7.2-3.7 13.5L32 38.8l7.9 3.9L36.2 29.2 46 22H34.6L32 14.2Z" /></svg>
+            Admissions 2026 ouvertes
+          </p>
+          <h1 class="rejoindre-hero-headline">Embarquez pour une carrière dans l'aviation et le tourisme</h1>
+          <p class="rejoindre-hero-sub">2 ans de formation, un stage en milieu réel et un diplôme reconnu — devenez hôtesse de l'air, steward, agent d'escale ou accompagnateur touristique.</p>
+          <div class="rejoindre-hero-ctas">
+            <a href="/register" class="landing-btn-glow landing-btn-lg">Je candidate</a>
+            <a href="#comment-ca-marche" class="landing-btn-outline-light landing-btn-lg">Voir le parcours</a>
+          </div>
+        </div>
+      </div>
+      <div class="rejoindre-hero-layer" aria-hidden="true">
+        <span class="rejoindre-scroll-hint"><span class="rejoindre-scroll-hint-chevron"></span>Faites défiler pour embarquer</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- PREUVE SOCIALE -->
+  <section class="rejoindre-section rejoindre-social-proof" aria-label="Chiffres clés">
+    <div class="rejoindre-container">
+      <div class="landing-reveal">
+        <div class="rejoindre-stats-grid">
+          <div class="rejoindre-stat"><span class="rejoindre-stat-value">92%</span><span class="rejoindre-stat-label">taux d'insertion à 1 an</span></div>
+          <div class="rejoindre-stat"><span class="rejoindre-stat-value">500+</span><span class="rejoindre-stat-label">diplômés depuis la création</span></div>
+          <div class="rejoindre-stat"><span class="rejoindre-stat-value">2</span><span class="rejoindre-stat-label">années pour un diplôme complet</span></div>
+          <div class="rejoindre-stat"><span class="rejoindre-stat-value">100%</span><span class="rejoindre-stat-label">promotions avec stage en entreprise</span></div>
+        </div>
+        <p class="rejoindre-social-note">Nos diplômés évoluent chez des compagnies aériennes, des groupes hôteliers et des agences de voyage au Maroc et à l'international.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- BÉNÉFICES -->
+  <section id="benefices" class="rejoindre-section" aria-label="Bénéfices">
+    <div class="rejoindre-container">
+      <div class="landing-reveal">
+        <p class="landing-section-kicker">
+          <svg class="landing-kicker-plane" viewBox="0 0 64 64" fill="currentColor" aria-hidden="true"><path d="M32 8 37 24h16l-12 9 4 15-8-6-8 6 4-15-12-9h16L32 8Zm0 6.2L29.4 22H18l9.8 7.2-3.7 13.5L32 38.8l7.9 3.9L36.2 29.2 46 22H34.6L32 14.2Z" /></svg>
+          Pourquoi IAT Academy
+        </p>
+        <h2 class="landing-h2" style="max-width:48rem">Ce qui fait la différence sur votre CV</h2>
+      </div>
+      <div class="rejoindre-benefits-grid" style="margin-top:2.5rem">
+        <div class="landing-reveal rejoindre-benefit-card">
+          <div class="rejoindre-benefit-photo"><img src="images/landing/studentpracticing.jpg" alt="Apprenant IAT Academy en stage" /></div>
+          <h3 class="rejoindre-benefit-title">Stage garanti en milieu réel</h3>
+          <p class="rejoindre-benefit-desc">Chaque parcours inclut une immersion professionnelle encadrée — pas seulement des cours, une vraie mise en situation avant le diplôme.</p>
+        </div>
+        <div class="landing-reveal rejoindre-benefit-card">
+          <div class="rejoindre-benefit-photo"><img src="images/landing/stock-airport.jpg" alt="Opérations aéroportuaires" /></div>
+          <h3 class="rejoindre-benefit-title">Employabilité aviation &amp; tourisme</h3>
+          <p class="rejoindre-benefit-desc">Un programme construit autour des métiers qui recrutent : cabine, escale, accueil touristique — pas une formation généraliste.</p>
+        </div>
+        <div class="landing-reveal rejoindre-benefit-card">
+          <div class="rejoindre-benefit-photo"><img src="images/landing/social-promo.jpg" alt="Promotion de diplômés IAT Academy" /></div>
+          <h3 class="rejoindre-benefit-title">Bourse à l'emploi réservée aux diplômés</h3>
+          <p class="rejoindre-benefit-desc">Une fois le diplôme en poche, accédez à un espace alumni avec des offres d'emploi du secteur, réservées à ceux qui ont terminé le cycle.</p>
+        </div>
+        <div class="landing-reveal rejoindre-benefit-card">
+          <div class="rejoindre-benefit-photo"><img src="images/landing/teacherExplaining1.jpg" alt="Formateur IAT Academy en session" /></div>
+          <h3 class="rejoindre-benefit-title">Accompagnement personnalisé</h3>
+          <p class="rejoindre-benefit-desc">Suivi individuel, espace apprenant en ligne et formateurs issus du terrain — vous n'avancez jamais seul dans votre parcours.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TÉMOIGNAGES -->
+  <section id="temoignages" class="rejoindre-section rejoindre-testimonials" aria-label="Témoignages">
+    <div class="rejoindre-container">
+      <div class="landing-reveal">
+        <p class="landing-section-kicker">
+          <svg class="landing-kicker-plane" viewBox="0 0 64 64" fill="currentColor" aria-hidden="true"><path d="M32 8 37 24h16l-12 9 4 15-8-6-8 6 4-15-12-9h16L32 8Zm0 6.2L29.4 22H18l9.8 7.2-3.7 13.5L32 38.8l7.9 3.9L36.2 29.2 46 22H34.6L32 14.2Z" /></svg>
+          Ils sont passés par IAT
+        </p>
+        <h2 class="landing-h2" style="max-width:48rem">Des diplômés, aujourd'hui en poste</h2>
+      </div>
+      <div class="rejoindre-testimonial-grid" style="margin-top:2.5rem">
+        <div class="landing-reveal rejoindre-testimonial-card">
+          <p class="rejoindre-testimonial-quote">&ldquo;Le stage en milieu réel m'a permis d'arriver en entretien avec une vraie expérience terrain, pas juste un diplôme sur papier.&rdquo;</p>
+          <div class="rejoindre-testimonial-attribution">
+            <span class="rejoindre-testimonial-avatar">NR</span>
+            <span><span class="rejoindre-testimonial-name">Nora</span><span class="rejoindre-testimonial-role">Hôtesse de l'air</span></span>
+          </div>
+        </div>
+        <div class="landing-reveal rejoindre-testimonial-card">
+          <p class="rejoindre-testimonial-quote">&ldquo;Deux ans intenses mais un accompagnement présent à chaque étape — du premier cours jusqu'à la recherche d'emploi.&rdquo;</p>
+          <div class="rejoindre-testimonial-attribution">
+            <span class="rejoindre-testimonial-avatar">YM</span>
+            <span><span class="rejoindre-testimonial-name">Youssef</span><span class="rejoindre-testimonial-role">Agent d'escale</span></span>
+          </div>
+        </div>
+        <div class="landing-reveal rejoindre-testimonial-card">
+          <p class="rejoindre-testimonial-quote">&ldquo;L'espace apprenant en ligne m'a permis de réviser à mon rythme entre les cours et le stage. Un vrai plus pour organiser son temps.&rdquo;</p>
+          <div class="rejoindre-testimonial-attribution">
+            <span class="rejoindre-testimonial-avatar">SK</span>
+            <span><span class="rejoindre-testimonial-name">Salma</span><span class="rejoindre-testimonial-role">Accompagnatrice touristique</span></span>
+          </div>
+        </div>
+      </div>
+      <p class="rejoindre-testimonial-disclaimer">Témoignages illustratifs — à remplacer par de vrais retours de diplômés.</p>
+    </div>
+  </section>
+
+  <!-- COMMENT ÇA MARCHE -->
+  <section id="comment-ca-marche" class="rejoindre-section" aria-label="Comment ça marche">
+    <div class="rejoindre-container">
+      <div class="landing-reveal">
+        <p class="landing-section-kicker">
+          <svg class="landing-kicker-plane" viewBox="0 0 64 64" fill="currentColor" aria-hidden="true"><path d="M32 8 37 24h16l-12 9 4 15-8-6-8 6 4-15-12-9h16L32 8Zm0 6.2L29.4 22H18l9.8 7.2-3.7 13.5L32 38.8l7.9 3.9L36.2 29.2 46 22H34.6L32 14.2Z" /></svg>
+          Comment ça marche
+        </p>
+        <h2 class="landing-h2" style="max-width:48rem">De la candidature au premier poste</h2>
+      </div>
+      <ol class="rejoindre-steps" style="margin-top:2.5rem">
+        <li class="landing-reveal rejoindre-step"><span class="rejoindre-step-num">01</span><h3 class="rejoindre-step-title">Candidature</h3><p class="rejoindre-step-desc">Déposez votre dossier en quelques minutes, sans paperasse inutile.</p></li>
+        <li class="landing-reveal rejoindre-step"><span class="rejoindre-step-num">02</span><h3 class="rejoindre-step-title">Sélection</h3><p class="rejoindre-step-desc">Un entretien pour vérifier votre motivation — pas un concours à préparer pendant des mois.</p></li>
+        <li class="landing-reveal rejoindre-step"><span class="rejoindre-step-num">03</span><h3 class="rejoindre-step-title">2 ans de formation + stage</h3><p class="rejoindre-step-desc">Cours en présentiel, espace apprenant en ligne, et une immersion en entreprise avant le diplôme.</p></li>
+        <li class="landing-reveal rejoindre-step"><span class="rejoindre-step-num">04</span><h3 class="rejoindre-step-title">Diplôme &amp; emploi</h3><p class="rejoindre-step-desc">Soutenance, remise du diplôme, puis accès à la bourse à l'emploi réservée aux diplômés.</p></li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section id="faq" class="rejoindre-section" aria-label="Questions fréquentes">
+    <div class="rejoindre-container rejoindre-faq-container">
+      <div class="landing-reveal">
+        <p class="landing-section-kicker">
+          <svg class="landing-kicker-plane" viewBox="0 0 64 64" fill="currentColor" aria-hidden="true"><path d="M32 8 37 24h16l-12 9 4 15-8-6-8 6 4-15-12-9h16L32 8Zm0 6.2L29.4 22H18l9.8 7.2-3.7 13.5L32 38.8l7.9 3.9L36.2 29.2 46 22H34.6L32 14.2Z" /></svg>
+          Questions fréquentes
+        </p>
+        <h2 class="landing-h2" style="max-width:48rem">Avant de vous décider</h2>
+      </div>
+      <div class="rejoindre-faq-list" style="margin-top:2rem">
+        <div class="rejoindre-faq-item is-open">
+          <button type="button" class="rejoindre-faq-question" onclick="toggleFaq(this)">Combien coûte la formation ?<span class="rejoindre-faq-icon">−</span></button>
+          <p class="rejoindre-faq-answer">Les frais varient selon la formule choisie. Contactez l'académie pour un devis détaillé et les facilités de paiement disponibles — un conseiller vous répond sous 48h.</p>
+        </div>
+        <div class="rejoindre-faq-item">
+          <button type="button" class="rejoindre-faq-question" onclick="toggleFaq(this)">Quel niveau faut-il pour candidater ?<span class="rejoindre-faq-icon">+</span></button>
+          <p class="rejoindre-faq-answer">Le baccalauréat suffit pour intégrer le cycle. Les profils en reconversion sans bac sont étudiés au cas par cas lors de l'entretien de sélection.</p>
+        </div>
+        <div class="rejoindre-faq-item">
+          <button type="button" class="rejoindre-faq-question" onclick="toggleFaq(this)">Quels débouchés réels après le diplôme ?<span class="rejoindre-faq-icon">+</span></button>
+          <p class="rejoindre-faq-answer">Hôtesse de l'air, steward, agent d'escale, accueil touristique ou hôtelier — nos diplômés intègrent des compagnies aériennes, des groupes hôteliers et des agences de voyage.</p>
+        </div>
+        <div class="rejoindre-faq-item">
+          <button type="button" class="rejoindre-faq-question" onclick="toggleFaq(this)">Le stage se déroule-t-il au Maroc ou à l'étranger ?<span class="rejoindre-faq-icon">+</span></button>
+          <p class="rejoindre-faq-answer">Le stage se déroule en priorité au Maroc, dans des structures partenaires du secteur. Certaines opportunités à l'étranger peuvent être étudiées selon le profil et la disponibilité des postes.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA FINAL -->
+  <section class="rejoindre-section rejoindre-final-cta" aria-label="Candidater">
+    <div class="rejoindre-container">
+      <div class="landing-reveal rejoindre-final-cta-inner">
+        <h2 class="landing-h2-light landing-h2">Votre carrière dans l'aviation commence par une candidature</h2>
+        <p class="landing-text-on-dark-muted">Les places pour la prochaine promotion sont limitées — déposez votre dossier dès aujourd'hui.</p>
+        <a href="/register" class="landing-btn-glow landing-btn-lg" style="margin-top:1.5rem">Je candidate</a>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="landing-footer">
+  <div class="landing-container">
+    <p class="landing-footer-copy">
+      © 2026 IAT Academy — Académie internationale des compagnies aériennes et du tourisme. Tous droits réservés.
+      <a href="/cgu">Conditions Générales d'Utilisation</a>
+    </p>
+  </div>
+</footer>
+
+<div class="rejoindre-sticky-cta" id="sticky-cta">
+  <a href="/register" class="landing-btn-glow rejoindre-sticky-cta-btn">Je candidate</a>
+</div>
+
+<script>
+  // Reveal on scroll (mirrors components/landing/Reveal.tsx)
+  var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  document.querySelectorAll(".landing-reveal").forEach(function (el) {
+    if (reduceMotion) { el.classList.add("is-visible"); return; }
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (entry.isIntersecting) { el.classList.add("is-visible"); io.disconnect(); }
+      });
+    }, { threshold: 0.14, rootMargin: "0px 0px -40px 0px" });
+    io.observe(el);
+  });
+
+  // Hero scroll progress (mirrors components/rejoindre/useScrollProgress.ts)
+  (function () {
+    var el = document.getElementById("hero-scene");
+    if (!el) return;
+    if (reduceMotion) { el.style.setProperty("--progress", "1"); return; }
+    var ticking = false;
+    function update() {
+      ticking = false;
+      var rect = el.getBoundingClientRect();
+      var total = rect.height - window.innerHeight;
+      var raw = total > 0 ? -rect.top / total : 0;
+      var progress = Math.min(1, Math.max(0, raw));
+      el.style.setProperty("--progress", progress.toFixed(4));
+    }
+    window.addEventListener("scroll", function () {
+      if (!ticking) { ticking = true; requestAnimationFrame(update); }
+    }, { passive: true });
+    update();
+  })();
+
+  // FAQ accordion (mirrors components/rejoindre/Faq.tsx)
+  function toggleFaq(btn) {
+    var item = btn.closest(".rejoindre-faq-item");
+    var icon = btn.querySelector(".rejoindre-faq-icon");
+    var open = item.classList.toggle("is-open");
+    icon.textContent = open ? "−" : "+";
+  }
+
+  // Sticky mobile CTA (mirrors components/rejoindre/StickyMobileCta.tsx)
+  (function () {
+    var bar = document.getElementById("sticky-cta");
+    window.addEventListener("scroll", function () {
+      bar.classList.toggle("is-visible", window.scrollY > window.innerHeight * 0.6);
+    }, { passive: true });
+  })();
+</script>
+
+</body>
+</html>
