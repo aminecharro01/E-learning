@@ -1,5 +1,5 @@
 import { rejoindre } from "./content";
-import { Reveal } from "../landing/Reveal";
+import { RejoindreReveal } from "./RejoindreReveal";
 import { AirplaneIcon } from "../landing/icons/Airplane";
 
 export function RejoindreTestimonials() {
@@ -7,16 +7,16 @@ export function RejoindreTestimonials() {
   return (
     <section id="temoignages" className="rejoindre-section scroll-mt-20 rejoindre-testimonials" aria-label="Témoignages">
       <div className="rejoindre-container">
-        <Reveal>
+        <RejoindreReveal>
           <p className="landing-section-kicker">
             <AirplaneIcon className="landing-kicker-plane" />
             {t.kicker}
           </p>
           <h2 className="landing-h2 max-w-3xl">{t.headline}</h2>
-        </Reveal>
+        </RejoindreReveal>
         <div className="rejoindre-testimonial-grid mt-10">
           {t.items.map((item, index) => (
-            <Reveal key={item.name} delayMs={index * 90} className="rejoindre-testimonial-card">
+            <RejoindreReveal key={item.name} delayMs={index * 90} className="rejoindre-testimonial-card">
               <p className="rejoindre-testimonial-quote">&ldquo;{item.quote}&rdquo;</p>
               <div className="rejoindre-testimonial-attribution">
                 <span className="rejoindre-testimonial-avatar" aria-hidden="true">
@@ -27,7 +27,7 @@ export function RejoindreTestimonials() {
                   <span className="rejoindre-testimonial-role">{item.role}</span>
                 </span>
               </div>
-            </Reveal>
+            </RejoindreReveal>
           ))}
         </div>
         <p className="rejoindre-testimonial-disclaimer">{t.note}</p>

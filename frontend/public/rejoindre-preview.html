@@ -147,18 +147,23 @@ body { margin: 0; font-family: var(--font-body); }
 .landing-footer-copy a { color: var(--gold-500); font-weight: 600; text-decoration: none; }
 .landing-footer-copy a:hover { text-decoration: underline; }
 
-.landing-reveal { opacity: 0; transform: translateY(24px); transition: opacity 0.6s ease, transform 0.6s ease; }
-.landing-reveal.is-visible { opacity: 1; transform: none; }
-@media (prefers-reduced-motion: reduce) {
-  .landing-reveal { opacity: 1; transform: none; transition: none; }
-}
+/* --- rejoindre.css (mirrors frontend/src/components/rejoindre/rejoindre.css) --- */
 
-/* --- rejoindre.css (verbatim from frontend/src/components/rejoindre/rejoindre.css) --- */
+.rejoindre-page {
+  isolation: isolate;
+  --ease-fluid: cubic-bezier(0.32, 0.72, 0, 1);
+}
 
 .rejoindre-container { width: 100%; max-width: 80rem; margin-inline: auto; padding-inline: 1rem; }
 @media (min-width: 640px) { .rejoindre-container { padding-inline: 1.5rem; } }
 .rejoindre-section { padding-block: clamp(3rem, 7vw, 5.5rem); }
-.rejoindre-page { isolation: isolate; }
+
+.rejoindre-page :is(a, button):focus-visible { outline: 2px solid var(--landing-gold); outline-offset: 2px; border-radius: 4px; }
+
+/* flight progress bar */
+.rejoindre-progress-track { position: fixed; top: 0; left: 0; right: 0; z-index: 60; height: 3px; background: var(--landing-glass-border); }
+.rejoindre-progress-fill { height: 100%; width: 100%; transform-origin: left; transform: scaleX(var(--page-progress, 0)); background: linear-gradient(90deg, var(--gold-500), var(--landing-gold)); }
+@media (prefers-reduced-motion: reduce) { .rejoindre-progress-track { display: none; } }
 
 .rejoindre-header { position: sticky; top: 0; z-index: 40; padding-block: 0.85rem; background: color-mix(in srgb, var(--landing-bg) 78%, transparent); backdrop-filter: blur(14px); border-bottom: 1px solid var(--landing-glass-border); }
 .rejoindre-header-row { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
@@ -203,12 +208,25 @@ body { margin: 0; font-family: var(--font-body); }
 .rejoindre-hero-content { position: relative; height: 100%; display: flex; flex-direction: column; justify-content: center; max-width: 40rem; padding-block: 6rem; }
 .rejoindre-hero-eyebrow { margin-bottom: 1.1rem; }
 .rejoindre-hero-headline { font-size: clamp(2rem, 5.2vw, 3.4rem); font-weight: 800; line-height: 1.08; letter-spacing: -0.02em; color: var(--landing-on-dark); text-wrap: balance; margin: 0; }
-.rejoindre-hero-sub { margin-top: 1.1rem; max-width: 34rem; font-size: clamp(1rem, 1.6vw, 1.15rem); line-height: 1.6; color: var(--landing-on-dark-muted); }
+.rejoindre-hero-sub { margin-top: 1.1rem; max-width: 34rem; font-size: clamp(1rem, 1.6vw, 1.15rem); line-height: 1.6; color: var(--landing-on-dark-muted); text-wrap: pretty; }
 .rejoindre-hero-ctas { display: flex; flex-wrap: wrap; gap: 0.85rem; margin-top: 1.75rem; }
 
 .rejoindre-scroll-hint { position: absolute; left: 50%; bottom: 1.75rem; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 0.4rem; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--landing-on-dark-muted); opacity: clamp(0, calc(1 - var(--progress, 0) * 6), 1); }
 .rejoindre-scroll-hint-chevron { width: 0.6rem; height: 0.6rem; border-right: 2px solid var(--landing-gold); border-bottom: 2px solid var(--landing-gold); transform: rotate(45deg); animation: rejoindre-chevron-bounce 1.8s ease-in-out infinite; }
 @keyframes rejoindre-chevron-bounce { 0%, 100% { transform: rotate(45deg) translate(0, 0); } 50% { transform: rotate(45deg) translate(4px, 4px); } }
+
+/* reveal — blur + rise + fade, fluid easing */
+.rejoindre-reveal { opacity: 0; transform: translateY(28px); filter: blur(6px); transition: opacity 0.9s var(--ease-fluid), transform 0.9s var(--ease-fluid), filter 0.9s var(--ease-fluid); transition-delay: var(--delay, 0ms); }
+.rejoindre-reveal.is-visible { opacity: 1; transform: none; filter: blur(0); }
+@media (prefers-reduced-motion: reduce) { .rejoindre-reveal { opacity: 1; transform: none; filter: none; transition: none; } }
+
+/* tagline reveal */
+.rejoindre-tagline { padding-block: clamp(5rem, 12vw, 8rem); }
+.rejoindre-tagline-text { max-width: 44rem; font-size: clamp(1.75rem, 4.2vw, 3rem); font-weight: 700; line-height: 1.25; letter-spacing: -0.01em; text-wrap: balance; margin: 0; }
+.rejoindre-tagline-word { color: color-mix(in srgb, var(--landing-on-dark) 30%, transparent); transition: color 0.6s var(--ease-fluid); transition-delay: var(--word-delay, 0ms); }
+.rejoindre-tagline-word.is-lit { color: var(--landing-on-dark); }
+.rejoindre-tagline-word.is-accent.is-lit { color: var(--landing-gold); }
+@media (prefers-reduced-motion: reduce) { .rejoindre-tagline-word { color: var(--landing-on-dark); transition: none; } .rejoindre-tagline-word.is-accent { color: var(--landing-gold); } }
 
 .rejoindre-social-proof { padding-block: clamp(2.5rem, 5vw, 4rem); border-bottom: 1px solid var(--landing-glass-border); }
 .rejoindre-stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.5rem 1rem; }
@@ -216,22 +234,25 @@ body { margin: 0; font-family: var(--font-body); }
 .rejoindre-stat { display: flex; flex-direction: column; gap: 0.25rem; text-align: center; }
 .rejoindre-stat-value { font-size: clamp(1.75rem, 3.5vw, 2.5rem); font-weight: 800; color: var(--landing-gold); font-variant-numeric: tabular-nums; }
 .rejoindre-stat-label { font-size: 0.82rem; color: var(--landing-on-dark-muted); }
-.rejoindre-social-note { margin-top: 1.75rem; max-width: 42rem; margin-inline: auto; text-align: center; font-size: 0.9rem; color: var(--landing-on-dark-muted); }
+.rejoindre-social-note { margin-top: 1.75rem; max-width: 42rem; margin-inline: auto; text-align: center; font-size: 0.9rem; color: var(--landing-on-dark-muted); text-wrap: pretty; }
 
 .rejoindre-benefits-grid { display: grid; gap: 1.25rem; grid-template-columns: 1fr; }
 @media (min-width: 640px) { .rejoindre-benefits-grid { grid-template-columns: repeat(2, 1fr); } }
 @media (min-width: 1024px) { .rejoindre-benefits-grid { grid-template-columns: repeat(4, 1fr); } }
-.rejoindre-benefit-card { display: flex; flex-direction: column; border-radius: 1rem; overflow: hidden; background: var(--landing-panel); border: 1px solid var(--landing-glass-border); box-shadow: var(--landing-card-shadow); }
-.rejoindre-benefit-photo { position: relative; aspect-ratio: 16 / 10; }
-.rejoindre-benefit-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.rejoindre-benefit-card { display: flex; flex-direction: column; border-radius: 1.25rem; overflow: hidden; background: var(--landing-panel); border: 1px solid var(--landing-glass-border); box-shadow: var(--landing-card-shadow); transition: box-shadow 0.5s var(--ease-fluid), border-color 0.5s var(--ease-fluid); }
+.rejoindre-benefit-card:hover { border-color: color-mix(in srgb, var(--landing-gold) 40%, var(--landing-glass-border)); box-shadow: 0 20px 45px -20px color-mix(in srgb, var(--landing-gold) 25%, transparent); }
+.rejoindre-benefit-photo { position: relative; aspect-ratio: 16 / 10; overflow: hidden; }
+.rejoindre-benefit-photo img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.7s var(--ease-fluid); }
+.rejoindre-benefit-card:hover .rejoindre-benefit-photo img { transform: scale(1.05); }
 .rejoindre-benefit-title { margin: 1.1rem 1.1rem 0.4rem; font-size: 1.05rem; font-weight: 700; color: var(--landing-on-dark); }
-.rejoindre-benefit-desc { margin: 0 1.1rem 1.1rem; font-size: 0.9rem; line-height: 1.55; color: var(--landing-on-dark-muted); }
+.rejoindre-benefit-desc { margin: 0 1.1rem 1.1rem; font-size: 0.9rem; line-height: 1.55; color: var(--landing-on-dark-muted); text-wrap: pretty; }
 
 .rejoindre-testimonials { background: var(--landing-deep); }
 .rejoindre-testimonial-grid { display: grid; gap: 1.25rem; grid-template-columns: 1fr; }
 @media (min-width: 768px) { .rejoindre-testimonial-grid { grid-template-columns: repeat(3, 1fr); } }
-.rejoindre-testimonial-card { padding: 1.5rem; border-radius: 1rem; background: var(--landing-panel); border: 1px solid var(--landing-glass-border); box-shadow: var(--landing-card-shadow); }
-.rejoindre-testimonial-quote { font-size: 0.95rem; line-height: 1.65; color: var(--landing-on-dark); margin: 0; }
+.rejoindre-testimonial-card { padding: 1.5rem; border-radius: 1.25rem; background: var(--landing-panel); border: 1px solid var(--landing-glass-border); box-shadow: var(--landing-card-shadow); transition: box-shadow 0.5s var(--ease-fluid), border-color 0.5s var(--ease-fluid); }
+.rejoindre-testimonial-card:hover { border-color: color-mix(in srgb, var(--landing-gold) 35%, var(--landing-glass-border)); box-shadow: 0 20px 45px -20px color-mix(in srgb, var(--landing-gold) 20%, transparent); }
+.rejoindre-testimonial-quote { font-size: 0.95rem; line-height: 1.65; color: var(--landing-on-dark); margin: 0; text-wrap: pretty; }
 .rejoindre-testimonial-attribution { display: flex; align-items: center; gap: 0.75rem; margin-top: 1.25rem; }
 .rejoindre-testimonial-avatar { display: inline-flex; align-items: center; justify-content: center; width: 2.75rem; height: 2.75rem; flex-shrink: 0; border-radius: 50%; font-size: 0.85rem; font-weight: 700; color: var(--primary-fg); background: var(--primary); }
 .rejoindre-testimonial-name { display: block; font-size: 0.9rem; font-weight: 700; color: var(--landing-on-dark); }
@@ -240,32 +261,39 @@ body { margin: 0; font-family: var(--font-body); }
 
 .rejoindre-steps { display: grid; gap: 1.25rem; grid-template-columns: 1fr; list-style: none; padding: 0; margin: 0; }
 @media (min-width: 768px) { .rejoindre-steps { grid-template-columns: repeat(4, 1fr); } }
-.rejoindre-step { padding: 1.5rem; border-radius: 1rem; background: var(--landing-panel); border: 1px solid var(--landing-glass-border); }
+.rejoindre-step { padding: 1.5rem; border-radius: 1.25rem; background: var(--landing-panel); border: 1px solid var(--landing-glass-border); transition: transform 0.5s var(--ease-fluid), border-color 0.5s var(--ease-fluid); }
+.rejoindre-step:hover { transform: translateY(-4px); border-color: color-mix(in srgb, var(--landing-gold) 35%, var(--landing-glass-border)); }
 .rejoindre-step-num { display: block; font-family: var(--font-jetbrains); font-size: 1.5rem; font-weight: 700; color: var(--landing-gold); }
 .rejoindre-step-title { margin-top: 0.6rem; font-size: 1rem; font-weight: 700; color: var(--landing-on-dark); }
-.rejoindre-step-desc { margin-top: 0.4rem; font-size: 0.88rem; line-height: 1.55; color: var(--landing-on-dark-muted); }
+.rejoindre-step-desc { margin-top: 0.4rem; font-size: 0.88rem; line-height: 1.55; color: var(--landing-on-dark-muted); text-wrap: pretty; }
 
 .rejoindre-faq-container { max-width: 48rem; }
 .rejoindre-faq-list { display: flex; flex-direction: column; gap: 0.75rem; }
-.rejoindre-faq-item { border-radius: 0.85rem; background: var(--landing-panel); border: 1px solid var(--landing-glass-border); overflow: hidden; }
+.rejoindre-faq-item { border-radius: 1rem; background: var(--landing-panel); border: 1px solid var(--landing-glass-border); overflow: hidden; transition: border-color 0.4s var(--ease-fluid); }
+.rejoindre-faq-item:hover { border-color: color-mix(in srgb, var(--landing-gold) 30%, var(--landing-glass-border)); }
 .rejoindre-faq-question { display: flex; align-items: center; justify-content: space-between; gap: 1rem; width: 100%; padding: 1rem 1.25rem; text-align: left; font-size: 0.95rem; font-weight: 650; color: var(--landing-on-dark); background: transparent; border: 0; cursor: pointer; touch-action: manipulation; font-family: inherit; }
-.rejoindre-faq-icon { flex-shrink: 0; font-size: 1.1rem; font-weight: 700; color: var(--landing-gold); }
-.rejoindre-faq-answer { padding: 0 1.25rem 1.1rem; font-size: 0.9rem; line-height: 1.6; color: var(--landing-on-dark-muted); margin: 0; display: none; }
-.rejoindre-faq-item.is-open .rejoindre-faq-answer { display: block; }
+.rejoindre-faq-icon { flex-shrink: 0; font-size: 1.1rem; font-weight: 700; color: var(--landing-gold); transition: transform 0.4s var(--ease-fluid); display: inline-block; }
+.rejoindre-faq-item.is-open .rejoindre-faq-icon { transform: rotate(45deg); }
+.rejoindre-faq-answer-row { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 0.45s var(--ease-fluid); }
+.rejoindre-faq-item.is-open .rejoindre-faq-answer-row { grid-template-rows: 1fr; }
+.rejoindre-faq-answer-inner { overflow: hidden; }
+.rejoindre-faq-answer { padding: 0 1.25rem 1.1rem; font-size: 0.9rem; line-height: 1.6; color: var(--landing-on-dark-muted); margin: 0; text-wrap: pretty; }
+@media (prefers-reduced-motion: reduce) { .rejoindre-faq-answer-row, .rejoindre-faq-icon { transition: none; } }
 
 .rejoindre-final-cta { background: var(--landing-deep); }
 .rejoindre-final-cta-inner { display: flex; flex-direction: column; align-items: flex-start; border-radius: 1.25rem; padding: clamp(2rem, 5vw, 3.5rem); background: color-mix(in srgb, var(--navy-soft) 10%, var(--landing-panel)); border: 1px solid color-mix(in srgb, var(--gold-500) 35%, var(--landing-glass-border)); box-shadow: var(--landing-card-shadow); }
 .rejoindre-final-cta-inner h2 { max-width: 42rem; }
 .rejoindre-final-cta-inner p { max-width: 34rem; margin: 0.75rem 0 0; }
 
-.rejoindre-sticky-cta { position: fixed; left: 0; right: 0; bottom: 0; z-index: 50; padding: 0.75rem 1rem calc(0.75rem + env(safe-area-inset-bottom)); background: color-mix(in srgb, var(--landing-bg) 92%, transparent); backdrop-filter: blur(14px); border-top: 1px solid var(--landing-glass-border); transform: translateY(100%); transition: transform 0.3s ease; }
+.rejoindre-sticky-cta { position: fixed; left: 0; right: 0; bottom: 0; z-index: 50; padding: 0.75rem 1rem calc(0.75rem + env(safe-area-inset-bottom)); background: color-mix(in srgb, var(--landing-bg) 92%, transparent); backdrop-filter: blur(14px); border-top: 1px solid var(--landing-glass-border); transform: translateY(100%); transition: transform 0.4s var(--ease-fluid); }
 .rejoindre-sticky-cta.is-visible { transform: translateY(0); }
 .rejoindre-sticky-cta-btn { display: flex; width: 100%; justify-content: center; min-height: 44px; }
 @media (min-width: 1024px) { .rejoindre-sticky-cta { display: none; } }
 
 @media (prefers-reduced-motion: reduce) {
   .rejoindre-boarding-pass-wrap, .rejoindre-scroll-hint-chevron { animation: none; }
-  .rejoindre-boarding-pass, .rejoindre-hero-paths, .rejoindre-hero-glow, .rejoindre-hero-plane, .rejoindre-hero-sky, .rejoindre-sticky-cta { transition: none; }
+  .rejoindre-boarding-pass, .rejoindre-hero-paths, .rejoindre-hero-glow, .rejoindre-hero-plane, .rejoindre-hero-sky, .rejoindre-sticky-cta,
+  .rejoindre-benefit-card, .rejoindre-benefit-photo img, .rejoindre-testimonial-card, .rejoindre-step, .rejoindre-faq-item { transition: none; }
 }
 @media (pointer: coarse) {
   .rejoindre-boarding-pass-wrap, .rejoindre-hero-plane { display: none; }
@@ -273,6 +301,8 @@ body { margin: 0; font-family: var(--font-body); }
 </style>
 </head>
 <body class="landing rejoindre-page">
+
+<div class="rejoindre-progress-track" aria-hidden="true"><div class="rejoindre-progress-fill" id="progress-fill"></div></div>
 
 <header class="rejoindre-header">
   <div class="rejoindre-container rejoindre-header-row">
@@ -342,7 +372,7 @@ body { margin: 0; font-family: var(--font-body); }
   <!-- PREUVE SOCIALE -->
   <section class="rejoindre-section rejoindre-social-proof" aria-label="Chiffres clés">
     <div class="rejoindre-container">
-      <div class="landing-reveal">
+      <div class="rejoindre-reveal">
         <div class="rejoindre-stats-grid">
           <div class="rejoindre-stat"><span class="rejoindre-stat-value">92%</span><span class="rejoindre-stat-label">taux d'insertion à 1 an</span></div>
           <div class="rejoindre-stat"><span class="rejoindre-stat-value">500+</span><span class="rejoindre-stat-label">diplômés depuis la création</span></div>
@@ -357,7 +387,7 @@ body { margin: 0; font-family: var(--font-body); }
   <!-- BÉNÉFICES -->
   <section id="benefices" class="rejoindre-section" aria-label="Bénéfices">
     <div class="rejoindre-container">
-      <div class="landing-reveal">
+      <div class="rejoindre-reveal">
         <p class="landing-section-kicker">
           <svg class="landing-kicker-plane" viewBox="0 0 64 64" fill="currentColor" aria-hidden="true"><path d="M32 8 37 24h16l-12 9 4 15-8-6-8 6 4-15-12-9h16L32 8Zm0 6.2L29.4 22H18l9.8 7.2-3.7 13.5L32 38.8l7.9 3.9L36.2 29.2 46 22H34.6L32 14.2Z" /></svg>
           Pourquoi IAT Academy
@@ -365,22 +395,22 @@ body { margin: 0; font-family: var(--font-body); }
         <h2 class="landing-h2" style="max-width:48rem">Ce qui fait la différence sur votre CV</h2>
       </div>
       <div class="rejoindre-benefits-grid" style="margin-top:2.5rem">
-        <div class="landing-reveal rejoindre-benefit-card">
+        <div class="rejoindre-reveal rejoindre-benefit-card" style="--delay:0ms">
           <div class="rejoindre-benefit-photo"><img src="images/landing/studentpracticing.jpg" alt="Apprenant IAT Academy en stage" /></div>
           <h3 class="rejoindre-benefit-title">Stage garanti en milieu réel</h3>
           <p class="rejoindre-benefit-desc">Chaque parcours inclut une immersion professionnelle encadrée — pas seulement des cours, une vraie mise en situation avant le diplôme.</p>
         </div>
-        <div class="landing-reveal rejoindre-benefit-card">
+        <div class="rejoindre-reveal rejoindre-benefit-card" style="--delay:90ms">
           <div class="rejoindre-benefit-photo"><img src="images/landing/stock-airport.jpg" alt="Opérations aéroportuaires" /></div>
           <h3 class="rejoindre-benefit-title">Employabilité aviation &amp; tourisme</h3>
           <p class="rejoindre-benefit-desc">Un programme construit autour des métiers qui recrutent : cabine, escale, accueil touristique — pas une formation généraliste.</p>
         </div>
-        <div class="landing-reveal rejoindre-benefit-card">
+        <div class="rejoindre-reveal rejoindre-benefit-card" style="--delay:180ms">
           <div class="rejoindre-benefit-photo"><img src="images/landing/social-promo.jpg" alt="Promotion de diplômés IAT Academy" /></div>
           <h3 class="rejoindre-benefit-title">Bourse à l'emploi réservée aux diplômés</h3>
           <p class="rejoindre-benefit-desc">Une fois le diplôme en poche, accédez à un espace alumni avec des offres d'emploi du secteur, réservées à ceux qui ont terminé le cycle.</p>
         </div>
-        <div class="landing-reveal rejoindre-benefit-card">
+        <div class="rejoindre-reveal rejoindre-benefit-card" style="--delay:270ms">
           <div class="rejoindre-benefit-photo"><img src="images/landing/teacherExplaining1.jpg" alt="Formateur IAT Academy en session" /></div>
           <h3 class="rejoindre-benefit-title">Accompagnement personnalisé</h3>
           <p class="rejoindre-benefit-desc">Suivi individuel, espace apprenant en ligne et formateurs issus du terrain — vous n'avancez jamais seul dans votre parcours.</p>
@@ -389,10 +419,19 @@ body { margin: 0; font-family: var(--font-body); }
     </div>
   </section>
 
+  <!-- TAGLINE — deuxième temps fort de la narration au scroll -->
+  <section class="rejoindre-section rejoindre-tagline" aria-label="Notre différence">
+    <div class="rejoindre-container">
+      <div class="rejoindre-reveal">
+        <p class="rejoindre-tagline-text" id="tagline-text"></p>
+      </div>
+    </div>
+  </section>
+
   <!-- TÉMOIGNAGES -->
   <section id="temoignages" class="rejoindre-section rejoindre-testimonials" aria-label="Témoignages">
     <div class="rejoindre-container">
-      <div class="landing-reveal">
+      <div class="rejoindre-reveal">
         <p class="landing-section-kicker">
           <svg class="landing-kicker-plane" viewBox="0 0 64 64" fill="currentColor" aria-hidden="true"><path d="M32 8 37 24h16l-12 9 4 15-8-6-8 6 4-15-12-9h16L32 8Zm0 6.2L29.4 22H18l9.8 7.2-3.7 13.5L32 38.8l7.9 3.9L36.2 29.2 46 22H34.6L32 14.2Z" /></svg>
           Ils sont passés par IAT
@@ -400,21 +439,21 @@ body { margin: 0; font-family: var(--font-body); }
         <h2 class="landing-h2" style="max-width:48rem">Des diplômés, aujourd'hui en poste</h2>
       </div>
       <div class="rejoindre-testimonial-grid" style="margin-top:2.5rem">
-        <div class="landing-reveal rejoindre-testimonial-card">
+        <div class="rejoindre-reveal rejoindre-testimonial-card" style="--delay:0ms">
           <p class="rejoindre-testimonial-quote">&ldquo;Le stage en milieu réel m'a permis d'arriver en entretien avec une vraie expérience terrain, pas juste un diplôme sur papier.&rdquo;</p>
           <div class="rejoindre-testimonial-attribution">
             <span class="rejoindre-testimonial-avatar">NR</span>
             <span><span class="rejoindre-testimonial-name">Nora</span><span class="rejoindre-testimonial-role">Hôtesse de l'air</span></span>
           </div>
         </div>
-        <div class="landing-reveal rejoindre-testimonial-card">
+        <div class="rejoindre-reveal rejoindre-testimonial-card" style="--delay:90ms">
           <p class="rejoindre-testimonial-quote">&ldquo;Deux ans intenses mais un accompagnement présent à chaque étape — du premier cours jusqu'à la recherche d'emploi.&rdquo;</p>
           <div class="rejoindre-testimonial-attribution">
             <span class="rejoindre-testimonial-avatar">YM</span>
             <span><span class="rejoindre-testimonial-name">Youssef</span><span class="rejoindre-testimonial-role">Agent d'escale</span></span>
           </div>
         </div>
-        <div class="landing-reveal rejoindre-testimonial-card">
+        <div class="rejoindre-reveal rejoindre-testimonial-card" style="--delay:180ms">
           <p class="rejoindre-testimonial-quote">&ldquo;L'espace apprenant en ligne m'a permis de réviser à mon rythme entre les cours et le stage. Un vrai plus pour organiser son temps.&rdquo;</p>
           <div class="rejoindre-testimonial-attribution">
             <span class="rejoindre-testimonial-avatar">SK</span>
@@ -429,7 +468,7 @@ body { margin: 0; font-family: var(--font-body); }
   <!-- COMMENT ÇA MARCHE -->
   <section id="comment-ca-marche" class="rejoindre-section" aria-label="Comment ça marche">
     <div class="rejoindre-container">
-      <div class="landing-reveal">
+      <div class="rejoindre-reveal">
         <p class="landing-section-kicker">
           <svg class="landing-kicker-plane" viewBox="0 0 64 64" fill="currentColor" aria-hidden="true"><path d="M32 8 37 24h16l-12 9 4 15-8-6-8 6 4-15-12-9h16L32 8Zm0 6.2L29.4 22H18l9.8 7.2-3.7 13.5L32 38.8l7.9 3.9L36.2 29.2 46 22H34.6L32 14.2Z" /></svg>
           Comment ça marche
@@ -437,10 +476,10 @@ body { margin: 0; font-family: var(--font-body); }
         <h2 class="landing-h2" style="max-width:48rem">De la candidature au premier poste</h2>
       </div>
       <ol class="rejoindre-steps" style="margin-top:2.5rem">
-        <li class="landing-reveal rejoindre-step"><span class="rejoindre-step-num">01</span><h3 class="rejoindre-step-title">Candidature</h3><p class="rejoindre-step-desc">Déposez votre dossier en quelques minutes, sans paperasse inutile.</p></li>
-        <li class="landing-reveal rejoindre-step"><span class="rejoindre-step-num">02</span><h3 class="rejoindre-step-title">Sélection</h3><p class="rejoindre-step-desc">Un entretien pour vérifier votre motivation — pas un concours à préparer pendant des mois.</p></li>
-        <li class="landing-reveal rejoindre-step"><span class="rejoindre-step-num">03</span><h3 class="rejoindre-step-title">2 ans de formation + stage</h3><p class="rejoindre-step-desc">Cours en présentiel, espace apprenant en ligne, et une immersion en entreprise avant le diplôme.</p></li>
-        <li class="landing-reveal rejoindre-step"><span class="rejoindre-step-num">04</span><h3 class="rejoindre-step-title">Diplôme &amp; emploi</h3><p class="rejoindre-step-desc">Soutenance, remise du diplôme, puis accès à la bourse à l'emploi réservée aux diplômés.</p></li>
+        <li class="rejoindre-reveal rejoindre-step" style="--delay:0ms"><span class="rejoindre-step-num">01</span><h3 class="rejoindre-step-title">Candidature</h3><p class="rejoindre-step-desc">Déposez votre dossier en quelques minutes, sans paperasse inutile.</p></li>
+        <li class="rejoindre-reveal rejoindre-step" style="--delay:90ms"><span class="rejoindre-step-num">02</span><h3 class="rejoindre-step-title">Sélection</h3><p class="rejoindre-step-desc">Un entretien pour vérifier votre motivation — pas un concours à préparer pendant des mois.</p></li>
+        <li class="rejoindre-reveal rejoindre-step" style="--delay:180ms"><span class="rejoindre-step-num">03</span><h3 class="rejoindre-step-title">2 ans de formation + stage</h3><p class="rejoindre-step-desc">Cours en présentiel, espace apprenant en ligne, et une immersion en entreprise avant le diplôme.</p></li>
+        <li class="rejoindre-reveal rejoindre-step" style="--delay:270ms"><span class="rejoindre-step-num">04</span><h3 class="rejoindre-step-title">Diplôme &amp; emploi</h3><p class="rejoindre-step-desc">Soutenance, remise du diplôme, puis accès à la bourse à l'emploi réservée aux diplômés.</p></li>
       </ol>
     </div>
   </section>
@@ -448,7 +487,7 @@ body { margin: 0; font-family: var(--font-body); }
   <!-- FAQ -->
   <section id="faq" class="rejoindre-section" aria-label="Questions fréquentes">
     <div class="rejoindre-container rejoindre-faq-container">
-      <div class="landing-reveal">
+      <div class="rejoindre-reveal">
         <p class="landing-section-kicker">
           <svg class="landing-kicker-plane" viewBox="0 0 64 64" fill="currentColor" aria-hidden="true"><path d="M32 8 37 24h16l-12 9 4 15-8-6-8 6 4-15-12-9h16L32 8Zm0 6.2L29.4 22H18l9.8 7.2-3.7 13.5L32 38.8l7.9 3.9L36.2 29.2 46 22H34.6L32 14.2Z" /></svg>
           Questions fréquentes
@@ -457,20 +496,20 @@ body { margin: 0; font-family: var(--font-body); }
       </div>
       <div class="rejoindre-faq-list" style="margin-top:2rem">
         <div class="rejoindre-faq-item is-open">
-          <button type="button" class="rejoindre-faq-question" onclick="toggleFaq(this)">Combien coûte la formation ?<span class="rejoindre-faq-icon">−</span></button>
-          <p class="rejoindre-faq-answer">Les frais varient selon la formule choisie. Contactez l'académie pour un devis détaillé et les facilités de paiement disponibles — un conseiller vous répond sous 48h.</p>
+          <button type="button" class="rejoindre-faq-question" onclick="toggleFaq(this)" aria-expanded="true">Combien coûte la formation ?<span class="rejoindre-faq-icon" aria-hidden="true">+</span></button>
+          <div class="rejoindre-faq-answer-row"><div class="rejoindre-faq-answer-inner"><p class="rejoindre-faq-answer">Les frais varient selon la formule choisie. Contactez l'académie pour un devis détaillé et les facilités de paiement disponibles — un conseiller vous répond sous 48h.</p></div></div>
         </div>
         <div class="rejoindre-faq-item">
-          <button type="button" class="rejoindre-faq-question" onclick="toggleFaq(this)">Quel niveau faut-il pour candidater ?<span class="rejoindre-faq-icon">+</span></button>
-          <p class="rejoindre-faq-answer">Le baccalauréat suffit pour intégrer le cycle. Les profils en reconversion sans bac sont étudiés au cas par cas lors de l'entretien de sélection.</p>
+          <button type="button" class="rejoindre-faq-question" onclick="toggleFaq(this)" aria-expanded="false">Quel niveau faut-il pour candidater ?<span class="rejoindre-faq-icon" aria-hidden="true">+</span></button>
+          <div class="rejoindre-faq-answer-row"><div class="rejoindre-faq-answer-inner"><p class="rejoindre-faq-answer">Le baccalauréat suffit pour intégrer le cycle. Les profils en reconversion sans bac sont étudiés au cas par cas lors de l'entretien de sélection.</p></div></div>
         </div>
         <div class="rejoindre-faq-item">
-          <button type="button" class="rejoindre-faq-question" onclick="toggleFaq(this)">Quels débouchés réels après le diplôme ?<span class="rejoindre-faq-icon">+</span></button>
-          <p class="rejoindre-faq-answer">Hôtesse de l'air, steward, agent d'escale, accueil touristique ou hôtelier — nos diplômés intègrent des compagnies aériennes, des groupes hôteliers et des agences de voyage.</p>
+          <button type="button" class="rejoindre-faq-question" onclick="toggleFaq(this)" aria-expanded="false">Quels débouchés réels après le diplôme ?<span class="rejoindre-faq-icon" aria-hidden="true">+</span></button>
+          <div class="rejoindre-faq-answer-row"><div class="rejoindre-faq-answer-inner"><p class="rejoindre-faq-answer">Hôtesse de l'air, steward, agent d'escale, accueil touristique ou hôtelier — nos diplômés intègrent des compagnies aériennes, des groupes hôteliers et des agences de voyage.</p></div></div>
         </div>
         <div class="rejoindre-faq-item">
-          <button type="button" class="rejoindre-faq-question" onclick="toggleFaq(this)">Le stage se déroule-t-il au Maroc ou à l'étranger ?<span class="rejoindre-faq-icon">+</span></button>
-          <p class="rejoindre-faq-answer">Le stage se déroule en priorité au Maroc, dans des structures partenaires du secteur. Certaines opportunités à l'étranger peuvent être étudiées selon le profil et la disponibilité des postes.</p>
+          <button type="button" class="rejoindre-faq-question" onclick="toggleFaq(this)" aria-expanded="false">Le stage se déroule-t-il au Maroc ou à l'étranger ?<span class="rejoindre-faq-icon" aria-hidden="true">+</span></button>
+          <div class="rejoindre-faq-answer-row"><div class="rejoindre-faq-answer-inner"><p class="rejoindre-faq-answer">Le stage se déroule en priorité au Maroc, dans des structures partenaires du secteur. Certaines opportunités à l'étranger peuvent être étudiées selon le profil et la disponibilité des postes.</p></div></div>
         </div>
       </div>
     </div>
@@ -479,7 +518,7 @@ body { margin: 0; font-family: var(--font-body); }
   <!-- CTA FINAL -->
   <section class="rejoindre-section rejoindre-final-cta" aria-label="Candidater">
     <div class="rejoindre-container">
-      <div class="landing-reveal rejoindre-final-cta-inner">
+      <div class="rejoindre-reveal rejoindre-final-cta-inner">
         <h2 class="landing-h2-light landing-h2">Votre carrière dans l'aviation commence par une candidature</h2>
         <p class="landing-text-on-dark-muted">Les places pour la prochaine promotion sont limitées — déposez votre dossier dès aujourd'hui.</p>
         <a href="/register" class="landing-btn-glow landing-btn-lg" style="margin-top:1.5rem">Je candidate</a>
@@ -503,9 +542,10 @@ body { margin: 0; font-family: var(--font-body); }
 </div>
 
 <script>
-  // Reveal on scroll (mirrors components/landing/Reveal.tsx)
   var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  document.querySelectorAll(".landing-reveal").forEach(function (el) {
+
+  // Reveal on scroll (mirrors components/rejoindre/RejoindreReveal.tsx)
+  document.querySelectorAll(".rejoindre-reveal").forEach(function (el) {
     if (reduceMotion) { el.classList.add("is-visible"); return; }
     var io = new IntersectionObserver(function (entries) {
       entries.forEach(function (entry) {
@@ -535,12 +575,65 @@ body { margin: 0; font-family: var(--font-body); }
     update();
   })();
 
-  // FAQ accordion (mirrors components/rejoindre/Faq.tsx)
+  // Whole-page flight progress bar (mirrors components/rejoindre/usePageProgress.ts)
+  (function () {
+    var fill = document.getElementById("progress-fill");
+    if (!fill || reduceMotion) return;
+    var ticking = false;
+    function update() {
+      ticking = false;
+      var doc = document.documentElement;
+      var total = doc.scrollHeight - window.innerHeight;
+      var progress = total > 0 ? Math.min(1, Math.max(0, window.scrollY / total)) : 0;
+      fill.style.setProperty("--page-progress", progress.toFixed(4));
+    }
+    window.addEventListener("scroll", function () {
+      if (!ticking) { ticking = true; requestAnimationFrame(update); }
+    }, { passive: true });
+    update();
+  })();
+
+  // Tagline word-by-word reveal (mirrors components/rejoindre/TaglineReveal.tsx)
+  (function () {
+    var el = document.getElementById("tagline-text");
+    if (!el) return;
+    var accent = new Set(["stage,", "individuel", "réseau", "alumni"]);
+    var tagline = "Ce n'est pas un diplôme de plus. C'est le stage, le suivi individuel et le réseau alumni qui transforment une formation en carrière.";
+    var words = tagline.split(" ");
+    words.forEach(function (word, index) {
+      var span = document.createElement("span");
+      span.className = "rejoindre-tagline-word" + (accent.has(word.toLowerCase()) ? " is-accent" : "");
+      span.style.setProperty("--word-delay", (index * 35) + "ms");
+      span.textContent = word + " ";
+      el.appendChild(span);
+    });
+    if (reduceMotion) {
+      el.querySelectorAll(".rejoindre-tagline-word").forEach(function (w) { w.classList.add("is-lit"); });
+      return;
+    }
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (entry.isIntersecting) {
+          el.querySelectorAll(".rejoindre-tagline-word").forEach(function (w) { w.classList.add("is-lit"); });
+          io.disconnect();
+        }
+      });
+    }, { threshold: 0.5 });
+    io.observe(el);
+  })();
+
+  // FAQ accordion — smooth grid-rows (mirrors components/rejoindre/Faq.tsx)
   function toggleFaq(btn) {
     var item = btn.closest(".rejoindre-faq-item");
-    var icon = btn.querySelector(".rejoindre-faq-icon");
-    var open = item.classList.toggle("is-open");
-    icon.textContent = open ? "−" : "+";
+    var willOpen = !item.classList.contains("is-open");
+    document.querySelectorAll(".rejoindre-faq-item.is-open").forEach(function (openItem) {
+      openItem.classList.remove("is-open");
+      openItem.querySelector(".rejoindre-faq-question").setAttribute("aria-expanded", "false");
+    });
+    if (willOpen) {
+      item.classList.add("is-open");
+      btn.setAttribute("aria-expanded", "true");
+    }
   }
 
   // Sticky mobile CTA (mirrors components/rejoindre/StickyMobileCta.tsx)

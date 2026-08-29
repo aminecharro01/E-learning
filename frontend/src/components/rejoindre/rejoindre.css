@@ -1,9 +1,19 @@
 /* =============================================================================
    /rejoindre — landing page de conversion (candidature)
    S'appuie sur les tokens --landing-* définis dans components/landing/landing.css
-   (déjà importé par RejoindrePage.tsx). Une seule séquence cinématique (le hero) ;
-   le reste de la page reste net, avec des révélations au scroll discrètes.
+   (déjà importé par RejoindrePage.tsx). Une séquence cinématique en tête (le
+   hero) puis une histoire racontée au scroll : une barre de progression "vol"
+   en haut de page, un moment "tagline" à mi-parcours, et des révélations
+   feutrées (flou + fondu) sur chaque section — jamais de bruit partout à la
+   fois.
    ============================================================================= */
+
+.rejoindre-page {
+  isolation: isolate;
+  /* Fluid, mass-and-spring easing used across every hand-authored transition
+     on this page instead of the browser's linear/ease defaults. */
+  --ease-fluid: cubic-bezier(0.32, 0.72, 0, 1);
+}
 
 .rejoindre-container {
   width: 100%;
@@ -22,8 +32,40 @@
   padding-block: clamp(3rem, 7vw, 5.5rem);
 }
 
-.rejoindre-page {
-  isolation: isolate;
+.rejoindre-page :is(a, button):focus-visible {
+  outline: 2px solid var(--landing-gold);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* =============================================================================
+   Flight progress bar — a thin "boarding pass" style indicator of how far the
+   visitor is into the page, tying the whole scroll journey back to the hero's
+   aviation motif. Single scaleX transform driven by --page-progress, cheap.
+   ============================================================================= */
+
+.rejoindre-progress-track {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 60;
+  height: 3px;
+  background: var(--landing-glass-border);
+}
+
+.rejoindre-progress-fill {
+  height: 100%;
+  width: 100%;
+  transform-origin: left;
+  transform: scaleX(var(--page-progress, 0));
+  background: linear-gradient(90deg, var(--gold-500), var(--landing-gold));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rejoindre-progress-track {
+    display: none;
+  }
 }
 
 /* --- Header (minimal, no site nav) --- */
@@ -326,6 +368,7 @@ html.dark .rejoindre-hero-sky {
   font-size: clamp(1rem, 1.6vw, 1.15rem);
   line-height: 1.6;
   color: var(--landing-on-dark-muted);
+  text-wrap: pretty;
 }
 
 .rejoindre-hero-ctas {
@@ -369,6 +412,84 @@ html.dark .rejoindre-hero-sky {
   }
   50% {
     transform: rotate(45deg) translate(4px, 4px);
+  }
+}
+
+/* =============================================================================
+   Reveal — this page's own scroll-reveal (distinct from the shared
+   components/landing/Reveal.tsx used by the institutional homepage, so
+   upgrading the motion here never touches that page). Heavier "gentle mass"
+   fade: blur + rise + opacity, custom fluid easing, staggered via inline
+   --delay set per item.
+   ============================================================================= */
+
+.rejoindre-reveal {
+  opacity: 0;
+  transform: translateY(28px);
+  filter: blur(6px);
+  transition:
+    opacity 0.9s var(--ease-fluid),
+    transform 0.9s var(--ease-fluid),
+    filter 0.9s var(--ease-fluid);
+  transition-delay: var(--delay, 0ms);
+}
+
+.rejoindre-reveal.is-visible {
+  opacity: 1;
+  transform: none;
+  filter: blur(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rejoindre-reveal {
+    opacity: 1;
+    transform: none;
+    filter: none;
+    transition: none;
+  }
+}
+
+/* =============================================================================
+   Tagline reveal — the page's second storytelling beat: one large statement,
+   words lighting up from muted to full ink in reading order as the section
+   crosses the trigger line (see TaglineReveal.tsx).
+   ============================================================================= */
+
+.rejoindre-tagline {
+  padding-block: clamp(5rem, 12vw, 8rem);
+}
+
+.rejoindre-tagline-text {
+  max-width: 44rem;
+  font-size: clamp(1.75rem, 4.2vw, 3rem);
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+
+.rejoindre-tagline-word {
+  color: color-mix(in srgb, var(--landing-on-dark) 30%, transparent);
+  transition: color 0.6s var(--ease-fluid);
+  transition-delay: var(--word-delay, 0ms);
+}
+
+.rejoindre-tagline-word.is-lit {
+  color: var(--landing-on-dark);
+}
+
+.rejoindre-tagline-word.is-accent.is-lit {
+  color: var(--landing-gold);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rejoindre-tagline-word {
+    color: var(--landing-on-dark);
+    transition: none;
+  }
+
+  .rejoindre-tagline-word.is-accent {
+    color: var(--landing-gold);
   }
 }
 
@@ -419,6 +540,7 @@ html.dark .rejoindre-hero-sky {
   text-align: center;
   font-size: 0.9rem;
   color: var(--landing-on-dark-muted);
+  text-wrap: pretty;
 }
 
 /* =============================================================================
@@ -446,16 +568,31 @@ html.dark .rejoindre-hero-sky {
 .rejoindre-benefit-card {
   display: flex;
   flex-direction: column;
-  border-radius: 1rem;
+  border-radius: 1.25rem;
   overflow: hidden;
   background: var(--landing-panel);
   border: 1px solid var(--landing-glass-border);
   box-shadow: var(--landing-card-shadow);
+  transition: box-shadow 0.5s var(--ease-fluid), border-color 0.5s var(--ease-fluid);
+}
+
+.rejoindre-benefit-card:hover {
+  border-color: color-mix(in srgb, var(--landing-gold) 40%, var(--landing-glass-border));
+  box-shadow: 0 20px 45px -20px color-mix(in srgb, var(--landing-gold) 25%, transparent);
 }
 
 .rejoindre-benefit-photo {
   position: relative;
   aspect-ratio: 16 / 10;
+  overflow: hidden;
+}
+
+.rejoindre-benefit-photo img {
+  transition: transform 0.7s var(--ease-fluid);
+}
+
+.rejoindre-benefit-card:hover .rejoindre-benefit-photo img {
+  transform: scale(1.05);
 }
 
 .rejoindre-benefit-title {
@@ -470,6 +607,7 @@ html.dark .rejoindre-hero-sky {
   font-size: 0.9rem;
   line-height: 1.55;
   color: var(--landing-on-dark-muted);
+  text-wrap: pretty;
 }
 
 /* =============================================================================
@@ -494,16 +632,23 @@ html.dark .rejoindre-hero-sky {
 
 .rejoindre-testimonial-card {
   padding: 1.5rem;
-  border-radius: 1rem;
+  border-radius: 1.25rem;
   background: var(--landing-panel);
   border: 1px solid var(--landing-glass-border);
   box-shadow: var(--landing-card-shadow);
+  transition: box-shadow 0.5s var(--ease-fluid), border-color 0.5s var(--ease-fluid);
+}
+
+.rejoindre-testimonial-card:hover {
+  border-color: color-mix(in srgb, var(--landing-gold) 35%, var(--landing-glass-border));
+  box-shadow: 0 20px 45px -20px color-mix(in srgb, var(--landing-gold) 20%, transparent);
 }
 
 .rejoindre-testimonial-quote {
   font-size: 0.95rem;
   line-height: 1.65;
   color: var(--landing-on-dark);
+  text-wrap: pretty;
 }
 
 .rejoindre-testimonial-attribution {
@@ -568,9 +713,15 @@ html.dark .rejoindre-hero-sky {
 
 .rejoindre-step {
   padding: 1.5rem;
-  border-radius: 1rem;
+  border-radius: 1.25rem;
   background: var(--landing-panel);
   border: 1px solid var(--landing-glass-border);
+  transition: transform 0.5s var(--ease-fluid), border-color 0.5s var(--ease-fluid);
+}
+
+.rejoindre-step:hover {
+  transform: translateY(-4px);
+  border-color: color-mix(in srgb, var(--landing-gold) 35%, var(--landing-glass-border));
 }
 
 .rejoindre-step-num {
@@ -593,10 +744,11 @@ html.dark .rejoindre-hero-sky {
   font-size: 0.88rem;
   line-height: 1.55;
   color: var(--landing-on-dark-muted);
+  text-wrap: pretty;
 }
 
 /* =============================================================================
-   FAQ
+   FAQ — smooth grid-rows accordion (no instant show/hide, no layout jump)
    ============================================================================= */
 
 .rejoindre-faq-container {
@@ -610,10 +762,15 @@ html.dark .rejoindre-hero-sky {
 }
 
 .rejoindre-faq-item {
-  border-radius: 0.85rem;
+  border-radius: 1rem;
   background: var(--landing-panel);
   border: 1px solid var(--landing-glass-border);
   overflow: hidden;
+  transition: border-color 0.4s var(--ease-fluid);
+}
+
+.rejoindre-faq-item:hover {
+  border-color: color-mix(in srgb, var(--landing-gold) 30%, var(--landing-glass-border));
 }
 
 .rejoindre-faq-question {
@@ -638,6 +795,25 @@ html.dark .rejoindre-hero-sky {
   font-size: 1.1rem;
   font-weight: 700;
   color: var(--landing-gold);
+  transition: transform 0.4s var(--ease-fluid);
+}
+
+.rejoindre-faq-item.is-open .rejoindre-faq-icon {
+  transform: rotate(45deg);
+}
+
+.rejoindre-faq-answer-row {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.45s var(--ease-fluid);
+}
+
+.rejoindre-faq-item.is-open .rejoindre-faq-answer-row {
+  grid-template-rows: 1fr;
+}
+
+.rejoindre-faq-answer-inner {
+  overflow: hidden;
 }
 
 .rejoindre-faq-answer {
@@ -645,6 +821,14 @@ html.dark .rejoindre-hero-sky {
   font-size: 0.9rem;
   line-height: 1.6;
   color: var(--landing-on-dark-muted);
+  text-wrap: pretty;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rejoindre-faq-answer-row,
+  .rejoindre-faq-icon {
+    transition: none;
+  }
 }
 
 /* =============================================================================
@@ -681,7 +865,7 @@ html.dark .rejoindre-hero-sky {
   backdrop-filter: blur(14px);
   border-top: 1px solid var(--landing-glass-border);
   transform: translateY(100%);
-  transition: transform 0.3s ease;
+  transition: transform 0.4s var(--ease-fluid);
 }
 
 .rejoindre-sticky-cta.is-visible {
@@ -710,7 +894,13 @@ html.dark .rejoindre-hero-sky {
   .rejoindre-hero-glow,
   .rejoindre-hero-plane,
   .rejoindre-hero-sky,
-  .rejoindre-sticky-cta {
+  .rejoindre-sticky-cta,
+  .rejoindre-benefit-card,
+  .rejoindre-benefit-photo img,
+  .rejoindre-testimonial-card,
+  .rejoindre-step,
+  .rejoindre-faq-item,
+  .rejoindre-faq-icon {
     transition: none;
   }
 }

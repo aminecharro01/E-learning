@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { rejoindre } from "./content";
-import { Reveal } from "../landing/Reveal";
+import { RejoindreReveal } from "./RejoindreReveal";
 import { AirplaneIcon } from "../landing/icons/Airplane";
 
 export function RejoindreFaq() {
@@ -12,18 +12,18 @@ export function RejoindreFaq() {
   return (
     <section id="faq" className="rejoindre-section scroll-mt-20" aria-label="Questions fréquentes">
       <div className="rejoindre-container rejoindre-faq-container">
-        <Reveal>
+        <RejoindreReveal>
           <p className="landing-section-kicker">
             <AirplaneIcon className="landing-kicker-plane" />
             {t.kicker}
           </p>
           <h2 className="landing-h2 max-w-3xl">{t.headline}</h2>
-        </Reveal>
+        </RejoindreReveal>
         <div className="rejoindre-faq-list mt-8">
           {t.items.map((item, index) => {
             const open = openIndex === index;
             return (
-              <div key={item.question} className="rejoindre-faq-item">
+              <div key={item.question} className={`rejoindre-faq-item${open ? " is-open" : ""}`}>
                 <button
                   type="button"
                   className="rejoindre-faq-question"
@@ -33,14 +33,16 @@ export function RejoindreFaq() {
                 >
                   {item.question}
                   <span className="rejoindre-faq-icon" aria-hidden="true">
-                    {open ? "−" : "+"}
+                    +
                   </span>
                 </button>
-                {open && (
-                  <p id={`faq-panel-${index}`} className="rejoindre-faq-answer">
-                    {item.answer}
-                  </p>
-                )}
+                <div className="rejoindre-faq-answer-row">
+                  <div className="rejoindre-faq-answer-inner">
+                    <p id={`faq-panel-${index}`} className="rejoindre-faq-answer">
+                      {item.answer}
+                    </p>
+                  </div>
+                </div>
               </div>
             );
           })}
