@@ -1,8 +1,5 @@
-"use client";
-
-import { useEffect, useRef, useState } from "react";
 import { iat } from "./content";
-import { AirplaneIcon, AirplaneSilhouette, FlightPathDecor } from "./icons/Airplane";
+import { AirplaneIcon, FlightPathDecor } from "./icons/Airplane";
 import { Reveal } from "./Reveal";
 
 const CARDS = [
@@ -27,35 +24,9 @@ const CARDS = [
 ] as const;
 
 export function LandingAbout() {
-  const planeRef = useRef<HTMLDivElement>(null);
-  const [planeVisible, setPlaneVisible] = useState(false);
-
-  useEffect(() => {
-    const el = planeRef.current;
-    if (!el) return;
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      setPlaneVisible(true);
-      return;
-    }
-    const io = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setPlaneVisible(true);
-          io.disconnect();
-        }
-      },
-      { threshold: 0.2 }
-    );
-    io.observe(el);
-    return () => io.disconnect();
-  }, []);
-
   return (
     <section id="about" className="landing-section scroll-mt-20 landing-about iat-board">
       <FlightPathDecor className="landing-about-paths" />
-      <div ref={planeRef} className={`landing-about-plane ${planeVisible ? "is-visible" : ""}`} aria-hidden="true">
-        <AirplaneSilhouette className="h-full w-full" ariaHidden />
-      </div>
       <div className="landing-container relative z-[1]">
         <Reveal>
           <p className="landing-section-kicker">
