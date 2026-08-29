@@ -37,6 +37,7 @@
     "react-dom": "19.1.0",
     "react-hook-form": "^7.81.0",
     "react-slick": "^0.31.0",
+    "recharts": "^3.10.1",
     "slick-carousel": "^1.8.1",
     "zod": "^4.4.3"
   },
