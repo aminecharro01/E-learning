@@ -22,6 +22,7 @@ type AuthContextValue = {
   isAdmin: boolean;
   isSuperAdmin: boolean;
   isFormateur: boolean;
+  isSupport: boolean;
   hasRole: (...roles: Role[]) => boolean;
 };
 
@@ -67,6 +68,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isAdmin: user?.role === "ADMIN" || user?.role === "SUPER_ADMIN",
       isSuperAdmin: user?.role === "SUPER_ADMIN",
       isFormateur: user?.role === "FORMATEUR" || user?.role === "ADMIN" || user?.role === "SUPER_ADMIN",
+      isSupport: user?.role === "SUPPORT",
       hasRole: (...roles: Role[]) => (user ? roles.includes(user.role) : false),
     }),
     [user, loading, error, refresh, logout]

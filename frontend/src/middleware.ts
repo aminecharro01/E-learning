@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 const COOKIE_NAME = process.env.NEXT_PUBLIC_JWT_COOKIE_NAME || "iat_token";
-const STAFF_ROLES = new Set(["SUPER_ADMIN", "ADMIN", "FORMATEUR"]);
+const STAFF_ROLES = new Set(["SUPER_ADMIN", "ADMIN", "FORMATEUR", "SUPPORT"]);
 
 /**
  * Reads the `role` claim without verifying the signature — this is a UX-level

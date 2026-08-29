@@ -33,7 +33,7 @@ public class AdminController {
     private final AuditLogService auditLogService;
 
     @GetMapping("/stats")
-    @PreAuthorize("hasAnyRole('ADMIN','FORMATEUR')")
+    @PreAuthorize("hasAnyRole('ADMIN','FORMATEUR','SUPPORT')")
     public ResponseEntity<AdminStatsResponse> stats() {
         return ResponseEntity.ok(adminService.stats());
     }
@@ -50,7 +50,7 @@ public class AdminController {
     }
 
     @GetMapping("/learners")
-    @PreAuthorize("hasAnyRole('ADMIN','FORMATEUR')")
+    @PreAuthorize("hasAnyRole('ADMIN','FORMATEUR','SUPPORT')")
     public ResponseEntity<PageResponse<LearnerSummaryResponse>> learners(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
@@ -60,7 +60,7 @@ public class AdminController {
     }
 
     @GetMapping("/learners/{id}/progress")
-    @PreAuthorize("hasAnyRole('ADMIN','FORMATEUR')")
+    @PreAuthorize("hasAnyRole('ADMIN','FORMATEUR','SUPPORT')")
     public ResponseEntity<LearnerProgressDetailResponse> learnerProgress(@PathVariable UUID id) {
         return ResponseEntity.ok(adminService.getLearnerProgress(id));
     }
@@ -189,7 +189,7 @@ public class AdminController {
     }
 
     @GetMapping("/contact-messages")
-    @PreAuthorize("hasAnyRole('ADMIN','FORMATEUR')")
+    @PreAuthorize("hasAnyRole('ADMIN','FORMATEUR','SUPPORT')")
     public ResponseEntity<PageResponse<ContactMessageResponse>> contactMessages(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
@@ -200,7 +200,7 @@ public class AdminController {
     }
 
     @PatchMapping("/contact-messages/{id}/status")
-    @PreAuthorize("hasAnyRole('ADMIN','FORMATEUR')")
+    @PreAuthorize("hasAnyRole('ADMIN','FORMATEUR','SUPPORT')")
     public ResponseEntity<ContactMessageResponse> updateContactStatus(
             @PathVariable UUID id,
             @Valid @RequestBody UpdateContactStatusRequest request
@@ -209,7 +209,7 @@ public class AdminController {
     }
 
     @PatchMapping("/contact-messages/bulk")
-    @PreAuthorize("hasAnyRole('ADMIN','FORMATEUR')")
+    @PreAuthorize("hasAnyRole('ADMIN','FORMATEUR','SUPPORT')")
     public ResponseEntity<MessageResponse> bulkUpdateContactStatus(
             @Valid @RequestBody BulkUpdateContactStatusRequest request
     ) {
@@ -217,13 +217,13 @@ public class AdminController {
     }
 
     @DeleteMapping("/contact-messages/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN','FORMATEUR')")
+    @PreAuthorize("hasAnyRole('ADMIN','FORMATEUR','SUPPORT')")
     public ResponseEntity<MessageResponse> deleteContact(@PathVariable UUID id) {
         return ResponseEntity.ok(publicLeadService.deleteContact(id));
     }
 
     @GetMapping("/newsletter-subscribers")
-    @PreAuthorize("hasAnyRole('ADMIN','FORMATEUR')")
+    @PreAuthorize("hasAnyRole('ADMIN','FORMATEUR','SUPPORT')")
     public ResponseEntity<PageResponse<NewsletterSubscriberResponse>> newsletterSubscribers(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
@@ -234,7 +234,7 @@ public class AdminController {
     }
 
     @PatchMapping("/newsletter-subscribers/{id}/active")
-    @PreAuthorize("hasAnyRole('ADMIN','FORMATEUR')")
+    @PreAuthorize("hasAnyRole('ADMIN','FORMATEUR','SUPPORT')")
     public ResponseEntity<NewsletterSubscriberResponse> setNewsletterActive(
             @PathVariable UUID id,
             @RequestParam boolean active
@@ -243,7 +243,7 @@ public class AdminController {
     }
 
     @DeleteMapping("/newsletter-subscribers/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN','FORMATEUR')")
+    @PreAuthorize("hasAnyRole('ADMIN','FORMATEUR','SUPPORT')")
     public ResponseEntity<MessageResponse> deleteNewsletter(@PathVariable UUID id) {
         return ResponseEntity.ok(publicLeadService.deleteNewsletter(id));
     }

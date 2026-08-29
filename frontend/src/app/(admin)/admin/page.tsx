@@ -16,8 +16,20 @@ import { Badge } from "@/components/admin/ui/Badge";
 import { CertIcon, ChartIcon, MailIcon, UsersIcon } from "@/components/admin/icons";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { btn } from "@/lib/ui";
+import { FormateurDashboard } from "@/components/admin/dashboard/FormateurDashboard";
+import { SupportDashboard } from "@/components/admin/dashboard/SupportDashboard";
 
 export default function AdminDashboardPage() {
+  const { isAdmin, isSupport } = useAuth();
+  if (isSupport) return <SupportDashboard />;
+  if (!isAdmin) return <FormateurDashboard />;
+  return <DirecteurDashboard />;
+}
+
+/** Vue Directeur / Super Admin — indicateurs plateforme (apprenants, contact, réussite,
+ *  certificats) et gestion des cours. Formateur et Support ont leur propre tableau de bord
+ *  ci-dessus : leurs missions et leurs permissions ne recoupent pas celles du Directeur. */
+function DirecteurDashboard() {
   const { user } = useAuth();
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [progress, setProgress] = useState<ProgressResponse | null>(null);

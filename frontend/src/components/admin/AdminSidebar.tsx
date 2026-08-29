@@ -95,14 +95,24 @@ export const GROUPS: NavGroup[] = [
   },
 ];
 
+/** Support n'a pas de rôle pédagogique : accès très restreint plutôt que la liste complète
+ *  filtrée par adminOnly/superAdminOnly (qui, par défaut, montre tout au reste du staff). */
+const SUPPORT_VISIBLE_PATHS = new Set(["/admin", "/admin/messages", "/admin/leads", "/admin/learners"]);
+
 export function AdminSidebar() {
   const pathname = usePathname();
   const { isExpanded, isMobileOpen, isHovered, setIsHovered } = useSidebar();
-  const { isAdmin, isSuperAdmin } = useAuth();
+  const { isAdmin, isSuperAdmin, isSupport } = useAuth();
   const unreadMessages = useUnreadMessagesCount();
 
   const wide = isExpanded || isHovered || isMobileOpen;
-  const spaceLabel = isSuperAdmin ? "Espace Super Admin" : isAdmin ? "Espace Directeur" : "Espace formateur";
+  const spaceLabel = isSuperAdmin
+    ? "Espace Super Admin"
+    : isAdmin
+      ? "Espace Directeur"
+      : isSupport
+        ? "Espace Support"
+        : "Espace formateur";
 
   return (
     <aside
@@ -126,7 +136,10 @@ export function AdminSidebar() {
       <nav className="no-scrollbar flex flex-1 flex-col overflow-y-auto">
         {GROUPS.map((group) => {
           const items = group.items.filter(
-            (item) => (!item.adminOnly || isAdmin) && (!item.superAdminOnly || isSuperAdmin)
+            (item) =>
+              (!item.adminOnly || isAdmin) &&
+              (!item.superAdminOnly || isSuperAdmin) &&
+              (!isSupport || SUPPORT_VISIBLE_PATHS.has(item.path))
           );
           if (items.length === 0) return null;
           return (

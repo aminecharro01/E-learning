@@ -78,7 +78,7 @@ export default function AuthBoardingPass({ initialMode = "signin" }: Props) {
       router.push(next);
       return;
     }
-    if (user.role === "SUPER_ADMIN" || user.role === "ADMIN" || user.role === "FORMATEUR") {
+    if (user.role === "SUPER_ADMIN" || user.role === "ADMIN" || user.role === "FORMATEUR" || user.role === "SUPPORT") {
       router.push("/admin");
     } else {
       router.push("/app");

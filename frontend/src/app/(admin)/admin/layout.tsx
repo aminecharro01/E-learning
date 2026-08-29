@@ -21,12 +21,12 @@ function AdminShell({ children }: { children: React.ReactNode }) {
       router.replace(`/login?next=${encodeURIComponent(pathname)}`);
       return;
     }
-    if (!hasRole("SUPER_ADMIN", "ADMIN", "FORMATEUR")) {
+    if (!hasRole("SUPER_ADMIN", "ADMIN", "FORMATEUR", "SUPPORT")) {
       router.replace("/app");
     }
   }, [loading, user, hasRole, router, pathname]);
 
-  if (loading || !user || !hasRole("SUPER_ADMIN", "ADMIN", "FORMATEUR")) {
+  if (loading || !user || !hasRole("SUPER_ADMIN", "ADMIN", "FORMATEUR", "SUPPORT")) {
     return <PageLoader label="Vérification de session…" />;
   }
 
