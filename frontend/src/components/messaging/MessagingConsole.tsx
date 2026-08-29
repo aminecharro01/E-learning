@@ -214,7 +214,7 @@ export function MessagingConsole() {
 
       <div className="card-theme mt-4 grid overflow-hidden rounded-2xl border border-theme lg:h-[72dvh] lg:grid-cols-[300px_1fr]">
         {/* Conversation list */}
-        <div className={`flex-col border-theme lg:flex lg:border-r ${selectedId ? "hidden" : "flex"}`}>
+        <div className={`min-h-0 flex-col border-theme lg:flex lg:border-r ${selectedId ? "hidden" : "flex"}`}>
           {isStaff && (
             <div className="border-b border-theme p-3">
               <div className="relative">
@@ -246,7 +246,7 @@ export function MessagingConsole() {
               )}
             </div>
           )}
-          <ul className="flex-1 overflow-y-auto">
+          <ul className="min-h-0 flex-1 overflow-y-auto">
             {conversations.map((c) => {
               const active = c.id === selectedId;
               const isRoom = c.type === "COHORT_ROOM";
@@ -306,7 +306,7 @@ export function MessagingConsole() {
         </div>
 
         {/* Chat pane */}
-        <div className={`flex-col lg:flex ${selectedId ? "flex" : "hidden"}`}>
+        <div className={`min-h-0 flex-col lg:flex ${selectedId ? "flex" : "hidden"}`}>
           {!selectedConversation ? (
             <div className="m-auto flex flex-col items-center gap-2 px-6 text-center text-muted">
               <MessageCircle size={40} className="opacity-30" aria-hidden />
@@ -344,7 +344,7 @@ export function MessagingConsole() {
                 </div>
               </div>
 
-              <div className="flex-1 space-y-1 overflow-y-auto px-4 py-4">
+              <div className="min-h-0 flex-1 space-y-1 overflow-y-auto px-4 py-4">
                 {feed.map((item) => {
                   if (item.kind === "date") {
                     return (
