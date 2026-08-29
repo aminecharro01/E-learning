@@ -65,6 +65,7 @@ public class DemoDataSeeder implements ApplicationRunner {
     private final MessageRepository messageRepository;
     private final ConversationRepository conversationRepository;
     private final MediaProperties mediaProperties;
+    private final JobOfferRepository jobOfferRepository;
 
     @Value("${app.demo.reset-progress-on-startup:true}")
     private boolean resetProgressOnStartup;
@@ -105,6 +106,7 @@ public class DemoDataSeeder implements ApplicationRunner {
         seedGroupsAndSessions();
         seedAssignmentsAndSubmissions(modules);
         seedMessaging();
+        seedJobOffers();
 
         log.warn("""
                 Demo ready — scénarios:
@@ -114,13 +116,14 @@ public class DemoDataSeeder implements ApplicationRunner {
                   lina.cherkaoui@demo.local / Demo@1234           → zéro progression
                   salma.naji@demo.local / Demo@1234               → année 2 ouverte
                   karim.ouafi@demo.local / Demo@1234              → paiement / activation en attente
-                  khadija.mansouri@demo.local / Demo@1234         → dossier stage & soutenance complets, certificat émis
+                  khadija.mansouri@demo.local / Demo@1234         → dossier stage & soutenance complets, certificat émis (alumni, voit la bourse à l'emploi)
                   admin@iat-academy.local / Admin@123             → Directeur (ADMIN)
                   superadmin@iat-academy.local / SuperAdmin@123   → Super Admin
                   formateur@iat-academy.local / Formateur@123     → Formateur
                   support@demo.local / Demo@1234                  → Support
                 Groupes : Cohorte 2026-A (avec membres + sessions live), Cohorte 2027-A (en attente, vide)
                 Devoirs : 1 devoir avec 1 copie à corriger + 1 copie déjà notée
+                Bourse à l'emploi : 4 offres publiées, 1 brouillon, 1 expirée (réservée aux alumni — Khadija uniquement)
                 Messagerie : conversation directe apprenant ↔ formateur pré-remplie
                 """);
     }
@@ -586,6 +589,70 @@ public class DemoDataSeeder implements ApplicationRunner {
 
     private void saveMessage(Conversation conversation, User sender, String body) {
         messageRepository.save(Message.builder().conversation(conversation).sender(sender).body(body).build());
+    }
+
+    // ------------------------------------------------------------------
+    // Bourse à l'emploi — réservée aux diplômés (JobOfferService#listForLearner ne montre
+    // que les offres publiées et non expirées à qui possède un Certificate). Persistant,
+    // idempotence par titre. Khadija (voir seedStageDossiers) est la seule alumni du jeu de
+    // démo, donc la seule à voir ces offres côté /app/jobs.
+    // ------------------------------------------------------------------
+
+    private void seedJobOffers() {
+        User admin = userRepository.findByEmailIgnoreCase("admin@iat-academy.local").orElse(null);
+        User formateur = requireUser("formateur@iat-academy.local");
+        if (admin == null) {
+            return;
+        }
+
+        ensureJobOffer("Hôtesse de l'air", "Royal Air Maroc",
+                "Vols moyen et long courrier au départ de Casablanca. Formation initiale sécurité assurée par la compagnie.",
+                "Casablanca", ContractType.CDI, "https://careers.royalairmaroc.com/hotesse-air",
+                "recrutement@ram.example", admin, true, null);
+        ensureJobOffer("Agent d'escale passagers", "Aéroport Mohammed V — Groupe RAM Handling",
+                "Enregistrement, embarquement, assistance passagers en correspondance. Anglais courant exigé.",
+                "Casablanca", ContractType.CDD, "https://jobs.ramhandling.example/agent-escale",
+                "rh@ramhandling.example", admin, true, null);
+        ensureJobOffer("Accompagnateur de groupes touristiques", "Atlas Voyages",
+                "Circuits villes impériales et désert. Permis B requis, disponibilité week-ends en haute saison.",
+                "Marrakech", ContractType.CDI, "https://atlasvoyages.example/carrieres",
+                "recrutement@atlasvoyages.example", formateur, true, null);
+        ensureJobOffer("Réceptionniste tournant(e)", "Hôtel Sofitel Marrakech",
+                "Accueil, check-in/check-out, standards 5 étoiles. Une expérience en hôtellerie internationale est un plus.",
+                "Marrakech", ContractType.STAGE, "https://careers.sofitel.example/marrakech",
+                "carrieres.marrakech@sofitel.example", admin, true, null);
+        // Brouillon — non publié, ne doit jamais apparaître côté alumni.
+        ensureJobOffer("Steward — long courrier", "Air Arabia Maroc",
+                "Offre en préparation, détails de rémunération à confirmer avant publication.",
+                "Casablanca", ContractType.CDI, null, "rh@airarabia.example", admin, false, null);
+        // Expirée — publiée mais passée, ne doit plus apparaître côté alumni.
+        ensureJobOffer("Agent de réservation call center", "Karam Travel",
+                "Traitement des demandes clients par téléphone et email, saisie GDS.",
+                "Rabat", ContractType.CDD, "https://karamtravel.example/jobs",
+                "jobs@karamtravel.example", admin, true, Instant.now().minusSeconds(86400L * 10));
+    }
+
+    private void ensureJobOffer(
+            String title, String company, String description, String location, ContractType contractType,
+            String applyUrl, String contactEmail, User postedBy, boolean published, Instant expiresAt
+    ) {
+        boolean exists = jobOfferRepository.findAllByOrderByCreatedAtDesc().stream()
+                .anyMatch(o -> o.getTitle().equals(title) && o.getCompany().equals(company));
+        if (exists) {
+            return;
+        }
+        jobOfferRepository.save(JobOffer.builder()
+                .title(title)
+                .company(company)
+                .description(description)
+                .location(location)
+                .contractType(contractType)
+                .applyUrl(applyUrl)
+                .contactEmail(contactEmail)
+                .postedBy(postedBy)
+                .published(published)
+                .expiresAt(expiresAt)
+                .build());
     }
 
     // ------------------------------------------------------------------
