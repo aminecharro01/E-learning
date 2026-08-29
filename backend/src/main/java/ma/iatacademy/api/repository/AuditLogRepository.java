@@ -9,4 +9,5 @@ import java.util.UUID;
 
 public interface AuditLogRepository extends JpaRepository<AuditLogEntry, UUID> {
     Page<AuditLogEntry> findAllByOrderByCreatedAtDesc(Pageable pageable);
+    Page<AuditLogEntry> findByActionOrderByCreatedAtDesc(String action, Pageable pageable);
 }

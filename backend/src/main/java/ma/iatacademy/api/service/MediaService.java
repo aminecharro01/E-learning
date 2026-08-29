@@ -315,7 +315,16 @@ public class MediaService {
         }
         boolean isOwner = requester != null && requester.getId().equals(asset.getOwnerId());
         boolean isStaff = requester != null && requester.getRole().isStaff();
-        if (!isOwner && !isStaff) {
+        // SUPPORT isn't "staff" for private document access (stage dossiers, submissions),
+        // but it does need to see a learner's own profile photo — the same list it's
+        // already allowed to browse (GET /api/admin/learners). Scoped to exactly the
+        // owner's current avatar, not a blanket staff-style bypass.
+        boolean isSupportViewingAvatar = requester != null
+                && requester.getRole() == Role.SUPPORT
+                && userRepository.findById(asset.getOwnerId())
+                        .map(owner -> asset.getId().equals(owner.getAvatarAssetId()))
+                        .orElse(false);
+        if (!isOwner && !isStaff && !isSupportViewingAvatar) {
             throw new ForbiddenException("Accès refusé à ce média.");
         }
     }

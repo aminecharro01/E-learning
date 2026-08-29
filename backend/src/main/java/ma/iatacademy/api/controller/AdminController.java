@@ -153,9 +153,10 @@ public class AdminController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<PageResponse<AuditLogEntryResponse>> auditLog(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) String action
     ) {
-        return ResponseEntity.ok(auditLogService.list(page, size));
+        return ResponseEntity.ok(auditLogService.list(page, size, action));
     }
 
     @PostMapping("/users/{userId}/unlock-module/{moduleId}")

@@ -189,11 +189,14 @@ public class DemoDataSeeder implements ApplicationRunner {
      *  de passe inchangés) avec un nom réel, plus un compte SUPPORT — aucun des 3 rôles
      *  staff n'était différencié au-delà du seul "Sara Formateur" jusqu'ici. */
     private void ensureAdditionalStaff() {
-        upsertUser("admin@iat-academy.local", "Admin@123", "Karim Bensouda — Directeur pédagogique",
+        // Nom seul — le rôle est déjà porté par sa propre colonne partout où ce compte
+        // apparaît (Utilisateurs, en-tête admin, journal d'audit) ; le répéter dans le nom
+        // était redondant partout où les deux s'affichent côte à côte.
+        upsertUser("admin@iat-academy.local", "Admin@123", "Karim Bensouda",
                 Role.ADMIN, PaymentStatus.EXEMPTED, true, false, null);
-        upsertUser("superadmin@iat-academy.local", "SuperAdmin@123", "Yasmine Aloui — Super Admin",
+        upsertUser("superadmin@iat-academy.local", "SuperAdmin@123", "Yasmine Aloui",
                 Role.SUPER_ADMIN, PaymentStatus.EXEMPTED, true, false, null);
-        upsertUser("support@demo.local", "Demo@1234", "Sami Radi — Support",
+        upsertUser("support@demo.local", "Demo@1234", "Sami Radi",
                 Role.SUPPORT, PaymentStatus.EXEMPTED, true, false, null);
     }
 
