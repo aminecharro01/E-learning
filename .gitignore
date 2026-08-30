@@ -38,3 +38,6 @@ npm-debug.log*
 # Frontend
 frontend/node_modules/
 frontend/.next/
+
+# Graphify — auto-generated knowledge graph, regenerate with `graphify update .`
+graphify-out/
