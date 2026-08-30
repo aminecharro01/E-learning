@@ -1,0 +1,129 @@
+@startuml diagramme_cas_utilisation
+!theme plain
+skinparam dpi 300
+left to right direction
+skinparam packageStyle rectangle
+skinparam actorStyle awesome
+
+title Diagramme de cas d'utilisation — IAT Academy
+
+actor "Étudiant\n(Apprenant)" as Etudiant
+actor "Formateur" as Formateur
+actor "Admin\n(Directeur)" as Admin
+actor "Super Admin" as SuperAdmin
+actor "Support" as Support
+actor "Tuteur de stage\n(externe, sans compte)" as Tuteur
+actor "Visiteur\n(non authentifié)" as Visiteur
+
+Admin --|> Formateur
+SuperAdmin --|> Admin
+
+rectangle "IAT Academy" {
+
+  package "Authentification & compte" {
+    usecase "S'inscrire" as UC_Register
+    usecase "Se connecter (+2FA optionnelle)" as UC_Login
+    usecase "Réinitialiser mot de passe" as UC_ForgotPwd
+    usecase "Gérer son profil" as UC_Profile
+  }
+
+  package "Parcours pédagogique" {
+    usecase "Consulter un module / une leçon" as UC_ViewLesson
+    usecase "Suivre sa progression" as UC_ViewProgress
+    usecase "Prendre des notes personnelles" as UC_Notes
+    usecase "Participer au forum de leçon" as UC_Forum
+  }
+
+  package "Évaluation" {
+    usecase "Passer un quiz" as UC_TakeQuiz
+    usecase "Consulter ses résultats" as UC_ViewResults
+    usecase "Créer / éditer un quiz" as UC_ManageQuiz
+    usecase "Générer des questions par IA" as UC_AiGenerate
+    usecase "Corriger une réponse libre" as UC_GradeEssay
+    usecase "Ajuster une note (bonus/malus)" as UC_GradeAdjust
+  }
+
+  package "Stage & Certification" {
+    usecase "Déposer un dossier de stage" as UC_StageDossier
+    usecase "Valider une UF (stage/soutenance)" as UC_ValidateUf
+    usecase "Inviter le tuteur à signer" as UC_InviteSignoff
+    usecase "Signer la validation de stage" as UC_SignStage
+    usecase "Consulter / partager son certificat" as UC_Certificate
+    usecase "Vérifier un certificat" as UC_VerifyCertificate
+  }
+
+  package "Communication" {
+    usecase "Envoyer un message" as UC_Message
+    usecase "Recevoir des notifications" as UC_Notification
+    usecase "Créer une campagne email" as UC_Campaign
+  }
+
+  package "Bourse à l'emploi" {
+    usecase "Consulter les offres (diplômés)" as UC_JobsView
+    usecase "Publier une offre" as UC_JobsManage
+  }
+
+  package "Administration" {
+    usecase "Gérer les utilisateurs et rôles" as UC_ManageUsers
+    usecase "Gérer les groupes / cohortes" as UC_ManageGroups
+    usecase "Rechercher dans la plateforme" as UC_Search
+    usecase "Consulter le journal d'audit" as UC_AuditLog
+    usecase "Configurer les paramètres système" as UC_AppSettings
+  }
+
+  package "Public" {
+    usecase "Contacter l'académie" as UC_Contact
+    usecase "S'abonner à l'infolettre" as UC_Newsletter
+  }
+}
+
+Etudiant --> UC_Register
+Etudiant --> UC_Login
+Etudiant --> UC_ForgotPwd
+Etudiant --> UC_Profile
+Etudiant --> UC_ViewLesson
+Etudiant --> UC_ViewProgress
+Etudiant --> UC_Notes
+Etudiant --> UC_Forum
+Etudiant --> UC_TakeQuiz
+Etudiant --> UC_ViewResults
+Etudiant --> UC_StageDossier
+Etudiant --> UC_Certificate
+Etudiant --> UC_Message
+Etudiant --> UC_Notification
+Etudiant --> UC_JobsView
+Etudiant --> UC_Search
+
+Formateur --> UC_Login
+Formateur --> UC_ManageQuiz
+Formateur --> UC_AiGenerate
+Formateur --> UC_GradeEssay
+Formateur --> UC_GradeAdjust
+Formateur --> UC_InviteSignoff
+Formateur --> UC_Message
+Formateur --> UC_Search
+Formateur --> UC_JobsManage
+
+Admin --> UC_ValidateUf
+Admin --> UC_ManageUsers
+Admin --> UC_ManageGroups
+Admin --> UC_Campaign
+Admin --> UC_AuditLog
+
+SuperAdmin --> UC_AppSettings
+
+Support --> UC_Login
+Support --> UC_Search
+
+Tuteur --> UC_SignStage
+
+Visiteur --> UC_Contact
+Visiteur --> UC_Newsletter
+Visiteur --> UC_VerifyCertificate
+
+UC_TakeQuiz .> UC_ViewResults : <<include>>
+UC_AiGenerate .> UC_ManageQuiz : <<extend>>
+UC_ValidateUf .> UC_InviteSignoff : <<extend>>
+UC_JobsView .> UC_Certificate : <<include>>\n(éligibilité = certificat existant)
+
+@enduml

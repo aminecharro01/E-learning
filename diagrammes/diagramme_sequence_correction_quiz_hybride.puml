@@ -1,0 +1,46 @@
+@startuml diagramme_sequence_correction_quiz_hybride
+!theme plain
+skinparam dpi 300
+title Séquence — Correction hybride d'un quiz (auto + manuelle) et réconciliation d'état
+
+actor Étudiant
+actor Formateur
+participant "QuizController" as Ctrl
+participant "QuizAttemptService" as AttemptSvc
+participant "QuizGradingService" as GradingSvc
+database "PostgreSQL" as DB
+database "Redis" as Redis
+
+== Soumission de la tentative ==
+Étudiant -> Ctrl : POST /quiz/{id}/submit
+Ctrl -> AttemptSvc : submit(quizId, answers, principal)
+AttemptSvc -> Redis : vérifier attemptKey (TTL / expiration)
+AttemptSvc -> AttemptSvc : scoreAnswers(answers)\n(questions à choix : auto, comparaison\nd'ensembles d'IDs — ESSAY exclues)
+
+alt le quiz ne contient aucune question ESSAY
+  AttemptSvc -> DB : score final, status = PASSED/FAILED
+  AttemptSvc -> AttemptSvc : applyPassEffects(...)\n(badge, certificat éligible, notification)
+else le quiz contient des questions ESSAY
+  AttemptSvc -> DB : score partiel (auto uniquement),\nstatus = PENDING_REVIEW
+  AttemptSvc -> AttemptSvc : notifier "correction en attente"
+end
+AttemptSvc -> Redis : supprimer attemptKey / questionsKey
+AttemptSvc --> Étudiant : 200 OK (score ou "en attente")
+
+== Correction manuelle (si PENDING_REVIEW) ==
+Formateur -> Ctrl : PATCH /quiz/attempts/{attemptId}/questions/{questionId}/grade
+Ctrl -> GradingSvc : gradeEssay(attemptId, questionId, request, graderId)
+GradingSvc -> DB : upsert EssayGrade(score, feedback, gradedBy)
+GradingSvc -> GradingSvc : finalizeIfFullyGraded(attempt)
+
+alt toutes les questions ESSAY sont notées
+  GradingSvc -> GradingSvc : recalcul score final\n(auto + moyenne ESSAY)
+  GradingSvc -> DB : status = PASSED/FAILED
+  GradingSvc -> AttemptSvc : applyPassEffects(...)\n(réutilise la même logique\nque la soumission auto)
+  AttemptSvc -> DB : badge / certificat éligible / notification
+else il reste des questions ESSAY non notées
+  GradingSvc -> GradingSvc : retour silencieux\n(pas de finalisation prématurée)
+end
+GradingSvc --> Formateur : 200 OK
+
+@enduml

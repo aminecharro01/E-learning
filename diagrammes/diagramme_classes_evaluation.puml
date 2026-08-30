@@ -1,0 +1,118 @@
+@startuml diagramme_classes_evaluation
+!theme plain
+skinparam dpi 300
+skinparam classAttributeIconSize 0
+hide circle
+hide empty members
+
+title Diagramme de classes — Évaluation (quiz, devoirs, notation)
+
+abstract class AuditableEntity {
+  +UUID id
+  +Instant createdAt
+  +Instant updatedAt
+}
+
+class User {
+  +String email
+  +String fullName
+  +Role role
+}
+
+class ModuleEntity {
+  +String code
+  +String title
+}
+
+class Lesson {
+  +String title
+}
+
+class Formation {
+  +String title
+}
+
+class Quiz {
+  +String title
+  +QuizType quizType
+  +int passingScore
+  +int maxAttempts
+  +int timeLimitSeconds
+  +int retryDelayMinutes
+  +boolean blocking
+}
+
+class Question {
+  +String prompt
+  +QuestionType questionType
+  +int orderIndex
+}
+
+class AnswerOption {
+  +String label
+  +boolean correct
+}
+
+class QuizAttempt {
+  +Instant startedAt
+  +Instant submittedAt
+  +BigDecimal score
+  +AttemptStatus status
+}
+
+class EssayGrade {
+  +BigDecimal score
+  +String feedback
+  +Instant gradedAt
+}
+
+class ProctoringEvent {
+  +ProctoringEventType eventType
+  +Instant occurredAt
+}
+
+class Assignment {
+  +String title
+  +Instant dueAt
+  +int maxScore
+}
+
+class Submission {
+  +SubmissionStatus status
+  +BigDecimal grade
+}
+
+class GradeAdjustment {
+  +BigDecimal points
+  +String reason
+}
+
+AuditableEntity <|-- Quiz
+AuditableEntity <|-- QuizAttempt
+
+Quiz "0..1" -- "0..N" Lesson : section >
+Quiz "0..1" -- "0..N" ModuleEntity : fin de module >
+Quiz "0..1" -- "0..N" Formation : fin d'UF / d'année >
+Quiz "1" *-- "0..N" Question
+Question "1" *-- "0..N" AnswerOption
+
+User "1" -- "0..N" QuizAttempt
+Quiz "1" -- "0..N" QuizAttempt
+QuizAttempt "1" -- "0..N" EssayGrade
+QuizAttempt "1" -- "0..N" ProctoringEvent
+Question "1" -- "0..N" EssayGrade
+
+ModuleEntity "1" -- "0..N" Assignment
+Assignment "1" -- "0..N" Submission
+User "1" -- "0..N" Submission
+User "1" -- "0..N" GradeAdjustment
+ModuleEntity "1" -- "0..N" GradeAdjustment
+
+note bottom of AnswerOption
+  Correction auto : égalité stricte entre
+  options sélectionnées et correct=true
+  (pas de crédit partiel). ESSAY : jamais
+  auto-noté, uniquement via EssayGrade.
+end note
+
+@enduml

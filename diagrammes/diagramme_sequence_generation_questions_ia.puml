@@ -1,0 +1,59 @@
+@startuml diagramme_sequence_generation_questions_ia
+!theme plain
+skinparam dpi 300
+title Séquence — Génération de questions de quiz par IA (repli Gemini -> Grok)
+
+actor Formateur
+participant "QuizController" as Ctrl
+participant "QuestionService" as QSvc
+participant "RateLimitService" as RateLimit
+participant "QuestionGenerationService" as GenSvc
+participant "Gemini API" as Gemini
+participant "Grok API" as Grok
+database "PostgreSQL" as DB
+database "Redis" as Redis
+
+Formateur -> Ctrl : POST /quiz/{id}/questions/generate-ai
+Ctrl -> QSvc : generateQuestionsAi(quizId, request, actorId)
+QSvc -> RateLimit : checkAiGenerationAllowed(actorId)
+RateLimit -> Redis : INCR rate:ai-generation:{actorId}
+alt count > 20 en 5 min
+  RateLimit --> QSvc : RateLimitException
+  QSvc --> Ctrl : HTTP 429
+else sous la limite
+  QSvc -> GenSvc : resolveSourceText(lessonId, rawText)
+  GenSvc --> QSvc : texte source (HTML nettoyé)
+  QSvc -> GenSvc : generate(sourceText, type, count)
+
+  GenSvc -> Gemini : callGemini(prompt)
+  alt Gemini répond correctement
+    Gemini --> GenSvc : JSON {questions:[...]}
+  else Gemini échoue (réseau, HTTP non-2xx, JSON invalide)
+    Gemini --> GenSvc : Exception
+    GenSvc -> Grok : callGrok(prompt)
+    alt Grok répond correctement
+      Grok --> GenSvc : JSON {questions:[...]}
+    else Grok échoue aussi
+      Grok --> GenSvc : Exception
+      GenSvc --> QSvc : ApiException\n("Génération IA indisponible")
+      QSvc --> Ctrl : HTTP 4xx
+    end
+  end
+
+  GenSvc -> GenSvc : parseQuestions(rawJson)\n(extraction fences, validation JSON)
+  GenSvc --> QSvc : List<CreateQuestionRequest>
+
+  loop pour chaque question générée
+    QSvc -> QSvc : addQuestion(quizId, question)\n(même validation que création manuelle)
+    alt question invalide
+      QSvc -> QSvc : RowError(index, message)
+    else question valide
+      QSvc -> DB : persister Question + AnswerOption
+    end
+  end
+
+  QSvc --> Ctrl : AiGenerationResponse(successCount, errors)
+  Ctrl --> Formateur : 200 OK
+end
+
+@enduml

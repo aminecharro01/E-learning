@@ -1,0 +1,36 @@
+@startuml diagramme_sequence_recherche_globale
+!theme plain
+skinparam dpi 300
+title Séquence — Recherche globale multi-source avec confidentialité des questions de quiz
+
+actor "Apprenant ou Staff" as User
+participant "SearchController" as Ctrl
+participant "SearchService" as SearchSvc
+database "PostgreSQL" as DB
+
+User -> Ctrl : GET /search?q=...
+Ctrl -> Ctrl : includeQuestions =\nprincipal != null && principal.getRole().isStaff()
+Ctrl -> SearchSvc : search(q, limit, includeQuestions)
+
+par recherche en parallèle sur plusieurs sources
+  SearchSvc -> DB : titres de modules publiés (LIKE)
+  SearchSvc -> DB : titres de leçons publiées (LIKE)
+  SearchSvc -> DB : blocs TEXT de leçons publiées\n(JSONB ->> 'body' ILIKE)
+  SearchSvc -> DB : blocs PDF — texte extrait\n(assets.extracted_text ILIKE)
+end
+
+alt includeQuestions == true (staff)
+  SearchSvc -> DB : prompts de questions de quiz (ILIKE)
+else includeQuestions == false (apprenant)
+  note over SearchSvc
+    questionRepository n'est JAMAIS interrogé —
+    un apprenant ne peut pas utiliser la recherche
+    pour retrouver les réponses d'un quiz.
+  end note
+end
+
+SearchSvc -> SearchSvc : agréger les résultats,\ncalculer un extrait (snippet)\nautour du premier terme trouvé
+SearchSvc --> Ctrl : liste de SearchResultItem\n(MODULE / LESSON / LESSON_CONTENT /\nLESSON_PDF / QUESTION si staff)
+Ctrl --> User : 200 OK
+
+@enduml

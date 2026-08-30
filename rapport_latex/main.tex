@@ -1,0 +1,200 @@
+% =============================================================================
+% main.tex — document maître
+% Compilation : voir README.md à la racine du dossier rapport_latex/
+% =============================================================================
+\documentclass[12pt,a4paper]{report}
+
+\input{preambule}
+
+\begin{document}
+
+% -----------------------------------------------------------------------------
+% Pages liminaires — pagination romaine
+% -----------------------------------------------------------------------------
+\pagenumbering{roman}
+
+\include{page_de_garde}
+
+\chapter*{Remerciements}
+Je tiens à exprimer ma sincère gratitude à mon encadrant académique pour
+son suivi attentif tout au long de ce projet, sa disponibilité et la
+pertinence de ses remarques, qui ont considérablement enrichi la démarche
+suivie dans ce travail. Mes remerciements vont également à mon encadrant
+professionnel au sein d'IAT Academy, pour la confiance qu'il m'a accordée
+dès le début du stage en me confiant un périmètre technique aussi complet,
+et pour le temps consacré à clarifier les règles métier propres au cursus
+de l'académie --- sans lesquelles la conception du système de progression
+par unité de formation n'aurait pas pu aboutir à une solution fidèle à la
+réalité du terrain.
+
+Je remercie chaleureusement l'ensemble de l'équipe pédagogique et
+administrative d'IAT Academy pour son accueil, sa bienveillance et sa
+disponibilité à répondre à mes questions tout au long de l'immersion dans
+le fonctionnement de l'académie. Cette collaboration au quotidien a été
+déterminante pour comprendre non seulement les besoins fonctionnels
+exprimés, mais aussi les contraintes réelles d'exploitation d'une
+plateforme destinée à des apprenants et des formateurs aux profils variés.
+
+Je souhaite également remercier le corps professoral de mon établissement
+pour la formation théorique et pratique reçue tout au long de mon cursus,
+qui a constitué le socle indispensable à la réalisation de ce projet, ainsi
+que les membres du jury pour l'intérêt qu'ils porteront à ce travail.
+
+Enfin, mes remerciements les plus personnels vont à ma famille et à mes
+proches, pour leur soutien constant et leurs encouragements tout au long de
+cette période de stage.
+
+\chapter*{Résumé}
+IAT Academy est une plateforme e-learning destinée aux métiers de l'aviation, de
+l'accueil et du tourisme, développée avec Spring Boot (backend) et Next.js
+(frontend). Ce rapport présente le contexte du projet, l'analyse et la
+conception de la solution, les choix techniques réalisés lors de l'implémentation
+— en particulier les mécanismes qui dépassent le simple CRUD (correction de
+quiz, génération de questions par intelligence artificielle, contrôle d'accès à
+granularité fine, etc. — voir chapitre 3) — ainsi que la démarche de tests et de
+déploiement.
+
+\textbf{Mots-clés :} e-learning, Spring Boot, Spring Security, PostgreSQL,
+Redis, intelligence artificielle, architecture en couches.
+
+\chapter*{Abstract}
+IAT Academy is an e-learning platform for aviation, hospitality and tourism
+training programs, built with Spring Boot (backend) and Next.js (frontend).
+This report presents the project context, the analysis and design of the
+solution, the technical decisions made during implementation — particularly the
+mechanisms that go beyond simple CRUD (quiz grading, AI-assisted question
+generation, fine-grained access control, etc. — see Chapter 3) — and the
+testing and deployment approach.
+
+\textbf{Keywords:} e-learning, Spring Boot, Spring Security, PostgreSQL, Redis,
+artificial intelligence, layered architecture.
+
+\tableofcontents
+\listoffigures
+\listoftables
+
+% -----------------------------------------------------------------------------
+% Corps du rapport — pagination arabe à partir de l'introduction
+% -----------------------------------------------------------------------------
+\cleardoublepage
+\pagenumbering{arabic}
+
+\chapter*{Introduction générale}
+\addcontentsline{toc}{chapter}{Introduction générale}
+
+La transformation numérique des organismes de formation professionnelle ne
+se limite plus, aujourd'hui, à la simple mise en ligne de supports de
+cours. Elle touche l'ensemble du cycle de vie de l'apprenant : son
+inscription, le suivi minutieux de sa progression, l'évaluation de ses
+compétences par des modalités variées, l'accompagnement individualisé
+jusqu'à l'obtention d'un diplôme, et jusqu'à la valorisation de ce diplôme
+sur le marché de l'emploi. C'est dans ce contexte qu'a été pensé et
+développé IAT Academy, une plateforme e-learning destinée à un cycle
+professionnel de deux années dans les métiers de l'aviation, de l'accueil
+et du tourisme --- des filières où l'employabilité concrète des diplômés
+constitue l'indicateur de réussite ultime, bien plus qu'un simple taux de
+réussite académique.
+
+Avant ce projet, la gestion pédagogique d'IAT Academy s'appuyait sur des
+outils et des supports dispersés, sans espace numérique centralisé
+permettant de suivre en temps réel la progression d'un apprenant à travers
+les différentes unités de formation qui composent son cursus, ni de
+garantir que les étapes-clés du parcours --- en particulier celles qui
+exigent un jugement humain, comme la validation du stage en entreprise ---
+soient réellement respectées avant qu'un module supérieur ne devienne
+accessible. La problématique centrale de ce projet peut donc se formuler
+ainsi : \emph{comment concevoir et développer une plateforme qui structure,
+sécurise et automatise l'intégralité du parcours pédagogique d'un
+apprenant, de la candidature à la délivrance d'un certificat vérifiable,
+tout en respectant des règles métier qui ne se réduisent jamais à un simple
+calcul automatique de score ?}
+
+Pour répondre à cette problématique, ce stage de fin d'études a consisté à
+concevoir et implémenter, de bout en bout, une application composée d'un
+backend Spring Boot exposant une API REST sécurisée et d'un frontend
+Next.js consommant cette API. Le travail réalisé couvre l'ensemble des
+étapes d'un projet logiciel réel : l'analyse des besoins et la
+modélisation du domaine métier, la conception d'une architecture en
+couches capable de supporter des règles de progression complexes, la mise
+en \oe uvre de mécanismes qui dépassent largement le simple CRUD ---
+notamment une intégration à des services d'intelligence artificielle
+générative pour assister la création de contenu pédagogique --- ainsi que
+la validation de l'ensemble par une suite de tests automatisés et une
+démarche de déploiement conteneurisé.
+
+Ce rapport est organisé en quatre chapitres. Le premier chapitre présente
+le contexte général du projet : l'organisme d'accueil, la problématique
+métier identifiée et les objectifs poursuivis. Le deuxième chapitre détaille
+l'analyse des besoins et les choix de conception qui en découlent ---
+acteurs, cas d'utilisation, modèle de données et architecture logicielle.
+Le troisième chapitre, cœur technique de ce rapport, présente
+l'implémentation réalisée en mettant l'accent sur les mécanismes qui
+constituent la véritable valeur ajoutée du projet, classés par ordre
+d'impact et systématiquement rattachés au code source qui les concrétise.
+Le quatrième et dernier chapitre décrit la démarche de validation par les
+tests et l'architecture de déploiement retenue. Une conclusion générale
+revient enfin sur les apports de ce travail et ouvre sur ses perspectives
+d'évolution.
+
+\include{chapitres/ch1_contexte}
+\include{chapitres/ch2_analyse_conception}
+\include{chapitres/ch3_realisation}
+\include{chapitres/ch4_tests_deploiement}
+
+\chapter*{Conclusion générale}
+\addcontentsline{toc}{chapter}{Conclusion générale}
+
+Ce projet de fin d'études a permis de concevoir et de développer IAT
+Academy, une plateforme e-learning complète destinée aux métiers de
+l'aviation, de l'accueil et du tourisme, en couvrant l'ensemble du cycle de
+vie d'un projet logiciel : analyse des besoins, modélisation d'un domaine
+métier de 37 entités, conception d'une architecture en couches robuste,
+implémentation d'une API REST sécurisée de 29 contrôleurs, puis validation
+par une suite de 138 tests automatisés et une démarche de déploiement
+conteneurisé. Au-delà de la couverture fonctionnelle --- catalogue de
+cours, système de quiz à quatre portées, gestion de stage, certification
+--- ce travail a surtout été l'occasion d'aller au-delà du simple CRUD sur
+plusieurs points précis, détaillés au chapitre~\ref{ch:realisation} :
+l'intégration résiliente d'un service d'intelligence artificielle
+générative avec repli automatique entre deux fournisseurs, la
+réconciliation d'état entre correction automatique et correction manuelle
+d'un même quiz, une logique de progression pédagogique en cascade jusqu'à
+l'éligibilité au certificat, et un contrôle d'accès à granularité fine qui
+dépasse le simple contrôle par rôle.
+
+Ce travail n'a pas été mené sans difficultés. La principale d'entre elles a
+consisté à traduire des règles métier parfois implicites --- notamment la
+distinction entre les UF qui exigent une validation manuelle du Directeur
+et celles qui n'en exigent pas, ou encore la coexistence de deux stratégies
+de déblocage du contenu selon qu'un apprenant suit son parcours en ligne de
+façon autonome ou qu'il appartient à une cohorte encadrée --- en un modèle
+de données et une logique applicative à la fois simples et fidèles à la
+réalité du terrain. La confrontation régulière avec l'équipe pédagogique
+d'IAT Academy a été déterminante pour éviter qu'une simplification
+excessive du modèle ne finisse par trahir ces règles. Le chapitre~3 assume
+également, en toute transparence, deux limites concrètes identifiées dans
+le code existant --- une incohérence dans l'application du contrôle de
+propriété au niveau du service de gestion des devoirs, et l'absence d'une
+reprise automatique après l'interruption d'une campagne email --- qui
+constituent naturellement les premières pistes d'amélioration à court
+terme.
+
+À plus long terme, plusieurs évolutions permettraient d'enrichir encore la
+plateforme : l'activation complète de la topologie de déploiement déjà
+anticipée par la configuration nginx (services API et frontend
+conteneurisés aux côtés de PostgreSQL et Redis), la mise en place d'une
+intégration continue automatisée pour exécuter la suite de tests à chaque
+modification, ou encore l'extension du mécanisme de génération de
+questions par intelligence artificielle à d'autres formats pédagogiques.
+Au-delà de l'aspect technique, ce stage a été une expérience professionnelle
+formatrice à part entière : il a permis de mettre en pratique, sur un projet
+réel destiné à des utilisateurs réels, des compétences d'analyse, de
+conception et de rigueur technique qui dépassent largement le cadre d'un
+exercice académique classique.
+
+% -----------------------------------------------------------------------------
+% Bibliographie
+% -----------------------------------------------------------------------------
+\printbibliography[title={Bibliographie}]
+
+\end{document}

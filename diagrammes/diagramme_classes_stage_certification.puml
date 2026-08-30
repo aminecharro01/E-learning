@@ -1,0 +1,80 @@
+@startuml diagramme_classes_stage_certification
+!theme plain
+skinparam dpi 300
+skinparam classAttributeIconSize 0
+hide circle
+hide empty members
+
+title Diagramme de classes — Stage et certification
+
+abstract class AuditableEntity {
+  +UUID id
+  +Instant createdAt
+  +Instant updatedAt
+}
+
+class User {
+  +String email
+  +String fullName
+  +Role role
+}
+
+class Formation {
+  +String title
+}
+
+class LearnerUfValidation {
+  +String ufCode
+  +boolean validated
+  +Instant validatedAt
+  +String note
+}
+
+class StageSignoffInvite {
+  +String token
+  +String tutorEmail
+  +String tutorName
+  +Instant expiresAt
+  +Instant usedAt
+}
+
+class LearnerDocument {
+  +LearnerDocType docType
+  +LearnerDocStatus status
+  +String notes
+}
+
+class Asset {
+  +String filename
+  +String assetKind
+  +String extractedText
+}
+
+class Certificate {
+  +String verificationCode
+  +Instant issuedAt
+  +String pdfPath
+  +boolean physicallyDelivered
+}
+
+AuditableEntity <|-- Certificate
+
+User "1" -- "0..N" LearnerUfValidation : apprenant >
+User "0..1" -- "0..N" LearnerUfValidation : validé par >
+LearnerUfValidation "1" -- "0..N" StageSignoffInvite
+
+User "1" -- "0..N" LearnerDocument : apprenant >
+User "1" -- "0..N" LearnerDocument : déposé par >
+Asset "1" -- "0..N" LearnerDocument
+
+User "1" -- "0..N" Certificate
+Formation "1" -- "0..N" Certificate
+
+note bottom of LearnerUfValidation
+  Gate manuel du Directeur limité à deux UF :
+  "UF 5" (stage) et "UF 11" (soutenance).
+  Pour toute autre UF, isValidated() renvoie
+  toujours true (voir ch. 3, §3.2.3).
+end note
+
+@enduml

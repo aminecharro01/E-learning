@@ -1,0 +1,178 @@
+\chapter{Tests et déploiement}
+\label{ch:tests-deploiement}
+
+\section{Stratégie de tests}
+
+La qualité du backend est vérifiée par une suite de tests unitaires et de
+service exécutée avec JUnit~5 et Mockito. Aucun contexte Spring complet
+n'est démarré pour ces tests : les dépendances de chaque service sont
+simulées avec \texttt{@Mock} ou \texttt{Mockito.spy()}, ce qui rend la
+suite rapide à exécuter aussi bien en local qu'en intégration continue, et
+permet de tester en isolation la logique métier sans dépendre d'une base
+de données réelle. Ce choix a en outre orienté certains choix
+d'implémentation présentés au chapitre~\ref{ch:realisation} : les méthodes
+\texttt{callGemini} et \texttt{callGrok} de
+\texttt{QuestionGenerationService}, par exemple, sont délibérément
+déclarées \emph{package-private} plutôt que \texttt{private}, dans le seul
+but de pouvoir être simulées par \texttt{Mockito.spy()} sans effectuer de
+véritable appel réseau lors des tests.
+
+\subsection{Couverture côté backend}
+
+\begin{table}[H]
+  \centering
+  \caption{Classes de test backend (\texttt{backend/src/test/java/ma/iatacademy/api/})}
+  \label{tab:tests-backend}
+  \begin{tabular}{@{}ll@{}}
+    \toprule
+    Classe de test & Objet couvert \\
+    \midrule
+    \texttt{QuizScoringLogicTest} & Logique de correction automatique des quiz \\
+    \texttt{SecurityRbacTest} & Contrôle d'accès par rôle (RBAC) \\
+    \texttt{AgendaServiceTest} & Planification / agenda \\
+    \texttt{AssignmentServiceTest} & Devoirs \\
+    \texttt{AuthServiceTest} & Authentification, inscription, mot de passe \\
+    \texttt{BadgeServiceTest} & Gamification (badges) \\
+    \texttt{CertificateServiceTest} & Délivrance et vérification de certificats \\
+    \texttt{CommentServiceTest} & Commentaires de leçon \\
+    \texttt{CourseAssistantServiceTest} & Assistant de cours (IA) \\
+    \texttt{EarlyWarningServiceTest} & Détection d'inactivité \\
+    \texttt{GradebookServiceTest} & Carnet de notes \\
+    \texttt{GroupServiceTest} & Groupes d'apprenants \\
+    \texttt{JobOfferServiceTest} & Bourse à l'emploi (accès diplômés) \\
+    \texttt{LessonLockServiceTest} & Verrou d'édition collaboratif \\
+    \texttt{LessonNoteServiceTest} & Notes personnelles de leçon \\
+    \texttt{MediaServiceTest} & Gestion des médias / extraction PDF \\
+    \texttt{MessagingServiceTest} & Messagerie interne \\
+    \texttt{ProgressionServiceTest} & Déblocage séquentiel du parcours \\
+    \texttt{QuestionGenerationServiceTest} & Génération de questions par IA \\
+    \texttt{RateLimitServiceTest} & Limitation de débit Redis \\
+    \texttt{SearchServiceTest} & Recherche globale \\
+    \texttt{StageServiceTest} & Gestion du stage \\
+    \texttt{UfValidationServiceTest} & Validation d'unité de formation \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+Au total, cette suite comporte \textbf{138 méthodes de test}
+(\texttt{@Test}), couvrant en priorité les services identifiés au
+chapitre~\ref{ch:realisation} comme porteurs de la logique métier la plus
+sensible : notation, sécurité, validation d'UF, intégration à des services
+d'intelligence artificielle externes. Cette priorisation n'est pas
+anodine : un service comme \texttt{ProgressionServiceTest}, par exemple,
+teste explicitement les deux branches distinctes du calcul de
+progression --- apprenant individuel suivant la règle séquentielle
+automatique par UF, et apprenant rattaché à un groupe suivant les
+assignations manuelles du Directeur --- puisqu'une régression sur l'une de
+ces deux branches serait particulièrement difficile à détecter par simple
+observation manuelle de l'application, la seconde branche ne concernant
+qu'une catégorie précise d'apprenants.
+
+\subsection{Couverture côté frontend et tests de charge}
+
+\begin{table}[H]
+  \centering
+  \caption{Tests frontend}
+  \label{tab:tests-frontend}
+  \begin{tabular}{@{}lll@{}}
+    \toprule
+    Type & Outil & Fichiers \\
+    \midrule
+    Tests unitaires / composants & Vitest + React Testing Library &
+      \texttt{QuizTimer.test.tsx}, \texttt{QuizAttemptReview.test.tsx},
+      \texttt{Loader.test.tsx}, \texttt{programme.test.ts},
+      \texttt{toast-store.test.ts} \\
+    Tests de bout en bout & Playwright & \texttt{auth.spec.ts}, \texttt{quiz.spec.ts} \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+Le projet comprend enfin un dossier \texttt{loadtest/} dédié aux tests de
+montée en charge, écrits comme des scripts autonomes plutôt qu'intégrés à
+la suite JUnit, dans la mesure où leur objet n'est pas de vérifier une
+règle métier mais un comportement sous concurrence. Le script
+\texttt{quiz-start-concurrency.js} vérifie précisément le point discuté au
+chapitre~\ref{ch:realisation} (\S\ref{sec:correction-hybride}) : que le
+verrou consultatif Postgres (\texttt{pg\_advisory\_xact\_lock}) empêche
+effectivement la création de deux tentatives de quiz simultanées pour un
+même couple utilisateur/quiz lorsque plusieurs requêtes de démarrage
+arrivent en parallèle. Le script \texttt{login-rate-limit.js} vérifie de
+son côté que le mécanisme de limitation de débit décrit au
+\S\ref{sec:rate-limiting} rejette effectivement les tentatives de
+connexion au-delà du seuil configuré, et \texttt{read-throughput.js} mesure
+le débit de lecture soutenu par l'API sur les endpoints les plus
+consultés. Ces scripts, bien que ne remplaçant pas une campagne de tests
+de charge outillée (par exemple avec k6 ou Gatling), ont permis de valider
+empiriquement --- et non uniquement par lecture du code --- que les
+mécanismes de concurrence et de limitation de débit se comportaient
+comme attendu sous une charge simultanée réaliste.
+
+\section{Architecture de déploiement}
+
+La Figure~\ref{fig:deploiement} présente la topologie de déploiement du
+projet. À l'heure actuelle, le fichier \texttt{docker-compose.yml} placé à
+la racine du dépôt active uniquement les services PostgreSQL 16 et Redis~7,
+respectivement exposés sur les ports hôtes 5433 et 6379 et adossés chacun
+à un volume nommé (\texttt{postgres\_data}, \texttt{redis\_data}) garantissant
+la persistance des données entre redémarrages de conteneur ; chaque service
+embarque en outre un test de santé (\texttt{healthcheck}) --- \texttt{pg\_isready}
+pour PostgreSQL, \texttt{redis-cli ping} pour Redis --- permettant à
+d'éventuels services dépendants d'attendre leur disponibilité réelle avant
+de démarrer. Les services applicatifs (API Spring Boot et frontend
+Next.js) sont pour leur part déjà décrits, à l'état de commentaire dans ce
+même fichier, en attente d'une activation ultérieure une fois la
+configuration de production stabilisée.
+
+Cette topologie cible n'est cependant pas une simple hypothèse de travail :
+elle est déjà entièrement anticipée par la configuration nginx du projet
+(\texttt{deploy/nginx/conf.d/elearning.conf}), qui définit deux
+\emph{upstreams} nommés --- \texttt{iat\_api} pointant vers le conteneur API
+sur le port 8080, et \texttt{iat\_frontend} pointant vers le conteneur
+frontend sur le port 3000 --- et route les requêtes entrantes en
+conséquence : les chemins \texttt{/api/}, \texttt{/swagger-ui/} et
+\texttt{/api-docs} sont dirigés vers l'API (avec un délai d'attente étendu
+à 300 secondes pour tolérer les opérations longues), tandis que toute autre
+requête, y compris les mises à niveau WebSocket, est dirigée vers le
+frontend. Cette configuration fixe également une taille maximale de corps
+de requête de 520~Mo, dimensionnée pour absorber les imports de médias
+volumineux (vidéos, PDF) traités par la plateforme. Le backend lui-même
+est packagé, via \texttt{backend/Dockerfile}, selon un \emph{build} Docker
+en deux étapes : une première image de compilation (\texttt{eclipse-temurin:17-jdk})
+qui télécharge les dépendances Maven puis compile l'application, et une
+seconde image d'exécution, nettement plus légère
+(\texttt{eclipse-temurin:17-jre}), qui ne conserve que l'archive
+exécutable finale --- une pratique standard qui réduit sensiblement la
+taille de l'image livrée en production par rapport à une image de
+compilation unique.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.9\textwidth,height=0.85\textheight,keepaspectratio]{diagramme_deploiement.png}
+  \caption{Architecture de déploiement}
+  \label{fig:deploiement}
+\end{figure}
+
+Sur le plan de la configuration, l'ensemble des paramètres sensibles ---
+identifiants de connexion à la base de données, clé de signature des
+jetons JWT, clés d'API des fournisseurs d'intelligence artificielle
+externes --- est injecté exclusivement par variables d'environnement
+(fichier \texttt{.env}, jamais versionné dans le dépôt ; voir
+\texttt{.env.example} pour la liste complète des clés attendues et leur
+rôle), conformément au principe des \emph{Twelve-Factor Apps} qui veut
+qu'une même image d'application puisse être déployée sur des
+environnements différents sans qu'aucun secret ne soit jamais gravé dans
+le code ou dans l'image elle-même. Ce même mécanisme est celui qui permet,
+par exemple, d'activer ou de désactiver silencieusement l'intégration à
+Gemini et à Grok décrite au \S\ref{sec:generation-ia} : un fournisseur est
+considéré comme configuré dès lors que sa clé d'API n'est pas vide,
+sans qu'aucun indicateur booléen supplémentaire ne soit nécessaire.
+
+\section{Conclusion}
+
+Ce chapitre a présenté la démarche de validation du projet --- une suite
+de 138 tests backend complétée par des tests frontend et des scripts de
+montée en charge ciblés sur les mécanismes de concurrence les plus
+sensibles --- ainsi que l'architecture de déploiement retenue, dont la
+topologie cible est déjà anticipée par la configuration nginx du projet
+en attendant son activation complète. La conclusion générale de ce rapport
+revient à présent sur l'ensemble du travail réalisé durant ce stage.

@@ -1,0 +1,92 @@
+@startuml diagramme_classes_pedagogie
+!theme plain
+skinparam dpi 300
+skinparam classAttributeIconSize 0
+hide circle
+hide empty members
+
+title Diagramme de classes — Structure pédagogique et groupes
+
+abstract class AuditableEntity {
+  +UUID id
+  +Instant createdAt
+  +Instant updatedAt
+}
+
+class User {
+  +String email
+  +String fullName
+  +Role role
+  +boolean enabled
+  +boolean year2AccessEnabled
+}
+
+class LearnerGroup {
+  +String name
+  +String code
+  +LocalDate startDate
+  +LocalDate endDate
+  +EnrollmentMode enrollmentMode
+}
+
+class GroupContentAssignment {
+  +String ufCode
+  +Instant unlockAt
+}
+
+class Formation {
+  +String title
+  +boolean published
+}
+
+class ModuleEntity {
+  +String code
+  +String title
+  +int orderIndex
+  +int yearNumber
+  +String ufCode
+  +String ufTitle
+  +boolean published
+}
+
+class Lesson {
+  +String title
+  +int orderIndex
+  +boolean published
+}
+
+class LessonBlock {
+  +BlockType blockType
+  +Map content
+  +int orderIndex
+}
+
+class LessonProgress {
+  +double videoWatchedPercent
+  +boolean completed
+  +Instant completedAt
+}
+
+AuditableEntity <|-- User
+AuditableEntity <|-- Formation
+AuditableEntity <|-- ModuleEntity
+AuditableEntity <|-- Lesson
+
+User "0..N" -- "0..1" LearnerGroup : membre >
+LearnerGroup "1" *-- "0..N" GroupContentAssignment
+GroupContentAssignment "0..N" --> "1" ModuleEntity
+
+Formation "1" *-- "0..N" ModuleEntity
+ModuleEntity "1" *-- "0..N" Lesson
+Lesson "1" *-- "0..N" LessonBlock
+User "1" -- "0..N" LessonProgress
+Lesson "1" -- "0..N" LessonProgress
+
+note bottom of ModuleEntity
+  L'Unité de Formation (UF) et l'année ne sont **pas**
+  des entités séparées : ce sont des attributs
+  (ufCode/ufTitle, yearNumber) portés directement par
+  ModuleEntity (choix de modèle volontaire, voir ch. 2).
+end note
+
+@enduml

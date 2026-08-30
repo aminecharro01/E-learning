@@ -1,0 +1,453 @@
+\chapter{Réalisation}
+\label{ch:realisation}
+
+\section{Vue d'ensemble des modules implémentés}
+
+Le backend expose 29 contrôleurs REST couvrant l'ensemble du cycle de vie
+pédagogique : authentification (avec 2FA optionnelle), catalogue de cours
+et éditeur de contenu par blocs, système de quiz à quatre portées
+(section, module, UF, année), gestion de stage avec signature externe,
+certification, messagerie, notifications, campagnes email, bourse à
+l'emploi, recherche globale et outils d'administration (utilisateurs,
+groupes, journal d'audit, paramètres système). Plutôt que de décrire
+exhaustivement chaque endpoint CRUD --- déjà couvert au
+chapitre~\ref{ch:analyse-conception} --- ce chapitre se concentre sur les
+mécanismes qui \emph{dépassent} le CRUD simple et qui constituent la
+valeur ajoutée technique réelle du projet.
+
+\section{Points forts techniques et valeur ajoutée}
+\label{sec:points-forts}
+
+Les onze points suivants sont classés par ordre d'impact décroissant :
+du plus démonstratif d'une compétence technique ou d'une valeur ajoutée
+utilisateur, au plus secondaire. Chaque affirmation renvoie à un fichier
+et, quand c'est utile, à une ligne précise du code source.
+
+%-----------------------------------------------------------------------
+\subsection{Génération de questions de quiz par intelligence artificielle, avec repli entre fournisseurs}
+\label{sec:generation-ia}
+
+\textbf{Contexte du problème.} Rédiger manuellement des questions de quiz
+pour chaque leçon est chronophage pour l'équipe pédagogique. Un service
+d'IA générative peut accélérer ce travail, mais dépendre d'un seul
+fournisseur externe (quota, panne, latence) rendrait la fonctionnalité peu
+fiable en production.
+
+\textbf{Solution apportée.} \texttt{QuestionGenerationService}
+(\texttt{service/QuestionGenerationService.java}) interroge d'abord l'API
+Gemini (\texttt{callGemini}, ligne 120) ; en cas d'échec --- réseau, réponse
+HTTP non-2xx, JSON invalide, ou aucune question extraite --- il bascule
+automatiquement vers l'API Grok (\texttt{callGrok}, ligne 140), avant
+d'échouer explicitement si les deux fournisseurs sont indisponibles. Les
+deux méthodes sont volontairement \texttt{package-private} (et non
+\texttt{private}) pour être simulées (\texttt{Mockito.spy()}) dans
+\texttt{QuestionGenerationServiceTest} sans appel réseau réel. Le résultat
+brut est nettoyé (extraction hors des blocs \texttt{```json}), parsé, puis
+chaque question générée passe par \emph{exactement} la même validation
+(\texttt{addQuestion}) qu'une question créée manuellement --- une question
+invalide dans le lot est rapportée comme erreur individuelle sans annuler
+les autres. L'appel est en outre protégé par
+\texttt{RateLimitService.checkAiGenerationAllowed} (20 requêtes / 5 minutes
+par utilisateur) pour contenir le coût d'un appel à une API payante.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth,height=0.85\textheight,keepaspectratio]{diagramme_sequence_generation_questions_ia.png}
+  \caption{Génération de questions par IA avec repli Gemini vers Grok}
+  \label{fig:seq-generation-ia}
+\end{figure}
+
+\textbf{Bénéfice concret.} Une simple intégration à un seul fournisseur
+aurait suffi pour une démonstration, mais pas pour un usage réel en
+production, où une panne ou un changement de quota chez Gemini aurait
+purement et simplement désactivé la fonctionnalité. Le mécanisme de repli
+et la réutilisation de la validation existante garantissent que le contenu
+généré par IA respecte les mêmes invariants qu'un contenu créé à la main,
+sans code de persistance dupliqué.
+
+%-----------------------------------------------------------------------
+\subsection{Correction hybride des quiz : automatique et manuelle, avec réconciliation d'état}
+\label{sec:correction-hybride}
+
+\textbf{Contexte du problème.} Un même quiz peut mélanger des questions à
+choix (auto-corrigeables) et des questions à réponse libre (nécessitant un
+jugement humain). Une solution naïve traiterait chaque soumission comme
+« terminée » dès l'envoi, ce qui est incorrect si une partie de la note
+dépend encore d'une correction à venir.
+
+\textbf{Solution apportée.} \texttt{QuizAttemptService.submit()}
+(\texttt{service/QuizAttemptService.java}) calcule le score des questions
+auto-corrigeables par égalité stricte d'ensembles d'identifiants
+d'options sélectionnées --- ce qui signifie qu'un choix multiple ne donne
+\emph{aucun} crédit partiel : une réponse presque correcte compte comme
+fausse. Si le quiz contient au moins une question \texttt{ESSAY}, la
+tentative passe au statut \texttt{PENDING\_REVIEW} plutôt que
+\texttt{PASSED}/\texttt{FAILED}. \texttt{QuizGradingService.gradeEssay()}
+persiste chaque note manuelle, puis \texttt{finalizeIfFullyGraded()}
+vérifie si \emph{toutes} les questions à réponse libre de la tentative ont
+désormais une note --- ce n'est qu'à ce moment que le score final est
+recalculé et que la tentative bascule vers son statut définitif, en
+réutilisant \texttt{applyPassEffects()} --- la même méthode qui gère
+badges, notifications et éligibilité au certificat pour une soumission
+entièrement automatique. Une autre difficulté résolue : le démarrage
+concurrent d'une tentative est sérialisé par un verrou Postgres
+(\texttt{pg\_advisory\_xact\_lock}) pour empêcher qu'un double clic ne crée
+deux tentatives \texttt{IN\_PROGRESS} simultanées --- comportement vérifié
+par un script de test de charge (\texttt{loadtest/quiz-start-concurrency.js}).
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth,height=0.85\textheight,keepaspectratio]{diagramme_sequence_correction_quiz_hybride.png}
+  \caption{Correction hybride d'un quiz et réconciliation d'état}
+  \label{fig:seq-correction-hybride}
+\end{figure}
+
+\textbf{Bénéfice concret.} Sans cette réconciliation explicite, un
+formateur pourrait involontairement déclencher une notification
+« quiz réussi » ou l'émission d'un certificat avant qu'une réponse libre
+ait été relue --- une erreur silencieuse difficile à détecter en
+production. La réutilisation de \texttt{applyPassEffects()} garantit aussi
+qu'un apprenant reçoit exactement le même traitement (badge, certificat)
+qu'il ait été corrigé automatiquement ou manuellement.
+
+%-----------------------------------------------------------------------
+\subsection{Progression pédagogique séquentielle par UF, avec cascade vers l'éligibilité au certificat}
+\label{sec:progression-uf}
+
+\textbf{Contexte du problème.} Le cursus impose un ordre : un apprenant ne
+doit pas pouvoir accéder au contenu d'une UF avant d'avoir complété la
+précédente, ni obtenir un certificat sans avoir réellement terminé
+l'intégralité du parcours --- y compris les étapes qui exigent un jugement
+humain (validation du stage par le Directeur).
+
+\textbf{Solution apportée.} \texttt{ProgressionService.isUfFullyDone()}
+(voir aussi la note du diagramme de classes,
+Figure~\ref{fig:classes-pedagogie}) combine trois conditions : le contenu de tous les
+modules de l'UF est complété, le quiz de fin d'UF est réussi \emph{si} il
+existe (sinon la condition est neutre), et
+\texttt{UfValidationService.isValidated()} confirme une validation manuelle
+--- mais uniquement pour les deux UF qui l'exigent réellement (\texttt{UF 5}
+= stage, \texttt{UF 11} = soutenance ; toutes les autres UF renvoient
+\texttt{true} sans intervention humaine). Les apprenants rattachés à un
+groupe (cohorte présentielle/hybride) échappent à cette règle séquentielle
+automatique : leur accès est piloté explicitement par
+\texttt{GroupContentAssignment}, avec des dates d'ouverture fixées par le
+Directeur --- deux stratégies de déblocage cohabitant dans le même modèle
+selon le profil d'apprenant. En bout de chaîne,
+\texttt{CertificateService.tryIssueIfEligible()} ne délivre un certificat
+que si \emph{tous} les modules de la formation sont complétés --- la
+cascade UF~$\rightarrow$~module~$\rightarrow$~certificat n'est jamais
+court-circuitée.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth,height=0.85\textheight,keepaspectratio]{diagramme_sequence_progression_uf_certificat.png}
+  \caption{Progression séquentielle par UF et cascade vers le certificat}
+  \label{fig:seq-progression-uf}
+\end{figure}
+
+\textbf{Bénéfice concret.} Un modèle plus simple (un simple pourcentage de
+progression global) n'aurait pas pu représenter la contrainte réelle du
+Directeur : certaines étapes ne se valident pas automatiquement, quel que
+soit le score obtenu. La double stratégie individuel/groupe permet en
+outre au même système de servir aussi bien les apprenants en ligne
+autonomes que les cohortes encadrées en présentiel.
+
+%-----------------------------------------------------------------------
+\subsection{Contrôle d'accès à granularité fine, au-delà du RBAC}
+\label{sec:acces-proprietaire}
+
+\textbf{Contexte du problème.} Un rôle (\texttt{@PreAuthorize}) suffit à
+dire \emph{qu'un} apprenant peut lire ses messages, pas \emph{lequel}. Sans
+vérification supplémentaire, un utilisateur authentifié pourrait accéder
+aux conversations, notifications ou notes personnelles d'un autre
+utilisateur simplement en devinant un identifiant dans l'URL.
+
+\textbf{Solution apportée.} Plusieurs services implémentent un contrôle de
+propriété explicite, systématiquement revérifié à \emph{chaque} opération
+(pas seulement à l'affichage de la liste) : \texttt{MessagingService.assertAccess()}
+distingue les conversations directes (vérification d'une ligne
+\texttt{ConversationParticipant}) des salons de cohorte (vérification du
+groupe partagé, avec accès de plein droit pour le staff) ;
+\texttt{NotificationService.markRead()} et
+\texttt{LessonNoteService.requireOwnNote()} comparent directement le
+propriétaire de la ressource à l'utilisateur authentifié ;
+\texttt{StageService} va plus loin avec trois méthodes d'assertion
+distinctes selon le type de document (document réservé au Directeur,
+document réservable à l'apprenant concerné uniquement, avec en plus une
+fenêtre de dates pour l'upload).
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth,height=0.85\textheight,keepaspectratio]{diagramme_sequence_controle_acces_proprietaire.png}
+  \caption{Contrôle d'accès à granularité fine (exemple de la messagerie)}
+  \label{fig:seq-acces-proprietaire}
+\end{figure}
+
+\textbf{Bénéfice concret.} Ce pattern --- vérification de propriété au
+niveau service, jamais seulement au niveau contrôleur --- ferme une classe
+entière de vulnérabilités de type IDOR (\emph{Insecure Direct Object
+Reference}, OWASP Top 10~\cite{owasp-top10}). Sa mise en \oe uvre n'est
+toutefois pas uniforme dans tout le code : voir la limite identifiée au
+\S\ref{sec:limites}.
+
+%-----------------------------------------------------------------------
+\subsection{Limitation de débit Redis, appliquée de façon transverse}
+\label{sec:rate-limiting}
+
+\textbf{Contexte du problème.} Plusieurs endpoints exposent une surface
+d'abus possible : tentatives de connexion (force brute), appels à des API
+IA payantes, envoi de messages (spam), upload de fichiers.
+
+\textbf{Solution apportée.} \texttt{RateLimitService} implémente un
+compteur à fenêtre fixe avec exactement deux primitives Redis --- \texttt{INCR}
+puis un \texttt{EXPIRE} conditionnel posé uniquement à la création du
+compteur --- exposé via huit méthodes dédiées
+(\texttt{checkLoginAllowed}, \texttt{checkAiGenerationAllowed},
+\texttt{checkMessageAllowed}, etc.), chacune avec son propre seuil et sa
+propre fenêtre temporelle. Le dépassement lève une
+\texttt{RateLimitException} annotée \texttt{@ResponseStatus(TOO\_MANY\_REQUESTS)},
+traduite automatiquement en HTTP~429 sans gestionnaire d'exception dédié.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth,height=0.85\textheight,keepaspectratio]{diagramme_sequence_rate_limiting.png}
+  \caption{Limitation de débit Redis (fenêtre fixe)}
+  \label{fig:seq-rate-limiting}
+\end{figure}
+
+\textbf{Bénéfice concret.} Un seul mécanisme réutilisable protège à la
+fois la sécurité (force brute sur la connexion) et le budget
+d'exploitation (appels IA facturés à l'usage) --- sans dépendance
+supplémentaire, Redis étant déjà présent dans la stack pour d'autres
+besoins.
+
+%-----------------------------------------------------------------------
+\subsection{Certificats vérifiables publiquement et partage LinkedIn}
+\label{sec:certificat-linkedin}
+
+\textbf{Contexte du problème.} Un certificat PDF classique n'offre aucun
+moyen à un tiers (recruteur, partenaire) de vérifier son authenticité, et
+ne valorise pas la réussite de l'apprenant sur les réseaux professionnels.
+
+\textbf{Solution apportée.} \texttt{CertificateService} génère un code de
+vérification aléatoire (UUID tronqué, 16 caractères) exposé par un
+endpoint public \emph{sans authentification}
+(\texttt{GET /api/certificates/verify/\{code\}}), qui ne renvoie que des
+informations déjà publiques par nature (nom de l'apprenant, formation,
+date --- jamais d'email ni de PDF téléchargeable). Côté frontend, la page
+Next.js \texttt{/verify/[code]} est un \emph{composant serveur} dont la
+fonction \texttt{generateMetadata} interroge cette API pour produire les
+balises Open Graph directement dans le HTML initial --- condition
+nécessaire pour que le robot d'indexation de LinkedIn, qui n'exécute pas
+de JavaScript, affiche un aperçu correct lors du partage.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth,height=0.85\textheight,keepaspectratio]{diagramme_sequence_certificat_verification_linkedin.png}
+  \caption{Vérification publique de certificat et partage LinkedIn}
+  \label{fig:seq-certificat-linkedin}
+\end{figure}
+
+\textbf{Bénéfice concret.} Cette fonctionnalité transforme un document
+statique en preuve vérifiable et en outil de visibilité professionnelle
+pour l'apprenant --- une valeur ajoutée directement alignée sur la mission
+de l'académie (employabilité).
+
+%-----------------------------------------------------------------------
+\subsection{Recherche globale multi-source, avec confidentialité des questions de quiz}
+\label{sec:recherche-globale}
+
+\textbf{Contexte du problème.} Une recherche naïve sur les seuls titres de
+modules/leçons est peu utile. L'étendre au contenu réel (texte, PDF,
+questions de quiz) introduit un risque : un apprenant pourrait utiliser la
+recherche pour retrouver directement l'énoncé --- voire la réponse --- d'une
+question d'examen.
+
+\textbf{Solution apportée.} \texttt{SearchService} interroge cinq sources
+(titres de modules, titres de leçons, corps de texte des blocs \texttt{TEXT},
+texte extrait des blocs \texttt{PDF}, prompts de questions), avec un
+extrait (\emph{snippet}) calculé autour du premier terme trouvé.
+\texttt{SearchController} détermine \texttt{includeQuestions} à partir du
+rôle du principal authentifié (\texttt{isStaff()}) \emph{avant} d'appeler le
+service : si l'appelant n'est pas membre du staff, le dépôt de questions
+n'est \textbf{jamais interrogé} --- la confidentialité n'est pas un simple
+filtrage d'affichage après coup. L'extraction du texte des PDF a lieu au
+moment de l'upload (\texttt{MediaService}, Apache PDFBox), en échec
+silencieux (best-effort) pour ne jamais bloquer un import de fichier.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth,height=0.85\textheight,keepaspectratio]{diagramme_sequence_recherche_globale.png}
+  \caption{Recherche globale avec confidentialité des questions}
+  \label{fig:seq-recherche-globale}
+\end{figure}
+
+\textbf{Bénéfice concret.} La recherche devient un outil pédagogique
+(retrouver un passage de cours) sans devenir un outil de triche --- un
+compromis qui aurait été manqué par une implémentation qui se contenterait
+de masquer les résultats côté interface.
+
+%-----------------------------------------------------------------------
+\subsection{Bourse à l'emploi dérivée de la possession d'un certificat}
+\label{sec:bourse-emploi}
+
+\textbf{Contexte du problème.} L'accès à la bourse à l'emploi doit être
+réservé aux diplômés --- une notion qui pourrait être modélisée par un
+simple champ booléen \texttt{isAlumni} sur \texttt{User}, au risque de se
+désynchroniser de la réalité (diplôme révoqué, erreur manuelle).
+
+\textbf{Solution apportée.} \texttt{JobOfferService.listForLearner()} ne
+stocke aucun champ dédié : le statut de diplômé est \emph{dérivé} de
+l'existence d'une ligne \texttt{Certificate} pour cet utilisateur et cette
+formation (\texttt{certificateRepository.findByUserIdAndFormationId}),
+exactement la même requête que celle utilisée pour afficher le certificat
+lui-même. Un apprenant non diplômé reçoit une erreur 403 explicite
+(« Réservé aux diplômés »). Le staff, lui, passe par une route
+\texttt{/admin/job-offers} entièrement distincte qui ne traverse jamais
+cette vérification.
+
+\textbf{Bénéfice concret.} L'état « diplômé » ne peut jamais être
+incohérent avec la réalité du certificat --- il n'existe qu'un seul endroit
+où cette vérité est stockée (principe \emph{single source of truth}).
+
+%-----------------------------------------------------------------------
+\subsection{Envoi de campagnes email asynchrone à débit maîtrisé}
+\label{sec:campagne-email}
+
+\textbf{Contexte du problème.} Envoyer plusieurs centaines d'emails de
+façon synchrone bloquerait la requête HTTP de l'administrateur, et un
+envoi trop rapide risquerait de faire percevoir le serveur SMTP comme
+source de spam.
+
+\textbf{Solution apportée.} \texttt{EmailCampaignService.send()} persiste
+immédiatement tous les destinataires en statut \texttt{PENDING}, bascule la
+campagne à \texttt{SENDING}, puis délègue à
+\texttt{CampaignSenderWorker.sendAsync()} --- une classe séparée
+spécifiquement parce qu'une méthode \texttt{@Async} appelée depuis la même
+classe contournerait le proxy AOP de Spring et ne serait jamais réellement
+asynchrone. L'envoi traite les destinataires un par un avec une pause fixe
+de 200~ms, sur un pool de threads volontairement restreint (2 à 4 threads)
+pour ne jamais saturer le serveur SMTP. Chaque échec individuel est
+capturé, journalisé et marqué \texttt{FAILED} sans interrompre l'envoi des
+destinataires suivants.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth,height=0.85\textheight,keepaspectratio]{diagramme_sequence_campagne_email_asynchrone.png}
+  \caption{Envoi asynchrone d'une campagne email à débit maîtrisé}
+  \label{fig:seq-campagne-email}
+\end{figure}
+
+\textbf{Bénéfice concret.} L'administrateur récupère l'interface
+immédiatement après avoir lancé l'envoi, et l'état de chaque destinataire
+(en base, pas dans une file séparée) reste consultable et survit à un
+redémarrage du serveur --- avec une limite assumée décrite au
+\S\ref{sec:limites}.
+
+%-----------------------------------------------------------------------
+\subsection{Détection d'inactivité (alerte précoce)}
+\label{sec:early-warning}
+
+\textbf{Contexte du problème.} Repérer les apprenants décrocheurs
+permet une intervention pédagogique avant l'échec.
+
+\textbf{Solution apportée.} \texttt{EarlyWarningService.findInactiveStudents(days)}
+calcule, pour chaque apprenant, le nombre de jours écoulés depuis la
+dernière mise à jour de sa \texttt{LessonProgress} --- avec repli sur la
+date de création du compte si aucune progression n'existe encore --- et
+retourne la liste triée par durée d'inactivité décroissante, consultée à
+la demande depuis le tableau de bord analytique (aucune tâche planifiée,
+aucun effet de bord automatique).
+
+\textbf{Bénéfice concret.} Un signal simple mais fiable, calculé à partir
+d'une donnée déjà existante plutôt que d'un nouveau mécanisme de suivi
+dédié.
+
+%-----------------------------------------------------------------------
+\subsection{Verrou d'édition collaboratif (distinct de la progression séquentielle)}
+\label{sec:verrou-edition}
+
+\textbf{Contexte du problème.} Deux membres du staff éditant la même leçon
+en même temps risqueraient d'écraser mutuellement leurs modifications.
+
+\textbf{Solution apportée.} \texttt{LessonLockService} pose un verrou
+Redis nominatif (\texttt{lesson\_lock:\{lessonId\}}, TTL 30 minutes,
+renouvelable) identifiant qui édite actuellement une leçon ; toute
+tentative concurrente reçoit une \texttt{LessonLockedException} (HTTP 409)
+nommant la personne qui détient le verrou. \emph{Précision utile pour ce
+rapport} : ce mécanisme ne doit pas être confondu avec le verrouillage
+séquentiel du parcours apprenant (\S\ref{sec:progression-uf}, implémenté
+dans \texttt{ProgressionService}) --- il s'agit d'une garde d'édition
+collaborative côté back-office, sans rapport avec la progression
+pédagogique.
+
+\textbf{Bénéfice concret.} Un conflit d'édition est prévenu plutôt que
+constaté après coup, avec un message explicite plutôt qu'un écrasement
+silencieux.
+
+\subsection{Tableau de synthèse}
+
+Le Tableau~\ref{tab:synthese-points-forts} regroupe, dans l'ordre d'impact
+retenu tout au long de cette section, les onze mécanismes présentés :
+leur emplacement précis dans le code source, et l'argument de valeur
+ajoutée qui justifie leur mise en avant --- réutilisable tel quel comme
+support de soutenance.
+
+\begin{table}[H]
+  \centering
+  \small
+  \caption{Synthèse des points forts techniques et de leur valeur ajoutée}
+  \label{tab:synthese-points-forts}
+  \begin{tabular}{@{}p{2.6cm}p{4.1cm}p{6.3cm}@{}}
+    \toprule
+    Mécanisme & Localisation & Valeur ajoutée \\
+    \midrule
+    Génération de questions par IA (repli Gemini/Grok) & \texttt{Question\allowbreak Generation\allowbreak Service} & Fonctionnalité IA fiable en production, jamais dépendante d'un seul fournisseur externe. \\
+    Correction hybride de quiz (auto + manuelle) & \texttt{QuizAttempt\allowbreak Service}, \texttt{QuizGrading\allowbreak Service} & Un score final toujours cohérent, jamais figé avant qu'une correction manuelle en attente ne soit terminée. \\
+    Progression séquentielle par UF $\rightarrow$ certificat & \texttt{Progression\allowbreak Service}, \texttt{UfValidation\allowbreak Service}, \texttt{Certificate\allowbreak Service} & Respecte les validations humaines obligatoires (stage, soutenance) sans jamais les court-circuiter automatiquement. \\
+    Contrôle d'accès à granularité fine & \texttt{Messaging\allowbreak Service}, \texttt{Notification\allowbreak Service}, \texttt{LessonNote\allowbreak Service}, \texttt{Stage\allowbreak Service} & Ferme une classe de vulnérabilités IDOR que le seul RBAC ne peut pas couvrir. \\
+    Limitation de débit Redis transverse & \texttt{RateLimit\allowbreak Service} & Protège à la fois la sécurité (force brute) et le budget d'exploitation (appels IA payants) avec un seul mécanisme réutilisable. \\
+    Certificat vérifiable publiquement + partage LinkedIn & \texttt{Certificate\allowbreak Service}, page \texttt{/verify/[code]} & Transforme un diplôme statique en preuve vérifiable et en outil d'employabilité réelle. \\
+    Recherche globale avec confidentialité des questions & \texttt{Search\allowbreak Service}, \texttt{Search\allowbreak Controller} & Un outil pédagogique qui ne peut jamais devenir un outil de triche. \\
+    Bourse à l'emploi dérivée du certificat & \texttt{JobOffer\allowbreak Service} & Le statut « diplômé » ne peut jamais se désynchroniser de la réalité (source de vérité unique). \\
+    Campagnes email asynchrones à débit maîtrisé & \texttt{EmailCampaign\allowbreak Service}, \texttt{CampaignSender\allowbreak Worker} & L'administrateur n'attend jamais l'envoi complet, sans jamais saturer le serveur SMTP. \\
+    Détection d'inactivité & \texttt{EarlyWarning\allowbreak Service} & Signal fiable pour l'intervention pédagogique, sans mécanisme de suivi dédié supplémentaire. \\
+    Verrou d'édition collaboratif & \texttt{LessonLock\allowbreak Service} & Prévient un conflit d'édition entre formateurs plutôt que de le constater après coup. \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\section{Limites identifiées et pistes d'amélioration}
+\label{sec:limites}
+
+Deux limites concrètes, identifiées en analysant le code plutôt que
+supposées, sont assumées ici plutôt que passées sous silence :
+
+\begin{itemize}
+  \item \textbf{Incohérence du contrôle de propriété.} Contrairement aux
+    services décrits au \S\ref{sec:acces-proprietaire},
+    \texttt{AssignmentService.gradeSubmission()} et
+    \texttt{AssignmentService.delete()} ne vérifient aucune propriété de
+    ressource au-delà du rôle \texttt{@PreAuthorize("hasAnyRole('ADMIN','FORMATEUR')")} :
+    un formateur peut ainsi noter ou supprimer un devoir rattaché à un
+    module qu'il n'encadre pas. \emph{Piste d'amélioration} : appliquer le
+    même pattern \texttt{assertAccess} que dans \texttt{MessagingService}.
+  \item \textbf{Reprise après incident non automatisée.} L'état d'une
+    campagne email interrompue par un redémarrage serveur (destinataires
+    encore \texttt{PENDING}) survit en base de données, mais aucun
+    mécanisme planifié ne relance automatiquement l'envoi --- une reprise
+    manuelle est nécessaire. \emph{Piste d'amélioration} : un
+    \texttt{@Scheduled} au démarrage de l'application qui détecte les
+    campagnes \texttt{SENDING} avec des destinataires \texttt{PENDING} et
+    relance \texttt{sendAsync()}.
+\end{itemize}
+
+\section{Conclusion}
+
+Ce chapitre a détaillé, par ordre d'impact, les mécanismes qui distinguent
+IAT Academy d'une simple application CRUD : intégration IA résiliente,
+correction hybride avec réconciliation d'état, progression métier en
+cascade, contrôle d'accès à granularité fine, et les limites identifiées
+en toute transparence. Le chapitre~\ref{ch:tests-deploiement} présente
+maintenant la démarche de validation et de déploiement.

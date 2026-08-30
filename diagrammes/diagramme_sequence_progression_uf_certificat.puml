@@ -1,0 +1,45 @@
+@startuml diagramme_sequence_progression_uf_certificat
+!theme plain
+skinparam dpi 300
+title Séquence — Progression séquentielle par UF et cascade vers le certificat
+
+actor Étudiant
+participant "QuizAttemptService" as AttemptSvc
+participant "ProgressionService" as Progression
+participant "UfValidationService" as UfValidation
+participant "CertificateService" as CertSvc
+database "PostgreSQL" as DB
+
+Étudiant -> AttemptSvc : réussit le quiz de fin de module\n(FIN_MODULE)
+AttemptSvc -> AttemptSvc : applyPassEffects(attempt)
+AttemptSvc -> Progression : isModuleCompleted(userId, moduleId)
+Progression -> DB : toutes les leçons complétées ?\nquiz FIN_MODULE réussi ?
+Progression --> AttemptSvc : true
+
+AttemptSvc -> CertSvc : tryIssueIfEligible(userId, formationId)
+CertSvc -> Progression : isModuleCompleted(...)\npour CHAQUE module de la formation
+
+note over Progression
+  Vérification en cascade, module par module :
+  isUfFullyDone = contenu complété
+               ET quiz de fin d'UF réussi (si configuré)
+               ET ufValidationService.isValidated(ufCode)
+               (gate manuel du Directeur — uniquement UF 5 / UF 11)
+end note
+
+Progression -> UfValidation : isValidated(userId, "UF 5")
+UfValidation --> Progression : true / false
+
+alt un module reste incomplet (contenu, quiz ou validation manquants)
+  Progression --> CertSvc : false
+  CertSvc --> AttemptSvc : pas de certificat émis
+else tous les modules de la formation sont complets
+  Progression --> CertSvc : true
+  CertSvc -> DB : vérifier qu'aucun certificat n'existe déjà
+  CertSvc -> CertSvc : générer le code de vérification\n(UUID aléatoire, 16 caractères)
+  CertSvc -> CertSvc : générer le PDF (OpenPDF)
+  CertSvc -> DB : persister Certificate
+  CertSvc --> AttemptSvc : certificat émis
+end
+
+@enduml

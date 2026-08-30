@@ -1,0 +1,234 @@
+\chapter{Analyse et conception}
+\label{ch:analyse-conception}
+
+\section{Acteurs et cas d'utilisation}
+
+Le système distingue cinq rôles internes, organisés en une hiérarchie de
+sécurité (\texttt{ROLE\_SUPER\_ADMIN > ROLE\_ADMIN}), à laquelle s'ajoutent
+deux acteurs externes ne possédant pas de compte : le tuteur de stage
+(accès par lien à usage unique) et le visiteur public (formulaire de
+contact, infolettre, vérification de certificat).
+
+\begin{table}[H]
+  \centering
+  \caption{Rôles applicatifs et responsabilités}
+  \label{tab:roles}
+  \begin{tabular}{@{}p{2.8cm}p{9.5cm}@{}}
+    \toprule
+    Rôle & Responsabilités \\
+    \midrule
+    \texttt{SUPER\_ADMIN} & Paramètres système globaux, en plus de tous les droits Admin. \\
+    \texttt{ADMIN} (Directeur) & Gestion pédagogique complète, validation des UF sensibles, gestion des groupes et des campagnes email, en plus de tous les droits Formateur. \\
+    \texttt{FORMATEUR} & Studio de cours, gestion des quiz, correction manuelle, messagerie, bourse à l'emploi. \\
+    \texttt{ETUDIANT} & Espace apprenant : contenu, quiz, stage, certificat, messagerie. \\
+    \texttt{SUPPORT} & Accès limité, essentiellement en lecture. \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+La Figure~\ref{fig:cas-utilisation} synthétise l'ensemble des cas
+d'utilisation identifiés à partir des 29 contrôleurs REST exposés par le
+backend.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth,height=0.85\textheight,keepaspectratio]{diagramme_cas_utilisation.png}
+  \caption{Diagramme de cas d'utilisation}
+  \label{fig:cas-utilisation}
+\end{figure}
+
+\section{Modèle de données}
+\label{sec:analyse-conception}
+
+Le modèle de données regroupe 37 entités JPA. Plutôt qu'un diagramme
+unique --- illisible à cette échelle, les relations transversales
+produisant un enchevêtrement de lignes ---, il est présenté ici par
+domaine fonctionnel : structure pédagogique et groupes
+(Figure~\ref{fig:classes-pedagogie}), évaluation
+(Figure~\ref{fig:classes-evaluation}), et stage et certification
+(Figure~\ref{fig:classes-stage}). Les domaines restants (communication,
+marketing/emploi, médias, suivi système) suivent les mêmes conventions de
+modélisation et sont détaillés au besoin dans le code source
+(\texttt{domain/entity/}).
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth,height=0.85\textheight,keepaspectratio]{diagramme_classes_pedagogie.png}
+  \caption{Diagramme de classes — structure pédagogique et groupes}
+  \label{fig:classes-pedagogie}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth,height=0.85\textheight,keepaspectratio]{diagramme_classes_evaluation.png}
+  \caption{Diagramme de classes — évaluation}
+  \label{fig:classes-evaluation}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth,height=0.85\textheight,keepaspectratio]{diagramme_classes_stage_certification.png}
+  \caption{Diagramme de classes — stage et certification}
+  \label{fig:classes-stage}
+\end{figure}
+
+\subsection{Un choix de modélisation délibéré : l'UF comme attribut}
+
+Un choix de conception mérite d'être souligné : l'Unité de Formation (UF)
+et l'année du cursus ne sont \emph{pas} modélisées comme des entités
+séparées avec leur propre table et clé primaire. Ce sont des attributs
+(\texttt{ufCode}, \texttt{ufTitle}, \texttt{yearNumber}) portés directement
+par \texttt{ModuleEntity}. Ce choix évite une jointure supplémentaire pour
+une notion qui, dans les règles métier réelles, sert uniquement de
+\emph{clé de regroupement} (voir \S\ref{sec:progression-uf}) --- il garde
+le schéma relationnel simple sans sacrifier la logique de progression par
+UF, qui est recalculée dynamiquement à partir de ces attributs plutôt que
+stockée redondamment.
+
+\section{Architecture logicielle}
+
+L'application suit une architecture en couches classique
+(Figure~\ref{fig:architecture}) : \texttt{Controller} $\rightarrow$
+\texttt{Service} $\rightarrow$ \texttt{Repository} $\rightarrow$
+\texttt{Entity}, adossée à PostgreSQL pour la persistance et Redis pour les
+besoins transverses (limitation de débit, verrous, état éphémère des
+tentatives de quiz).
+
+\begin{sidewaysfigure}
+  \centering
+  \includegraphics[width=\textwidth,height=0.9\textwidth,keepaspectratio]{diagramme_architecture.png}
+  \caption{Architecture en couches}
+  \label{fig:architecture}
+\end{sidewaysfigure}
+
+La règle de conception appliquée de façon constante dans le code est la
+suivante : un contrôleur ne fait que du routage HTTP, de la validation
+\texttt{@PreAuthorize} et de la traduction requête/réponse ; toute la
+logique métier --- y compris les vérifications de propriété de ressource
+détaillées au chapitre~\ref{ch:realisation} --- vit dans la couche
+service, jamais dans le contrôleur.
+
+\section{Sécurité}
+
+La sécurité de la plateforme ne pouvait pas être traitée comme une simple
+case à cocher en fin de développement : dès lors qu'une partie du contenu
+--- réponses de quiz, dossiers de stage, échanges de messagerie --- touche
+directement à la vie privée et à l'évaluation d'un apprenant mineur ou
+jeune majeur, l'authentification et le contrôle d'accès devaient être
+pensés comme des contraintes de conception à part entière, et non comme
+une couche ajoutée après coup. Cette section détaille les deux piliers sur
+lesquels repose cette sécurité : l'authentification, qui répond à la
+question \emph{qui êtes-vous ?}, et l'autorisation, qui répond à la
+question, en apparence proche mais en réalité bien plus difficile à
+garantir correctement, \emph{avez-vous le droit d'agir sur cette
+ressource précise ?}
+
+\subsection{Authentification}
+
+L'authentification de la plateforme repose sur un jeton JWT (signé en
+HS256) transporté par un cookie \texttt{httpOnly} --- c'est-à-dire un
+cookie que le JavaScript exécuté dans le navigateur ne peut ni lire ni
+manipuler, ce qui ferme la voie la plus commune d'exfiltration de jeton en
+cas de faille de type \emph{cross-site scripting} (XSS) sur le frontend.
+Le déroulement complet, depuis la soumission du formulaire de connexion
+jusqu'à l'établissement du contexte de sécurité sur chaque requête
+suivante, se décompose en quatre étapes. Premièrement,
+\texttt{AuthService.login()} authentifie les identifiants soumis par
+l'intermédiaire de l'\texttt{AuthenticationManager} de Spring Security,
+qui compare le mot de passe fourni au hachage BCrypt stocké en base ---
+jamais le mot de passe en clair. Deuxièmement, si l'utilisateur a activé
+la double authentification par application TOTP (Google Authenticator ou
+équivalent), la réponse renvoyée à ce stade n'est pas encore le cookie de
+session final, mais un jeton temporaire valable cinq minutes, qui exige un
+second appel explicite à l'endpoint \texttt{/verify-2fa} avant que la
+connexion ne soit réellement effective --- une étape supplémentaire
+délibérément conçue pour qu'un mot de passe compromis seul ne suffise
+jamais à usurper un compte protégé par 2FA. Troisièmement, une fois
+l'authentification (simple ou renforcée par 2FA) confirmée,
+\texttt{JwtService} construit le jeton définitif, dont le sujet est
+l'identifiant de l'utilisateur et dont les revendications embarquent son
+adresse email et son rôle applicatif. Quatrièmement, à chaque requête
+suivante, \texttt{JwtAuthenticationFilter} --- un filtre Spring exécuté
+avant le filtre d'authentification standard du framework --- extrait ce
+jeton du cookie, le valide, puis peuple le contexte de sécurité de la
+requête courante avant que celle-ci n'atteigne le contrôleur ciblé.
+
+Ce choix architectural a une conséquence directe sur la politique de
+session retenue : le backend fonctionne en mode \texttt{STATELESS},
+c'est-à-dire qu'aucune session n'est conservée en mémoire côté serveur.
+L'intégralité de l'état d'authentification est reconstruite, à chaque
+requête, à partir du seul contenu du jeton --- un choix cohérent avec une
+architecture où le frontend Next.js est physiquement découplé du backend
+Spring Boot, et qui simplifie d'autant la mise à l'échelle horizontale de
+l'API si elle devait un jour être répliquée sur plusieurs instances,
+puisqu'aucune session partagée n'a besoin d'être synchronisée entre elles.
+
+\subsection{Autorisation}
+\label{sec:autorisation}
+
+Savoir \emph{qui} fait la requête ne suffit pas à savoir si cette requête
+doit être acceptée : le contrôle d'accès de la plateforme combine, de
+façon volontairement distincte, deux niveaux de vérification qui ne
+répondent pas à la même question. Le premier niveau est un
+\textbf{RBAC déclaratif}, appliqué au moyen de l'annotation
+\texttt{@PreAuthorize} posée sur chaque endpoint sensible, et résolu
+contre la hiérarchie de rôles \texttt{ROLE\_SUPER\_ADMIN > ROLE\_ADMIN}
+présentée au chapitre~\ref{ch:realisation}. Ce niveau répond correctement
+à la question \og cet utilisateur a-t-il le \emph{type} de compte requis
+pour accéder à cette fonctionnalité ? \fg, mais il est structurellement
+incapable de répondre à une seconde question, tout aussi critique dès lors
+qu'une ressource appartient nommément à un utilisateur précis : \og cet
+utilisateur a-t-il le droit d'accéder à \emph{cette instance précise} de
+la ressource, et pas seulement à des ressources de ce type en général ?
+\fg. C'est pour répondre à cette seconde question qu'un second niveau, un
+\textbf{contrôle de propriété} implémenté au niveau de la couche service,
+vient compléter le RBAC pour les ressources intrinsèquement personnelles
+--- une conversation de messagerie, une notification, un dossier de stage
+--- comme le détaille et l'illustre concrètement le
+\S\ref{sec:acces-proprietaire} du chapitre suivant.
+
+\section{Choix technologiques}
+
+Chaque brique technologique retenue pour ce projet répond à une
+contrainte identifiée dans les sections précédentes, plutôt qu'à un
+simple effet de mode : le Tableau~\ref{tab:stack} met en regard chaque
+choix et la justification qui le sous-tend, en particulier pour les
+décisions les moins évidentes de prime abord --- pourquoi Redis en plus
+d'une base relationnelle déjà présente, ou pourquoi un rendu serveur côté
+frontend pour une seule page de la plateforme.
+
+\begin{table}[H]
+  \centering
+  \caption{Stack technique et justification}
+  \label{tab:stack}
+  \begin{tabular}{@{}p{3.2cm}p{9cm}@{}}
+    \toprule
+    Technologie & Justification \\
+    \midrule
+    Spring Boot 3 / Java 21 & Écosystème mature, sécurité (Spring Security)
+      et accès aux données (Spring Data JPA) intégrés, adapté à une
+      application métier avec des règles de progression complexes. \\
+    PostgreSQL + Flyway & Base relationnelle fiable pour un modèle fortement
+      structuré (formations/modules/leçons) ; migrations versionnées
+      reproductibles entre environnements. \\
+    Redis & Structures de données en mémoire adaptées aux besoins
+      transverses à courte durée de vie (compteurs de débit, verrous
+      d'édition, état de tentative de quiz) sans alourdir PostgreSQL de
+      lectures/écritures fréquentes et volatiles. \\
+    JWT + cookie httpOnly & Authentification sans état, compatible avec un
+      frontend découplé (Next.js), sans exposer le jeton au JavaScript
+      (protection XSS). \\
+    Next.js 15 (frontend) & Rendu serveur pour les pages publiques exigeant
+      des métadonnées SEO/Open Graph (ex. vérification de certificat, voir
+      \S\ref{sec:certificat-linkedin}). \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\section{Conclusion}
+
+Ce chapitre a présenté les cas d'utilisation, le modèle de données, les
+choix d'architecture et de sécurité qui structurent IAT Academy. Le
+chapitre~\ref{ch:realisation} détaille maintenant comment ces choix se
+traduisent dans l'implémentation, en particulier sur les mécanismes qui
+dépassent le CRUD simple.

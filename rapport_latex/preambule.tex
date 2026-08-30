@@ -1,0 +1,78 @@
+% =============================================================================
+% preambule.tex — packages et réglages de mise en forme (normes PFE marocaines)
+% =============================================================================
+
+% --- Langue ---
+\usepackage[french]{babel}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+
+% --- Police : rendu proche Times New Roman ---
+\usepackage{mathptmx}
+
+% --- Interligne 1,5 ---
+\usepackage{setspace}
+\onehalfspacing
+
+% --- Marges 2,5 cm ---
+\usepackage[margin=2.5cm]{geometry}
+
+% --- Figures / tableaux ---
+\usepackage{graphicx}
+\graphicspath{{images/}{../diagrammes/images/}}
+\usepackage{float}                 % positionnement stable avec [H]
+\usepackage{rotating}              % figures en paysage (sidewaysfigure) pour les diagrammes très larges
+\usepackage{caption}
+\captionsetup[table]{position=above}   % légendes tableaux au-dessus
+\captionsetup[figure]{position=below}  % légendes figures en dessous (par défaut, explicite ici)
+
+% Numérotation des figures et tableaux par chapitre → Figure 2.1, Tableau 3.2
+\counterwithin{figure}{chapter}
+\counterwithin{table}{chapter}
+
+% --- Tableaux enrichis ---
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+
+% --- Extraits de code (Java / PlantUML) ---
+\usepackage{xcolor}
+\usepackage{listings}
+\definecolor{codegray}{rgb}{0.95,0.95,0.95}
+\definecolor{codekeyword}{rgb}{0.0,0.0,0.6}
+\definecolor{codecomment}{rgb}{0.35,0.55,0.35}
+\lstdefinestyle{javastyle}{
+  backgroundcolor=\color{codegray},
+  basicstyle=\ttfamily\footnotesize,
+  keywordstyle=\color{codekeyword}\bfseries,
+  commentstyle=\color{codecomment}\itshape,
+  numbers=left,
+  numberstyle=\tiny,
+  frame=single,
+  breaklines=true,
+  showstringspaces=false,
+  language=Java,
+  captionpos=b,
+}
+\lstset{style=javastyle}
+
+% --- Liens cliquables (table des matières, \ref, bibliographie) ---
+\usepackage{hyperref}
+\hypersetup{
+  colorlinks=true,
+  linkcolor=black,
+  citecolor=black,
+  urlcolor=blue,
+  pdftitle={Rapport de Projet de Fin d'Études — IAT Academy},
+}
+
+% --- Bibliographie ---
+% Style ieee par défaut (adapté à un rapport d'ingénierie logicielle) ;
+% remplacer par style=apa si l'établissement l'exige.
+\usepackage[backend=biber,style=ieee,sorting=none]{biblatex}
+\addbibresource{bibliographie.bib}
+
+% --- Divers ---
+\usepackage{enumitem}
+\usepackage{textcomp}
+\usepackage{csquotes}

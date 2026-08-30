@@ -1,0 +1,84 @@
+@startuml diagramme_architecture
+!theme plain
+skinparam dpi 300
+skinparam componentStyle rectangle
+skinparam linetype ortho
+
+title Architecture en couches — IAT Academy (backend Spring Boot)
+
+actor "Navigateur\n(Next.js / frontend)" as Client
+
+package "API REST (Spring Boot)" {
+
+  package "Couche Contrôleur" {
+    [AuthController]
+    [QuizController]
+    [CertificateController]
+    [SearchController]
+    [JobOfferController]
+    [EmailCampaignController]
+    [... 24 autres @RestController]
+  }
+
+  package "Sécurité transversale" {
+    [JwtAuthenticationFilter]
+    [SecurityConfig\n(RoleHierarchy, @PreAuthorize)]
+  }
+
+  package "Couche Service" {
+    [QuizAttemptService]
+    [QuizGradingService]
+    [QuestionGenerationService]
+    [UfValidationService]
+    [ProgressionService]
+    [CertificateService]
+    [SearchService]
+    [JobOfferService]
+    [RateLimitService]
+    [CampaignSenderWorker]
+    [... autres services métier]
+  }
+
+  package "Couche Accès aux données" {
+    [Repositories Spring Data JPA]
+  }
+}
+
+package "Persistance" {
+  database "PostgreSQL\n(migrations Flyway)" as DB
+  database "Redis\n(rate-limit, verrous, sessions quiz)" as Redis
+}
+
+cloud "Intégrations externes" {
+  [Gemini API] as Gemini
+  [Grok API] as Grok
+  [Bunny Stream] as Bunny
+  [Serveur SMTP] as Smtp
+}
+
+storage "Stockage disque\n(data/media — PDF, images)" as Disk
+
+Client --> [JwtAuthenticationFilter] : HTTPS / cookie JWT httpOnly
+[JwtAuthenticationFilter] --> [SecurityConfig\n(RoleHierarchy, @PreAuthorize)]
+[SecurityConfig\n(RoleHierarchy, @PreAuthorize)] --> [Couche Contrôleur]
+
+[Couche Contrôleur] --> [Couche Service]
+[Couche Service] --> [Couche Accès aux données]
+[Couche Accès aux données] --> DB
+
+[RateLimitService] --> Redis
+[QuizAttemptService] --> Redis : verrous de tentative,\nsessions de quiz
+[QuestionGenerationService] --> Gemini : génération de questions\n(essai 1)
+[QuestionGenerationService] --> Grok : repli si Gemini échoue\n(essai 2)
+[CampaignSenderWorker] --> Smtp : envoi asynchrone,\ndébit maîtrisé
+[Couche Service] --> Bunny : streaming vidéo
+[Couche Service] --> Disk : PDF / images / documents
+
+note right of [Couche Contrôleur]
+  Rôle strictement limité au routage HTTP,
+  à la validation @PreAuthorize et à la
+  traduction requête/réponse — toute la
+  logique métier vit dans la couche Service.
+end note
+
+@enduml
