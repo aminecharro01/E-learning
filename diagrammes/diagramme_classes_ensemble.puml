@@ -2,7 +2,6 @@
 !theme plain
 skinparam dpi 300
 skinparam packageStyle rectangle
-skinparam linetype ortho
 skinparam shadowing false
 skinparam classAttributeIconSize 0
 skinparam class {
@@ -11,8 +10,8 @@ skinparam class {
   ArrowColor Black
   FontStyle Normal
 }
-skinparam nodesep 30
-skinparam ranksep 40
+skinparam nodesep 45
+skinparam ranksep 55
 
 title Diagramme de classes — Vue d'ensemble de l'application (IAT Academy)
 
@@ -281,9 +280,9 @@ Lesson "1" -- "0..N" LessonProgress
 User "1" -- "0..N" LessonNote
 Lesson "1" -- "0..N" LessonNote
 
-Quiz "0..1" -- "0..N" Lesson
-Quiz "0..1" -- "0..N" ModuleEntity
-Quiz "0..1" -- "0..N" Formation
+Lesson "0..1" -- "0..N" Quiz
+ModuleEntity "0..1" -- "0..N" Quiz
+Formation "0..1" -- "0..N" Quiz
 Quiz "1" *-- "0..N" Question
 Question "1" *-- "0..N" AnswerOption
 User "1" -- "0..N" QuizAttempt
