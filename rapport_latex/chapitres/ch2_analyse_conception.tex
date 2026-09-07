@@ -40,16 +40,25 @@ backend.
 \section{Modèle de données}
 \label{sec:analyse-conception}
 
-Le modèle de données regroupe 37 entités JPA. Plutôt qu'un diagramme
-unique --- illisible à cette échelle, les relations transversales
-produisant un enchevêtrement de lignes ---, il est présenté ici par
-domaine fonctionnel : structure pédagogique et groupes
+Le modèle de données regroupe 37 entités JPA. La Figure~\ref{fig:classes-ensemble}
+en donne une vue d'ensemble au format UML standard, organisée en huit
+paquetages fonctionnels avec leurs attributs principaux, leurs
+associations et les cardinalités correspondantes. Trois domaines jugés
+les plus structurants pour la compréhension du système sont ensuite
+détaillés à un niveau plus fin : structure pédagogique et groupes
 (Figure~\ref{fig:classes-pedagogie}), évaluation
 (Figure~\ref{fig:classes-evaluation}), et stage et certification
 (Figure~\ref{fig:classes-stage}). Les domaines restants (communication,
 marketing/emploi, médias, suivi système) suivent les mêmes conventions de
 modélisation et sont détaillés au besoin dans le code source
 (\texttt{domain/entity/}).
+
+\begin{sidewaysfigure}
+  \centering
+  \includegraphics[width=\textwidth,height=0.9\textheight,keepaspectratio]{diagramme_classes_ensemble.png}
+  \caption{Diagramme de classes — vue d'ensemble de l'application}
+  \label{fig:classes-ensemble}
+\end{sidewaysfigure}
 
 \begin{figure}[H]
   \centering

@@ -20,10 +20,11 @@ rapport_latex/
 
 diagrammes/
 ├── diagramme_cas_utilisation.puml     # PlantUML — diagrammes UML
+├── diagramme_classes_ensemble.puml    # vue d'ensemble (sans attributs)
 ├── diagramme_classes_pedagogie.puml
 ├── diagramme_classes_evaluation.puml
 ├── diagramme_classes_stage_certification.puml
-├── diagramme_sequence_*.puml          # 8 diagrammes de séquence
+├── diagramme_sequence_*.puml          # 4 diagrammes de séquence (les plus représentatifs)
 ├── mingrammer/                        # Python (mingrammer/diagrams) — schémas d'infrastructure
 │   ├── diagramme_architecture.py
 │   ├── diagramme_deploiement.py

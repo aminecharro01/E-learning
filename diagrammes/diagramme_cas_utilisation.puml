@@ -1,129 +1,283 @@
-@startuml diagramme_cas_utilisation
-!theme plain
-skinparam dpi 300
+@startuml
+
+title Diagramme de cas d'utilisation - IAT Academy
+
 left to right direction
-skinparam packageStyle rectangle
-skinparam actorStyle awesome
 
-title Diagramme de cas d'utilisation — IAT Academy
+skinparam backgroundColor white
+skinparam shadowing false
+skinparam dpi 300
+skinparam linetype ortho
 
-actor "Étudiant\n(Apprenant)" as Etudiant
+skinparam usecase {
+    BackgroundColor #F1F1F1
+    BorderColor black
+    FontColor black
+    FontSize 11
+}
+
+skinparam actor {
+    FontColor black
+    BorderColor black
+}
+
+skinparam rectangle {
+    BackgroundColor white
+    BorderColor black
+    FontColor black
+}
+
+
+' =========================================================
+' ACTEURS
+' =========================================================
+
+actor "Visiteur" as Visiteur
+
+actor "Utilisateur\nConnecté" as User
+actor "Étudiant" as Etudiant
+
 actor "Formateur" as Formateur
 actor "Admin\n(Directeur)" as Admin
 actor "Super Admin" as SuperAdmin
-actor "Support" as Support
-actor "Tuteur de stage\n(externe, sans compte)" as Tuteur
-actor "Visiteur\n(non authentifié)" as Visiteur
 
-Admin --|> Formateur
-SuperAdmin --|> Admin
 
-rectangle "IAT Academy" {
+' =========================================================
+' HÉRITAGE DES ACTEURS
+' =========================================================
 
-  package "Authentification & compte" {
-    usecase "S'inscrire" as UC_Register
-    usecase "Se connecter (+2FA optionnelle)" as UC_Login
-    usecase "Réinitialiser mot de passe" as UC_ForgotPwd
-    usecase "Gérer son profil" as UC_Profile
-  }
+Etudiant --|> User #line:orange
+Formateur --|> User #line:orange
+Admin --|> Formateur #line:orange
+SuperAdmin --|> Admin #line:orange
 
-  package "Parcours pédagogique" {
-    usecase "Consulter un module / une leçon" as UC_ViewLesson
-    usecase "Suivre sa progression" as UC_ViewProgress
-    usecase "Prendre des notes personnelles" as UC_Notes
-    usecase "Participer au forum de leçon" as UC_Forum
-  }
 
-  package "Évaluation" {
-    usecase "Passer un quiz" as UC_TakeQuiz
-    usecase "Consulter ses résultats" as UC_ViewResults
-    usecase "Créer / éditer un quiz" as UC_ManageQuiz
-    usecase "Générer des questions par IA" as UC_AiGenerate
-    usecase "Corriger une réponse libre" as UC_GradeEssay
-    usecase "Ajuster une note (bonus/malus)" as UC_GradeAdjust
-  }
+' =========================================================
+' SYSTÈME
+' =========================================================
 
-  package "Stage & Certification" {
-    usecase "Déposer un dossier de stage" as UC_StageDossier
-    usecase "Valider une UF (stage/soutenance)" as UC_ValidateUf
-    usecase "Inviter le tuteur à signer" as UC_InviteSignoff
-    usecase "Signer la validation de stage" as UC_SignStage
-    usecase "Consulter / partager son certificat" as UC_Certificate
-    usecase "Vérifier un certificat" as UC_VerifyCertificate
-  }
+rectangle "Système IAT Academy" {
 
-  package "Communication" {
-    usecase "Envoyer un message" as UC_Message
-    usecase "Recevoir des notifications" as UC_Notification
-    usecase "Créer une campagne email" as UC_Campaign
-  }
+    ' -----------------------------------------------------
+    ' ACCÈS ET COMPTE
+    ' -----------------------------------------------------
 
-  package "Bourse à l'emploi" {
-    usecase "Consulter les offres (diplômés)" as UC_JobsView
-    usecase "Publier une offre" as UC_JobsManage
-  }
+    usecase "S'inscrire" as UC_Register #line:blue
 
-  package "Administration" {
-    usecase "Gérer les utilisateurs et rôles" as UC_ManageUsers
-    usecase "Gérer les groupes / cohortes" as UC_ManageGroups
-    usecase "Rechercher dans la plateforme" as UC_Search
-    usecase "Consulter le journal d'audit" as UC_AuditLog
-    usecase "Configurer les paramètres système" as UC_AppSettings
-  }
+    usecase "S'authentifier\n(2FA)" as UC_Login #line:blue
 
-  package "Public" {
-    usecase "Contacter l'académie" as UC_Contact
-    usecase "S'abonner à l'infolettre" as UC_Newsletter
-  }
+    usecase "Accéder à son\nespace personnel" as UC_AccessSpace #line:green
+
+    usecase "Gérer son profil" as UC_Profile #line:green
+
+    usecase "Contacter\nl'académie" as UC_Contact #line:blue
+
+    usecase "Vérifier un\ncertificat" as UC_VerifyCertificate #line:blue
+
+
+    ' -----------------------------------------------------
+    ' COURS ET ÉVALUATIONS
+    ' -----------------------------------------------------
+
+    usecase "Consulter les\ncours et modules" as UC_ViewLesson
+
+    usecase "Passer une\névaluation" as UC_TakeQuiz
+
+    usecase "Consulter ses\nrésultats" as UC_ViewResults
+
+    usecase "Concevoir un\nquiz" as UC_ManageQuiz #line:purple
+
+    usecase "Générer des\nquestions par IA" as UC_AiGenerate
+
+    usecase "Évaluer et\nnoter les copies" as UC_Grade #line:purple
+
+
+    ' -----------------------------------------------------
+    ' STAGE ET CERTIFICATION
+    ' -----------------------------------------------------
+
+    usecase "Soumettre son\ndossier de stage" as UC_StageDossier
+
+    usecase "Valider une unité\nde formation (UF)" as UC_ValidateUf #line:red
+
+    usecase "Consulter son\ncertificat" as UC_Certificate
+
+    usecase "Inviter le tuteur\nà signer" as UC_InviteSignoff #line:red
+
+
+    ' -----------------------------------------------------
+    ' ADMINISTRATION ET SERVICES
+    ' -----------------------------------------------------
+
+    usecase "Échanger par\nmessagerie interne" as UC_Message #line:green
+
+    usecase "Gérer les utilisateurs\net droits" as UC_ManageUsers #line:red
+
+    usecase "Gérer les cohortes\net classes" as UC_ManageGroups #line:red
+
+    usecase "Consulter les\njournaux d'audit" as UC_AuditLog #line:red
+
+    usecase "Configurer les\nparamètres généraux" as UC_AppSettings #line:red
+
+    usecase "Consulter la\nbourse à l'emploi" as UC_JobsView #line:purple
+
+
+    ' =====================================================
+    ' ORGANISATION INTERNE DES USE CASES
+    ' =====================================================
+
+    ' ----- Colonne 1 -----
+
+    UC_Register -[hidden]down-> UC_Login
+    UC_Login -[hidden]down-> UC_Contact
+    UC_Contact -[hidden]down-> UC_VerifyCertificate
+
+
+    ' ----- Colonne 2 -----
+
+    UC_AccessSpace -[hidden]down-> UC_Profile
+    UC_Profile -[hidden]down-> UC_Message
+    UC_Message -[hidden]down-> UC_JobsView
+
+
+    ' ----- Colonne 3 -----
+
+    UC_ViewLesson -[hidden]down-> UC_TakeQuiz
+    UC_TakeQuiz -[hidden]down-> UC_ViewResults
+
+
+    ' ----- Colonne 4 -----
+
+    UC_ManageQuiz -[hidden]down-> UC_AiGenerate
+    UC_AiGenerate -[hidden]down-> UC_Grade
+
+
+    ' ----- Colonne 5 -----
+
+    UC_StageDossier -[hidden]down-> UC_ValidateUf
+    UC_ValidateUf -[hidden]down-> UC_InviteSignoff
+    UC_InviteSignoff -[hidden]down-> UC_Certificate
+
+
+    ' ----- Administration -----
+
+    UC_ManageUsers -[hidden]down-> UC_ManageGroups
+    UC_ManageGroups -[hidden]down-> UC_AuditLog
+    UC_AuditLog -[hidden]down-> UC_AppSettings
+
+
+    ' ----- Espacement horizontal -----
+
+    UC_Register -[hidden]right-> UC_AccessSpace
+    UC_AccessSpace -[hidden]right-> UC_ViewLesson
+    UC_ViewLesson -[hidden]right-> UC_ManageQuiz
+    UC_ManageQuiz -[hidden]right-> UC_StageDossier
+    UC_StageDossier -[hidden]right-> UC_ManageUsers
+
 }
 
-Etudiant --> UC_Register
-Etudiant --> UC_Login
-Etudiant --> UC_ForgotPwd
-Etudiant --> UC_Profile
+
+' =========================================================
+' RELATIONS AVEC LES ACTEURS
+' =========================================================
+
+
+' -------------------------
+' VISITEUR
+' -------------------------
+
+Visiteur --> UC_Register #line:blue
+Visiteur --> UC_Login #line:blue
+Visiteur --> UC_Contact #line:blue
+Visiteur --> UC_VerifyCertificate #line:blue
+
+
+' -------------------------
+' UTILISATEUR CONNECTÉ
+' -------------------------
+
+User --> UC_AccessSpace #line:green
+User --> UC_Profile #line:green
+User --> UC_Message #line:green
+
+
+' -------------------------
+' ÉTUDIANT
+' -------------------------
+
 Etudiant --> UC_ViewLesson
-Etudiant --> UC_ViewProgress
-Etudiant --> UC_Notes
-Etudiant --> UC_Forum
 Etudiant --> UC_TakeQuiz
 Etudiant --> UC_ViewResults
 Etudiant --> UC_StageDossier
 Etudiant --> UC_Certificate
-Etudiant --> UC_Message
-Etudiant --> UC_Notification
 Etudiant --> UC_JobsView
-Etudiant --> UC_Search
 
-Formateur --> UC_Login
-Formateur --> UC_ManageQuiz
-Formateur --> UC_AiGenerate
-Formateur --> UC_GradeEssay
-Formateur --> UC_GradeAdjust
-Formateur --> UC_InviteSignoff
-Formateur --> UC_Message
-Formateur --> UC_Search
-Formateur --> UC_JobsManage
 
-Admin --> UC_ValidateUf
-Admin --> UC_ManageUsers
-Admin --> UC_ManageGroups
-Admin --> UC_Campaign
-Admin --> UC_AuditLog
+' -------------------------
+' FORMATEUR
+' -------------------------
 
-SuperAdmin --> UC_AppSettings
+Formateur --> UC_ManageQuiz #line:purple
+Formateur --> UC_Grade #line:purple
 
-Support --> UC_Login
-Support --> UC_Search
 
-Tuteur --> UC_SignStage
+' -------------------------
+' ADMIN
+' -------------------------
 
-Visiteur --> UC_Contact
-Visiteur --> UC_Newsletter
-Visiteur --> UC_VerifyCertificate
+Admin --> UC_ValidateUf #line:red
+Admin --> UC_InviteSignoff #line:red
+Admin --> UC_ManageUsers #line:red
+Admin --> UC_ManageGroups #line:red
+Admin --> UC_AuditLog #line:red
 
-UC_TakeQuiz .> UC_ViewResults : <<include>>
+
+' -------------------------
+' SUPER ADMIN
+' -------------------------
+
+SuperAdmin --> UC_AppSettings #line:red
+
+
+' =========================================================
+' RELATIONS ENTRE CAS
+' =========================================================
+
+UC_AccessSpace .> UC_Login : <<include>>
+
 UC_AiGenerate .> UC_ManageQuiz : <<extend>>
-UC_ValidateUf .> UC_InviteSignoff : <<extend>>
-UC_JobsView .> UC_Certificate : <<include>>\n(éligibilité = certificat existant)
+
+UC_InviteSignoff .> UC_ValidateUf : <<extend>>
+
+
+' =========================================================
+' POSITIONNEMENT DES ACTEURS
+' =========================================================
+
+' Acteurs de gauche
+
+Visiteur -[hidden]right-> UC_Register
+
+User -[hidden]right-> UC_AccessSpace
+
+Etudiant -[hidden]right-> UC_ViewLesson
+
+
+' Acteurs de droite
+
+UC_ManageQuiz -[hidden]right-> Formateur
+
+UC_ValidateUf -[hidden]right-> Admin
+
+UC_AppSettings -[hidden]right-> SuperAdmin
+
+
+' Héritage vertical
+
+User -[hidden]down-> Etudiant
+
+Formateur -[hidden]down-> Admin
+
+Admin -[hidden]down-> SuperAdmin
 
 @enduml

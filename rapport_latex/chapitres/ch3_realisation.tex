@@ -209,13 +209,6 @@ propre fenêtre temporelle. Le dépassement lève une
 \texttt{RateLimitException} annotée \texttt{@ResponseStatus(TOO\_MANY\_REQUESTS)},
 traduite automatiquement en HTTP~429 sans gestionnaire d'exception dédié.
 
-\begin{figure}[H]
-  \centering
-  \includegraphics[width=\textwidth,height=0.85\textheight,keepaspectratio]{diagramme_sequence_rate_limiting.png}
-  \caption{Limitation de débit Redis (fenêtre fixe)}
-  \label{fig:seq-rate-limiting}
-\end{figure}
-
 \textbf{Bénéfice concret.} Un seul mécanisme réutilisable protège à la
 fois la sécurité (force brute sur la connexion) et le budget
 d'exploitation (appels IA facturés à l'usage) --- sans dépendance
@@ -241,13 +234,6 @@ fonction \texttt{generateMetadata} interroge cette API pour produire les
 balises Open Graph directement dans le HTML initial --- condition
 nécessaire pour que le robot d'indexation de LinkedIn, qui n'exécute pas
 de JavaScript, affiche un aperçu correct lors du partage.
-
-\begin{figure}[H]
-  \centering
-  \includegraphics[width=\textwidth,height=0.85\textheight,keepaspectratio]{diagramme_sequence_certificat_verification_linkedin.png}
-  \caption{Vérification publique de certificat et partage LinkedIn}
-  \label{fig:seq-certificat-linkedin}
-\end{figure}
 
 \textbf{Bénéfice concret.} Cette fonctionnalité transforme un document
 statique en preuve vérifiable et en outil de visibilité professionnelle
@@ -275,13 +261,6 @@ n'est \textbf{jamais interrogé} --- la confidentialité n'est pas un simple
 filtrage d'affichage après coup. L'extraction du texte des PDF a lieu au
 moment de l'upload (\texttt{MediaService}, Apache PDFBox), en échec
 silencieux (best-effort) pour ne jamais bloquer un import de fichier.
-
-\begin{figure}[H]
-  \centering
-  \includegraphics[width=\textwidth,height=0.85\textheight,keepaspectratio]{diagramme_sequence_recherche_globale.png}
-  \caption{Recherche globale avec confidentialité des questions}
-  \label{fig:seq-recherche-globale}
-\end{figure}
 
 \textbf{Bénéfice concret.} La recherche devient un outil pédagogique
 (retrouver un passage de cours) sans devenir un outil de triche --- un
@@ -331,13 +310,6 @@ de 200~ms, sur un pool de threads volontairement restreint (2 à 4 threads)
 pour ne jamais saturer le serveur SMTP. Chaque échec individuel est
 capturé, journalisé et marqué \texttt{FAILED} sans interrompre l'envoi des
 destinataires suivants.
-
-\begin{figure}[H]
-  \centering
-  \includegraphics[width=\textwidth,height=0.85\textheight,keepaspectratio]{diagramme_sequence_campagne_email_asynchrone.png}
-  \caption{Envoi asynchrone d'une campagne email à débit maîtrisé}
-  \label{fig:seq-campagne-email}
-\end{figure}
 
 \textbf{Bénéfice concret.} L'administrateur récupère l'interface
 immédiatement après avoir lancé l'envoi, et l'état de chaque destinataire

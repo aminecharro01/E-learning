@@ -1,0 +1,340 @@
+@startuml diagramme_classes_ensemble
+!theme plain
+skinparam dpi 300
+skinparam packageStyle rectangle
+skinparam linetype ortho
+skinparam shadowing false
+skinparam classAttributeIconSize 0
+skinparam class {
+  BackgroundColor White
+  BorderColor Black
+  ArrowColor Black
+  FontStyle Normal
+}
+skinparam nodesep 30
+skinparam ranksep 40
+
+title Diagramme de classes — Vue d'ensemble de l'application (IAT Academy)
+
+abstract class AuditableEntity {
+  # createdAt : Instant
+  # updatedAt : Instant
+}
+
+package "Utilisateurs & Groupes" as PKG_USERS {
+  class User {
+    - id : UUID
+    - email : String
+    - fullName : String
+    - role : Role
+    - enabled : boolean
+    - paymentStatus : PaymentStatus
+  }
+  class LearnerGroup {
+    - id : UUID
+    - name : String
+    - code : String
+    - startDate : LocalDate
+    - endDate : LocalDate
+  }
+  class GroupContentAssignment {
+    - id : UUID
+    - ufCode : String
+    - unlockAt : Instant
+  }
+}
+
+package "Contenu pédagogique" as PKG_CONTENU {
+  class Formation {
+    - id : UUID
+    - title : String
+    - published : boolean
+  }
+  class ModuleEntity {
+    - id : UUID
+    - code : String
+    - title : String
+    - orderIndex : int
+    - yearNumber : int
+    - ufCode : String
+    - published : boolean
+  }
+  class Lesson {
+    - id : UUID
+    - title : String
+    - orderIndex : int
+    - published : boolean
+  }
+  class LessonBlock {
+    - id : UUID
+    - blockType : BlockType
+    - orderIndex : int
+  }
+  class LessonProgress {
+    - id : UUID
+    - videoWatchedPercent : int
+    - completed : boolean
+    - completedAt : Instant
+  }
+}
+
+package "Évaluation" as PKG_EVAL {
+  class Quiz {
+    - id : UUID
+    - title : String
+    - quizType : QuizType
+    - passingScore : int
+    - maxAttempts : int
+    - published : boolean
+  }
+  class Question {
+    - id : UUID
+    - prompt : String
+    - questionType : QuestionType
+    - orderIndex : int
+  }
+  class AnswerOption {
+    - id : UUID
+    - label : String
+    - correct : boolean
+  }
+  class QuizAttempt {
+    - id : UUID
+    - startedAt : Instant
+    - submittedAt : Instant
+    - score : BigDecimal
+    - status : AttemptStatus
+  }
+  class EssayGrade {
+    - id : UUID
+    - score : BigDecimal
+    - feedback : String
+    - gradedAt : Instant
+  }
+  class ProctoringEvent {
+    - id : UUID
+    - eventType : ProctoringEventType
+    - occurredAt : Instant
+  }
+  class Assignment {
+    - id : UUID
+    - title : String
+    - dueAt : Instant
+    - maxScore : BigDecimal
+  }
+  class Submission {
+    - id : UUID
+    - submittedAt : Instant
+    - status : SubmissionStatus
+    - grade : BigDecimal
+  }
+  class GradeAdjustment {
+    - id : UUID
+    - points : BigDecimal
+    - reason : String
+  }
+}
+
+package "Stage & Certification" as PKG_STAGE {
+  class LearnerUfValidation {
+    - id : UUID
+    - ufCode : String
+    - validated : boolean
+    - validatedAt : Instant
+  }
+  class StageSignoffInvite {
+    - id : UUID
+    - token : String
+    - tutorEmail : String
+    - expiresAt : Instant
+  }
+  class LearnerDocument {
+    - id : UUID
+    - docType : LearnerDocType
+    - status : LearnerDocStatus
+  }
+  class Certificate {
+    - id : UUID
+    - verificationCode : String
+    - issuedAt : Instant
+    - physicallyDelivered : boolean
+  }
+}
+
+package "Communication" as PKG_COMM {
+  class Conversation {
+    - id : UUID
+    - type : ConversationType
+  }
+  class ConversationParticipant {
+    - id : UUID
+    - lastReadAt : Instant
+  }
+  class Message {
+    - id : UUID
+    - body : String
+    - createdAt : Instant
+  }
+  class Notification {
+    - id : UUID
+    - type : NotificationType
+    - title : String
+    - readAt : Instant
+  }
+  class LessonComment {
+    - id : UUID
+    - body : String
+    - hidden : boolean
+    - pinned : boolean
+  }
+}
+
+package "Marketing & Emploi" as PKG_MARKETING {
+  class EmailCampaign {
+    - id : UUID
+    - subject : String
+    - status : CampaignStatus
+    - sentAt : Instant
+    - recipientCount : int
+  }
+  class EmailCampaignRecipient {
+    - id : UUID
+    - recipientEmail : String
+    - status : CampaignRecipientStatus
+  }
+  class NewsletterSubscriber {
+    - id : UUID
+    - email : String
+    - active : boolean
+  }
+  class ContactMessage {
+    - id : UUID
+    - email : String
+    - message : String
+    - status : String
+  }
+  class JobOffer {
+    - id : UUID
+    - title : String
+    - company : String
+    - contractType : ContractType
+    - published : boolean
+  }
+}
+
+package "Médias" as PKG_MEDIAS {
+  class Asset {
+    - id : UUID
+    - filename : String
+    - mimeType : String
+    - sizeBytes : long
+    - assetKind : String
+  }
+  class AssetDownload {
+    - id : UUID
+    - downloadedAt : Instant
+  }
+  class MediaFolder {
+    - id : UUID
+    - name : String
+  }
+}
+
+package "Système" as PKG_SYSTEME {
+  class AuditLogEntry {
+    - id : UUID
+    - action : String
+    - targetType : String
+  }
+  class TimeTrackingLog {
+    - id : UUID
+    - eventDate : LocalDate
+    - secondsSpent : int
+  }
+  class VirtualSession {
+    - id : UUID
+    - title : String
+    - scheduledAt : Instant
+    - durationMinutes : int
+  }
+  class UserBadge {
+    - id : UUID
+    - badgeCode : BadgeCode
+    - awardedAt : Instant
+  }
+}
+
+' --- Empilement vertical des paquetages, sans rapport avec le modèle ---
+PKG_USERS -[hidden]-> PKG_CONTENU
+PKG_CONTENU -[hidden]-> PKG_EVAL
+PKG_EVAL -[hidden]-> PKG_STAGE
+PKG_STAGE -[hidden]-> PKG_COMM
+PKG_COMM -[hidden]-> PKG_MARKETING
+PKG_MARKETING -[hidden]-> PKG_MEDIAS
+PKG_MEDIAS -[hidden]-> PKG_SYSTEME
+
+AuditableEntity <|-- User
+AuditableEntity <|-- Formation
+AuditableEntity <|-- ModuleEntity
+AuditableEntity <|-- Lesson
+AuditableEntity <|-- Quiz
+AuditableEntity <|-- QuizAttempt
+AuditableEntity <|-- Certificate
+
+User "0..N" -- "0..1" LearnerGroup
+LearnerGroup "1" *-- "0..N" GroupContentAssignment
+GroupContentAssignment "0..N" --> "1" ModuleEntity
+
+Formation "1" *-- "0..N" ModuleEntity
+ModuleEntity "1" *-- "0..N" Lesson
+Lesson "1" *-- "0..N" LessonBlock
+User "1" -- "0..N" LessonProgress
+Lesson "1" -- "0..N" LessonProgress
+
+Quiz "0..1" -- "0..N" Lesson
+Quiz "0..1" -- "0..N" ModuleEntity
+Quiz "0..1" -- "0..N" Formation
+Quiz "1" *-- "0..N" Question
+Question "1" *-- "0..N" AnswerOption
+User "1" -- "0..N" QuizAttempt
+Quiz "1" -- "0..N" QuizAttempt
+QuizAttempt "1" -- "0..N" EssayGrade
+QuizAttempt "1" -- "0..N" ProctoringEvent
+ModuleEntity "1" -- "0..N" Assignment
+Assignment "1" -- "0..N" Submission
+User "1" -- "0..N" GradeAdjustment
+
+User "1" -- "0..N" LearnerUfValidation
+LearnerUfValidation "1" -- "0..N" StageSignoffInvite
+User "1" -- "0..N" LearnerDocument
+User "1" -- "0..N" Certificate
+Formation "1" -- "0..N" Certificate
+
+LearnerGroup "0..1" -- "0..N" Conversation
+Conversation "1" *-- "0..N" ConversationParticipant
+Conversation "1" -- "0..N" Message
+User "1" -- "0..N" Notification
+Lesson "0..1" -- "0..N" LessonComment
+
+EmailCampaign "1" *-- "0..N" EmailCampaignRecipient
+LearnerGroup "0..1" -- "0..N" EmailCampaign
+Certificate ..> JobOffer : éligibilité
+
+User "1" -- "0..N" AssetDownload
+Asset "1" -- "0..N" AssetDownload
+LearnerDocument "0..N" -- "1" Asset
+
+User "1" -- "0..N" AuditLogEntry
+User "1" -- "0..N" TimeTrackingLog
+User "1" -- "0..N" UserBadge
+LearnerGroup "0..1" -- "0..N" VirtualSession
+
+note bottom of ModuleEntity
+  L'UF et l'année ne sont pas des entités
+  séparées : attributs de ModuleEntity
+  (voir Figure "structure pédagogique").
+end note
+
+note "Vue d'ensemble des 37 entités JPA, organisée en huit paquetages\nfonctionnels. Les associations, plus nombreuses que les attributs\naffichés, sont détaillées avec leurs cardinalités précises dans\nles diagrammes de classes par domaine (Figures suivantes)." as N1
+
+@enduml
