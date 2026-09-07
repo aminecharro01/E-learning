@@ -340,11 +340,11 @@ note right of AuditableEntity
 end note
 
 note bottom of Quiz
-  Les trois associations (Lesson, ModuleEntity,
-  Formation) sont mutuellement exclusives et
-  dépendent de quizType (APPLICATIF, FIN_MODULE,
-  FIN_UF, FIN_ANNEE) : un quiz donné n'en renseigne
-  qu'une seule.
+  Portée déterminée par quizType (QuizService) :
+  - APPLICATIF : Lesson + ModuleEntity (dérivé de la leçon)
+  - FIN_MODULE : ModuleEntity seul
+  - FIN_UF / FIN_ANNEE : Formation seule (+ ufCode ou yearNumber)
+  Lesson et Formation ne sont donc jamais renseignés ensemble.
 end note
 
 note "Vue d'ensemble des 40 classes du domaine (39 entités JPA concrètes\n+ 1 superclasse abstraite AuditableEntity), organisée en huit\npaquetages fonctionnels. Les associations, plus nombreuses que les\nattributs affichés, sont détaillées avec leurs cardinalités précises\ndans les diagrammes de classes par domaine (Figures suivantes)." as N1
