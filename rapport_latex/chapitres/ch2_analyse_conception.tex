@@ -43,25 +43,27 @@ backend.
 Le modèle de données regroupe 39 entités JPA concrètes, toutes héritant
 --- à l'exception d'\texttt{AssetDownload} --- d'une superclasse technique
 abstraite \texttt{AuditableEntity} (\texttt{createdAt}/\texttt{updatedAt}).
-La Figure~\ref{fig:classes-ensemble}
-en donne une vue d'ensemble au format UML standard, organisée en huit
-paquetages fonctionnels avec leurs attributs principaux, leurs
-associations et les cardinalités correspondantes. Trois domaines jugés
-les plus structurants pour la compréhension du système sont ensuite
-détaillés à un niveau plus fin : structure pédagogique et groupes
-(Figure~\ref{fig:classes-pedagogie}), évaluation
+Plutôt qu'un diagramme unique tentant de représenter les 39 classes et
+la cinquantaine d'associations qui les relient --- illisible à cette
+échelle ---, la Figure~\ref{fig:classes-ensemble} en donne une vue
+d'ensemble volontairement simplifiée : les huit paquetages fonctionnels,
+une à trois classes représentatives par paquetage, et uniquement les
+associations et cardinalités les plus structurantes. Trois domaines
+jugés les plus importants sont ensuite détaillés intégralement, avec
+toutes leurs classes, attributs et cardinalités : structure pédagogique
+et groupes (Figure~\ref{fig:classes-pedagogie}), évaluation
 (Figure~\ref{fig:classes-evaluation}), et stage et certification
 (Figure~\ref{fig:classes-stage}). Les domaines restants (communication,
 marketing/emploi, médias, suivi système) suivent les mêmes conventions de
 modélisation et sont détaillés au besoin dans le code source
 (\texttt{domain/entity/}).
 
-\begin{sidewaysfigure}
+\begin{figure}[H]
   \centering
-  \includegraphics[width=\textwidth,height=0.9\textheight,keepaspectratio]{diagramme_classes_ensemble.png}
-  \caption{Diagramme de classes — vue d'ensemble de l'application}
+  \includegraphics[width=\textwidth,height=0.85\textheight,keepaspectratio]{diagramme_classes_ensemble.png}
+  \caption{Diagramme de classes — vue d'ensemble simplifiée de l'application}
   \label{fig:classes-ensemble}
-\end{sidewaysfigure}
+\end{figure}
 
 \begin{figure}[H]
   \centering

@@ -1,351 +1,230 @@
 @startuml diagramme_classes_ensemble
 !theme plain
-skinparam dpi 300
-skinparam packageStyle rectangle
-skinparam shadowing false
-skinparam classAttributeIconSize 0
-skinparam class {
-  BackgroundColor White
-  BorderColor Black
-  ArrowColor Black
-  FontStyle Normal
-}
-skinparam nodesep 25
-skinparam ranksep 35
 
-title Diagramme de classes — Vue d'ensemble de l'application (IAT Academy)
+' ============================================================
+' CONFIGURATION GÉNÉRALE
+' ============================================================
+
+skinparam dpi 300
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam classAttributeIconSize 0
+
+skinparam nodesep 40
+skinparam ranksep 55
+
+skinparam class {
+    BackgroundColor White
+    BorderColor Black
+    ArrowColor Black
+    FontColor Black
+    FontStyle Normal
+}
+
+skinparam package {
+    BackgroundColor #FAFAFA
+    BorderColor #555555
+    FontColor Black
+    FontStyle bold
+}
+
+skinparam ArrowColor #444444
+
+title Diagramme de classes — Vue d'ensemble simplifiée (IAT Academy)
+
+' ============================================================
+' CLASSE TECHNIQUE
+' ============================================================
 
 abstract class AuditableEntity {
   # createdAt : Instant
   # updatedAt : Instant
 }
 
-package "Utilisateurs & Groupes" as PKG_USERS {
+' ============================================================
+' UTILISATEURS & GROUPES (3 classes)
+' ============================================================
+
+package "Utilisateurs & Groupes (3)" as PKG_USERS {
   class User {
     - id : UUID
-    - email : String
     - fullName : String
     - role : Role
-    - enabled : boolean
-    - paymentStatus : PaymentStatus
   }
   class LearnerGroup {
     - id : UUID
     - name : String
-    - code : String
-    - startDate : LocalDate
-    - endDate : LocalDate
-  }
-  class GroupContentAssignment {
-    - id : UUID
-    - ufCode : String
-    - unlockAt : Instant
   }
 }
 
-package "Contenu pédagogique" as PKG_CONTENU {
+' ============================================================
+' CONTENU PÉDAGOGIQUE (6 classes)
+' ============================================================
+
+package "Contenu pédagogique (6)" as PKG_CONTENU {
   class Formation {
     - id : UUID
     - title : String
-    - published : boolean
   }
   class ModuleEntity {
     - id : UUID
-    - code : String
     - title : String
-    - orderIndex : int
-    - yearNumber : int
-    - ufCode : String
-    - published : boolean
   }
   class Lesson {
     - id : UUID
     - title : String
-    - orderIndex : int
-    - published : boolean
-  }
-  class LessonBlock {
-    - id : UUID
-    - blockType : BlockType
-    - orderIndex : int
-  }
-  class LessonProgress {
-    - id : UUID
-    - videoWatchedPercent : int
-    - completed : boolean
-    - completedAt : Instant
-  }
-  class LessonNote {
-    - id : UUID
-    - body : String
   }
 }
 
-package "Évaluation" as PKG_EVAL {
+' ============================================================
+' ÉVALUATION (9 classes)
+' ============================================================
+
+package "Évaluation (9)" as PKG_EVAL {
   class Quiz {
     - id : UUID
     - title : String
     - quizType : QuizType
-    - passingScore : int
-    - maxAttempts : int
-    - published : boolean
-  }
-  class Question {
-    - id : UUID
-    - prompt : String
-    - questionType : QuestionType
-    - orderIndex : int
-  }
-  class AnswerOption {
-    - id : UUID
-    - label : String
-    - correct : boolean
   }
   class QuizAttempt {
     - id : UUID
-    - startedAt : Instant
-    - submittedAt : Instant
     - score : BigDecimal
     - status : AttemptStatus
   }
-  class EssayGrade {
-    - id : UUID
-    - score : BigDecimal
-    - feedback : String
-    - gradedAt : Instant
-  }
-  class ProctoringEvent {
-    - id : UUID
-    - eventType : ProctoringEventType
-    - occurredAt : Instant
-  }
-  class Assignment {
-    - id : UUID
-    - title : String
-    - dueAt : Instant
-    - maxScore : BigDecimal
-  }
-  class Submission {
-    - id : UUID
-    - submittedAt : Instant
-    - status : SubmissionStatus
-    - grade : BigDecimal
-  }
-  class GradeAdjustment {
-    - id : UUID
-    - points : BigDecimal
-    - reason : String
-  }
 }
 
-package "Stage & Certification" as PKG_STAGE {
+' ============================================================
+' STAGE & CERTIFICATION (4 classes)
+' ============================================================
+
+package "Stage & Certification (4)" as PKG_STAGE {
   class LearnerUfValidation {
     - id : UUID
     - ufCode : String
     - validated : boolean
-    - validatedAt : Instant
-  }
-  class StageSignoffInvite {
-    - id : UUID
-    - token : String
-    - tutorEmail : String
-    - expiresAt : Instant
-  }
-  class LearnerDocument {
-    - id : UUID
-    - docType : LearnerDocType
-    - status : LearnerDocStatus
   }
   class Certificate {
     - id : UUID
     - verificationCode : String
-    - issuedAt : Instant
-    - physicallyDelivered : boolean
   }
 }
 
-package "Communication" as PKG_COMM {
+' ============================================================
+' COMMUNICATION (5 classes)
+' ============================================================
+
+package "Communication (5)" as PKG_COMM {
   class Conversation {
     - id : UUID
     - type : ConversationType
   }
-  class ConversationParticipant {
-    - id : UUID
-    - lastReadAt : Instant
-  }
-  class Message {
-    - id : UUID
-    - body : String
-  }
   class Notification {
     - id : UUID
-    - type : NotificationType
     - title : String
-    - readAt : Instant
-  }
-  class LessonComment {
-    - id : UUID
-    - body : String
-    - hidden : boolean
-    - pinned : boolean
   }
 }
 
-package "Marketing & Emploi" as PKG_MARKETING {
+' ============================================================
+' MARKETING & EMPLOI (5 classes)
+' ============================================================
+
+package "Marketing & Emploi (5)" as PKG_MARKETING {
   class EmailCampaign {
     - id : UUID
     - subject : String
-    - status : CampaignStatus
-    - sentAt : Instant
-    - recipientCount : int
-  }
-  class EmailCampaignRecipient {
-    - id : UUID
-    - recipientEmail : String
-    - status : CampaignRecipientStatus
-  }
-  class NewsletterSubscriber {
-    - id : UUID
-    - email : String
-    - active : boolean
-  }
-  class ContactMessage {
-    - id : UUID
-    - email : String
-    - message : String
-    - status : String
   }
   class JobOffer {
     - id : UUID
     - title : String
-    - company : String
-    - contractType : ContractType
-    - published : boolean
   }
 }
 
-package "Médias" as PKG_MEDIAS {
+' ============================================================
+' MÉDIAS (3 classes)
+' ============================================================
+
+package "Médias (3)" as PKG_MEDIAS {
   class Asset {
     - id : UUID
     - filename : String
-    - mimeType : String
-    - sizeBytes : long
-    - assetKind : String
-  }
-  class AssetDownload {
-    - id : UUID
-    - downloadedAt : Instant
-  }
-  class MediaFolder {
-    - id : UUID
-    - name : String
   }
 }
 
-package "Système" as PKG_SYSTEME {
+' ============================================================
+' SYSTÈME (4 classes)
+' ============================================================
+
+package "Système (4)" as PKG_SYSTEME {
   class AuditLogEntry {
     - id : UUID
     - action : String
-    - targetType : String
-    - targetId : UUID
-  }
-  class TimeTrackingLog {
-    - id : UUID
-    - eventDate : LocalDate
-    - secondsSpent : int
-  }
-  class VirtualSession {
-    - id : UUID
-    - title : String
-    - scheduledAt : Instant
-    - durationMinutes : int
-  }
-  class UserBadge {
-    - id : UUID
-    - badgeCode : BadgeCode
-    - awardedAt : Instant
   }
 }
 
+' ============================================================
+' HÉRITAGE TECHNIQUE
+' ============================================================
+
+AuditableEntity <|-- User
+AuditableEntity <|-- LearnerGroup
+AuditableEntity <|-- Formation
+AuditableEntity <|-- ModuleEntity
+AuditableEntity <|-- Lesson
+AuditableEntity <|-- Quiz
+AuditableEntity <|-- QuizAttempt
+AuditableEntity <|-- LearnerUfValidation
+AuditableEntity <|-- Certificate
+AuditableEntity <|-- Conversation
+AuditableEntity <|-- Notification
+AuditableEntity <|-- EmailCampaign
+AuditableEntity <|-- JobOffer
+AuditableEntity <|-- Asset
+AuditableEntity <|-- AuditLogEntry
+
+' ============================================================
+' RELATIONS PRINCIPALES ENTRE PAQUETAGES
+' ============================================================
+
 User "0..N" -- "0..1" LearnerGroup
-LearnerGroup "1" *-- "0..N" GroupContentAssignment
-GroupContentAssignment "0..N" --> "1" ModuleEntity
 
 Formation "1" *-- "0..N" ModuleEntity
 ModuleEntity "1" *-- "0..N" Lesson
-Lesson "1" *-- "0..N" LessonBlock
-User "1" -- "0..N" LessonProgress
-Lesson "1" -- "0..N" LessonProgress
-User "1" -- "0..N" LessonNote
-Lesson "1" -- "0..N" LessonNote
 
 Lesson "0..1" -- "0..N" Quiz
-ModuleEntity "0..1" -- "0..N" Quiz
-Formation "0..1" -- "0..N" Quiz
-Quiz "1" *-- "0..N" Question
-Question "1" *-- "0..N" AnswerOption
 User "1" -- "0..N" QuizAttempt
 Quiz "1" -- "0..N" QuizAttempt
-QuizAttempt "1" -- "0..N" EssayGrade
-Question "1" -- "0..N" EssayGrade
-QuizAttempt "1" -- "0..N" ProctoringEvent
-ModuleEntity "1" -- "0..N" Assignment
-Assignment "1" -- "0..N" Submission
-User "1" -- "0..N" GradeAdjustment
-ModuleEntity "1" -- "0..N" GradeAdjustment
 
 User "1" -- "0..N" LearnerUfValidation
-LearnerUfValidation "1" -- "0..N" StageSignoffInvite
-User "1" -- "0..N" LearnerDocument
 User "1" -- "0..N" Certificate
 Formation "1" -- "0..N" Certificate
 
 LearnerGroup "0..1" -- "0..N" Conversation
-Conversation "1" *-- "0..N" ConversationParticipant
-User "1" -- "0..N" ConversationParticipant
-Conversation "1" *-- "0..N" Message
-User "1" -- "0..N" Message : envoie
 User "1" -- "0..N" Notification : reçoit
-Lesson "0..1" -- "0..N" LessonComment
-User "1" -- "0..N" LessonComment : auteur
 
-EmailCampaign "1" *-- "0..N" EmailCampaignRecipient
 LearnerGroup "0..1" -- "0..N" EmailCampaign
-User "0..1" -- "0..N" EmailCampaign : créée par
 JobOffer ..> Certificate : vérifie l'éligibilité
 
-User "1" -- "0..N" AssetDownload
-Asset "1" -- "0..N" AssetDownload
-LearnerDocument "0..N" -- "1" Asset
+User "1" ..> Asset : consulte / télécharge
 
 User "0..1" -- "0..N" AuditLogEntry
-User "1" -- "0..N" TimeTrackingLog
-User "1" -- "0..N" UserBadge
-LearnerGroup "0..1" -- "0..N" VirtualSession
-User "0..1" -- "0..N" VirtualSession : organise
 
-note bottom of ModuleEntity
-  L'UF et l'année ne sont pas des entités
-  séparées : attributs de ModuleEntity
-  (voir Figure "structure pédagogique").
-end note
+' ============================================================
+' NOTES
+' ============================================================
 
 note right of AuditableEntity
   Superclasse technique (@MappedSuperclass).
   38 des 39 entités concrètes en héritent ;
   seule AssetDownload n'a pas d'audit trail.
-  Les flèches d'héritage individuelles ne sont
-  pas tracées ici pour ne pas surcharger la vue.
 end note
 
 note bottom of Quiz
-  Portée déterminée par quizType (QuizService) :
-  - APPLICATIF : Lesson + ModuleEntity (dérivé de la leçon)
-  - FIN_MODULE : ModuleEntity seul
-  - FIN_UF / FIN_ANNEE : Formation seule (+ ufCode ou yearNumber)
-  Lesson et Formation ne sont donc jamais renseignés ensemble.
+  Portée réelle déterminée par quizType :
+  Lesson (APPLICATIF), ModuleEntity (FIN_MODULE)
+  ou Formation (FIN_UF / FIN_ANNEE) — simplifiée
+  ici à Lesson. Détail complet : diagramme Évaluation.
 end note
 
-note "Vue d'ensemble des 40 classes du domaine (39 entités JPA concrètes\n+ 1 superclasse abstraite AuditableEntity), organisée en huit\npaquetages fonctionnels. Les associations, plus nombreuses que les\nattributs affichés, sont détaillées avec leurs cardinalités précises\ndans les diagrammes de classes par domaine (Figures suivantes)." as N1
+note "Vue d'ensemble SIMPLIFIÉE : 15 classes représentatives sur les 39\nentités JPA concrètes (+ 1 superclasse abstraite AuditableEntity),\nune à trois par paquetage. Seules les relations et cardinalités les\nplus structurantes sont représentées. Le détail complet (toutes les\nclasses, tous les attributs, toutes les associations) est donné par\nles diagrammes de classes par domaine (Figures suivantes)." as N1
 
 @enduml
