@@ -94,12 +94,12 @@ L'application suit une architecture en couches classique
 besoins transverses (limitation de débit, verrous, état éphémère des
 tentatives de quiz).
 
-\begin{sidewaysfigure}
+\begin{figure}[H]
   \centering
-  \includegraphics[width=\textwidth,height=0.9\textwidth,keepaspectratio]{diagramme_architecture.png}
+  \includegraphics[width=0.75\textwidth,height=0.85\textheight,keepaspectratio]{diagramme_architecture.png}
   \caption{Architecture en couches}
   \label{fig:architecture}
-\end{sidewaysfigure}
+\end{figure}
 
 La règle de conception appliquée de façon constante dans le code est la
 suivante : un contrôleur ne fait que du routage HTTP, de la validation

@@ -19,15 +19,28 @@ rapport_latex/
 └── images/                           # logos + diagrammes inclus dans le rapport
 
 diagrammes/
-├── diagramme_cas_utilisation.puml
+├── diagramme_cas_utilisation.puml     # PlantUML — diagrammes UML
 ├── diagramme_classes_pedagogie.puml
 ├── diagramme_classes_evaluation.puml
 ├── diagramme_classes_stage_certification.puml
-├── diagramme_architecture.puml
-├── diagramme_deploiement.puml
 ├── diagramme_sequence_*.puml          # 8 diagrammes de séquence
-└── images/                           # PNG générés (300 DPI)
+├── mingrammer/                        # Python (mingrammer/diagrams) — schémas d'infrastructure
+│   ├── diagramme_architecture.py
+│   ├── diagramme_deploiement.py
+│   └── requirements.txt
+└── images/                           # PNG générés (300 DPI), toutes sources confondues
 ```
+
+Deux outils différents génèrent les diagrammes, chacun choisi pour ce
+qu'il représente le mieux : **PlantUML** pour les diagrammes UML (cas
+d'utilisation, classes, séquence — sémantique de lignes de vie, de
+compartiments de classe, que mingrammer ne sait pas exprimer), et
+**Python/mingrammer** pour l'architecture en couches et le déploiement,
+qui sont par nature des schémas de composants/infrastructure — mingrammer
+les rend avec de vraies icônes (Spring, Next.js, PostgreSQL, Redis, nginx)
+et un nombre de niveaux d'imbrication volontairement réduit par rapport à
+la version PlantUML initiale, pour un rendu plus lisible sur une page A4
+verticale.
 
 ## À personnaliser avant remise
 
@@ -71,9 +84,11 @@ numéros de figures/tableaux et les renvois `\ref{}`. Un unique passage
 
 ## Régénérer les diagrammes après modification du code source
 
-Les fichiers `.puml` sont les sources éditables ; les `.png` dans
-`diagrammes/images/` sont générés automatiquement et ne doivent pas être
-édités à la main.
+Les fichiers `.puml` et les scripts `.py` sont les sources éditables ; les
+`.png` dans `diagrammes/images/` sont générés automatiquement et ne
+doivent pas être édités à la main.
+
+### Diagrammes UML (PlantUML) — cas d'utilisation, classes, séquence
 
 1. **Installer PlantUML** (nécessite Java) :
    ```bash
@@ -105,6 +120,37 @@ Les fichiers `.puml` sont les sources éditables ; les `.png` dans
 
 4. **Recompiler le rapport** (voir section précédente) pour que les
    figures mises à jour apparaissent dans le PDF.
+
+### Diagrammes d'infrastructure (Python / mingrammer) — architecture, déploiement
+
+1. **Installer les dépendances** (nécessite Python 3.9+ et Graphviz —
+   `dot` doit être sur le `PATH` ; `sudo apt install graphviz` /
+   `brew install graphviz` / installateur Windows depuis graphviz.org) :
+   ```bash
+   pip install -r diagrammes/mingrammer/requirements.txt
+   ```
+
+2. **Modifier** le script concerné
+   (`diagrammes/mingrammer/diagramme_architecture.py` ou
+   `diagramme_deploiement.py`).
+
+3. **Régénérer le PNG** — chaque script écrit directement dans
+   `diagrammes/images/` (300 DPI, orientation portrait par construction
+   grâce à `direction="TB"`) :
+   ```bash
+   cd diagrammes/mingrammer
+   python diagramme_architecture.py
+   python diagramme_deploiement.py
+   ```
+
+4. **Recompiler le rapport** comme ci-dessus.
+
+> Ces deux diagrammes ont volontairement été reconstruits avec
+> mingrammer plutôt que PlantUML : ce sont par nature des schémas
+> d'infrastructure (conteneurs, bases de données, services externes), le
+> registre exact où mingrammer excelle avec de vraies icônes et une
+> imbrication à un seul niveau — contrairement aux versions PlantUML
+> initiales qui empilaient jusqu'à quatre niveaux de paquets imbriqués.
 
 ## Tableau de synthèse des points forts techniques
 
