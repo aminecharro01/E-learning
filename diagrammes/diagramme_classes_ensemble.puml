@@ -76,6 +76,10 @@ package "Contenu pédagogique" as PKG_CONTENU {
     - completed : boolean
     - completedAt : Instant
   }
+  class LessonNote {
+    - id : UUID
+    - body : String
+  }
 }
 
 package "Évaluation" as PKG_EVAL {
@@ -173,7 +177,6 @@ package "Communication" as PKG_COMM {
   class Message {
     - id : UUID
     - body : String
-    - createdAt : Instant
   }
   class Notification {
     - id : UUID
@@ -245,6 +248,7 @@ package "Système" as PKG_SYSTEME {
     - id : UUID
     - action : String
     - targetType : String
+    - targetId : UUID
   }
   class TimeTrackingLog {
     - id : UUID
@@ -265,22 +269,6 @@ package "Système" as PKG_SYSTEME {
 }
 
 ' --- Empilement vertical des paquetages, sans rapport avec le modèle ---
-PKG_USERS -[hidden]-> PKG_CONTENU
-PKG_CONTENU -[hidden]-> PKG_EVAL
-PKG_EVAL -[hidden]-> PKG_STAGE
-PKG_STAGE -[hidden]-> PKG_COMM
-PKG_COMM -[hidden]-> PKG_MARKETING
-PKG_MARKETING -[hidden]-> PKG_MEDIAS
-PKG_MEDIAS -[hidden]-> PKG_SYSTEME
-
-AuditableEntity <|-- User
-AuditableEntity <|-- Formation
-AuditableEntity <|-- ModuleEntity
-AuditableEntity <|-- Lesson
-AuditableEntity <|-- Quiz
-AuditableEntity <|-- QuizAttempt
-AuditableEntity <|-- Certificate
-
 User "0..N" -- "0..1" LearnerGroup
 LearnerGroup "1" *-- "0..N" GroupContentAssignment
 GroupContentAssignment "0..N" --> "1" ModuleEntity
@@ -290,6 +278,8 @@ ModuleEntity "1" *-- "0..N" Lesson
 Lesson "1" *-- "0..N" LessonBlock
 User "1" -- "0..N" LessonProgress
 Lesson "1" -- "0..N" LessonProgress
+User "1" -- "0..N" LessonNote
+Lesson "1" -- "0..N" LessonNote
 
 Quiz "0..1" -- "0..N" Lesson
 Quiz "0..1" -- "0..N" ModuleEntity
@@ -299,10 +289,12 @@ Question "1" *-- "0..N" AnswerOption
 User "1" -- "0..N" QuizAttempt
 Quiz "1" -- "0..N" QuizAttempt
 QuizAttempt "1" -- "0..N" EssayGrade
+Question "1" -- "0..N" EssayGrade
 QuizAttempt "1" -- "0..N" ProctoringEvent
 ModuleEntity "1" -- "0..N" Assignment
 Assignment "1" -- "0..N" Submission
 User "1" -- "0..N" GradeAdjustment
+ModuleEntity "1" -- "0..N" GradeAdjustment
 
 User "1" -- "0..N" LearnerUfValidation
 LearnerUfValidation "1" -- "0..N" StageSignoffInvite
@@ -312,22 +304,27 @@ Formation "1" -- "0..N" Certificate
 
 LearnerGroup "0..1" -- "0..N" Conversation
 Conversation "1" *-- "0..N" ConversationParticipant
-Conversation "1" -- "0..N" Message
-User "1" -- "0..N" Notification
+User "1" -- "0..N" ConversationParticipant
+Conversation "1" *-- "0..N" Message
+User "1" -- "0..N" Message : envoie
+User "1" -- "0..N" Notification : reçoit
 Lesson "0..1" -- "0..N" LessonComment
+User "1" -- "0..N" LessonComment : auteur
 
 EmailCampaign "1" *-- "0..N" EmailCampaignRecipient
 LearnerGroup "0..1" -- "0..N" EmailCampaign
-Certificate ..> JobOffer : éligibilité
+User "0..1" -- "0..N" EmailCampaign : créée par
+JobOffer ..> Certificate : vérifie l'éligibilité
 
 User "1" -- "0..N" AssetDownload
 Asset "1" -- "0..N" AssetDownload
 LearnerDocument "0..N" -- "1" Asset
 
-User "1" -- "0..N" AuditLogEntry
+User "0..1" -- "0..N" AuditLogEntry
 User "1" -- "0..N" TimeTrackingLog
 User "1" -- "0..N" UserBadge
 LearnerGroup "0..1" -- "0..N" VirtualSession
+User "0..1" -- "0..N" VirtualSession : organise
 
 note bottom of ModuleEntity
   L'UF et l'année ne sont pas des entités
@@ -335,6 +332,22 @@ note bottom of ModuleEntity
   (voir Figure "structure pédagogique").
 end note
 
-note "Vue d'ensemble des 37 entités JPA, organisée en huit paquetages\nfonctionnels. Les associations, plus nombreuses que les attributs\naffichés, sont détaillées avec leurs cardinalités précises dans\nles diagrammes de classes par domaine (Figures suivantes)." as N1
+note right of AuditableEntity
+  Superclasse technique (@MappedSuperclass).
+  38 des 39 entités concrètes en héritent ;
+  seule AssetDownload n'a pas d'audit trail.
+  Les flèches d'héritage individuelles ne sont
+  pas tracées ici pour ne pas surcharger la vue.
+end note
+
+note bottom of Quiz
+  Les trois associations (Lesson, ModuleEntity,
+  Formation) sont mutuellement exclusives et
+  dépendent de quizType (APPLICATIF, FIN_MODULE,
+  FIN_UF, FIN_ANNEE) : un quiz donné n'en renseigne
+  qu'une seule.
+end note
+
+note "Vue d'ensemble des 40 classes du domaine (39 entités JPA concrètes\n+ 1 superclasse abstraite AuditableEntity), organisée en huit\npaquetages fonctionnels. Les associations, plus nombreuses que les\nattributs affichés, sont détaillées avec leurs cardinalités précises\ndans les diagrammes de classes par domaine (Figures suivantes)." as N1
 
 @enduml

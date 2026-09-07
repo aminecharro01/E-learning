@@ -40,7 +40,10 @@ backend.
 \section{Modèle de données}
 \label{sec:analyse-conception}
 
-Le modèle de données regroupe 37 entités JPA. La Figure~\ref{fig:classes-ensemble}
+Le modèle de données regroupe 39 entités JPA concrètes, toutes héritant
+--- à l'exception d'\texttt{AssetDownload} --- d'une superclasse technique
+abstraite \texttt{AuditableEntity} (\texttt{createdAt}/\texttt{updatedAt}).
+La Figure~\ref{fig:classes-ensemble}
 en donne une vue d'ensemble au format UML standard, organisée en huit
 paquetages fonctionnels avec leurs attributs principaux, leurs
 associations et les cardinalités correspondantes. Trois domaines jugés
