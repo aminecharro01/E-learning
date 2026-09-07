@@ -68,9 +68,13 @@ class LessonProgress {
 }
 
 AuditableEntity <|-- User
+AuditableEntity <|-- LearnerGroup
+AuditableEntity <|-- GroupContentAssignment
 AuditableEntity <|-- Formation
 AuditableEntity <|-- ModuleEntity
 AuditableEntity <|-- Lesson
+AuditableEntity <|-- LessonBlock
+AuditableEntity <|-- LessonProgress
 
 User "0..N" -- "0..1" LearnerGroup : membre >
 LearnerGroup "1" *-- "0..N" GroupContentAssignment

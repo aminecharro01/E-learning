@@ -74,7 +74,7 @@ class ProctoringEvent {
 class Assignment {
   +String title
   +Instant dueAt
-  +int maxScore
+  +BigDecimal maxScore
 }
 
 class Submission {
@@ -88,11 +88,18 @@ class GradeAdjustment {
 }
 
 AuditableEntity <|-- Quiz
+AuditableEntity <|-- Question
+AuditableEntity <|-- AnswerOption
 AuditableEntity <|-- QuizAttempt
+AuditableEntity <|-- EssayGrade
+AuditableEntity <|-- ProctoringEvent
+AuditableEntity <|-- Assignment
+AuditableEntity <|-- Submission
+AuditableEntity <|-- GradeAdjustment
 
-Quiz "0..1" -- "0..N" Lesson : section >
-Quiz "0..1" -- "0..N" ModuleEntity : fin de module >
-Quiz "0..1" -- "0..N" Formation : fin d'UF / d'année >
+Lesson "0..1" -- "0..N" Quiz : section >
+ModuleEntity "0..1" -- "0..N" Quiz : fin de module >
+Formation "0..1" -- "0..N" Quiz : fin d'UF / d'année >
 Quiz "1" *-- "0..N" Question
 Question "1" *-- "0..N" AnswerOption
 

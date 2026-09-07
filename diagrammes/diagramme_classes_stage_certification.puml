@@ -57,6 +57,9 @@ class Certificate {
   +boolean physicallyDelivered
 }
 
+AuditableEntity <|-- LearnerUfValidation
+AuditableEntity <|-- StageSignoffInvite
+AuditableEntity <|-- LearnerDocument
 AuditableEntity <|-- Certificate
 
 User "1" -- "0..N" LearnerUfValidation : apprenant >
