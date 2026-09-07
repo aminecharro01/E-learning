@@ -10,8 +10,8 @@ skinparam class {
   ArrowColor Black
   FontStyle Normal
 }
-skinparam nodesep 45
-skinparam ranksep 55
+skinparam nodesep 25
+skinparam ranksep 35
 
 title Diagramme de classes — Vue d'ensemble de l'application (IAT Academy)
 
@@ -267,7 +267,6 @@ package "Système" as PKG_SYSTEME {
   }
 }
 
-' --- Empilement vertical des paquetages, sans rapport avec le modèle ---
 User "0..N" -- "0..1" LearnerGroup
 LearnerGroup "1" *-- "0..N" GroupContentAssignment
 GroupContentAssignment "0..N" --> "1" ModuleEntity
