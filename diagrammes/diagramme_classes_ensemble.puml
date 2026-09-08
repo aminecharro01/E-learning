@@ -2,33 +2,51 @@
 !theme plain
 
 ' ============================================================
-' CONFIGURATION GÉNÉRALE
+' CONFIGURATION GÉNÉRALE — palette de marque IAT Academy (navy/gold)
 ' ============================================================
 
 skinparam dpi 300
 skinparam shadowing false
 skinparam packageStyle rectangle
 skinparam classAttributeIconSize 0
+skinparam linetype ortho
 
-skinparam nodesep 40
-skinparam ranksep 55
+skinparam nodesep 55
+skinparam ranksep 60
 
 skinparam class {
     BackgroundColor White
-    BorderColor Black
-    ArrowColor Black
-    FontColor Black
-    FontStyle Normal
+    BorderColor #142B4B
+    BorderThickness 1.2
+    ArrowColor #142B4B
+    ArrowThickness 1.3
+    FontColor #142B4B
+    FontStyle Bold
+    AttributeFontColor #23282F
+    AttributeFontStyle Normal
+    AttributeFontSize 12
 }
 
 skinparam package {
-    BackgroundColor #FAFAFA
-    BorderColor #555555
-    FontColor Black
-    FontStyle bold
+    BackgroundColor #FFF8EC
+    BorderColor #C97612
+    BorderThickness 1.4
+    FontColor #142B4B
+    FontStyle Bold
+    FontSize 13
 }
 
-skinparam ArrowColor #444444
+skinparam note {
+    BackgroundColor #FFF8EC
+    BorderColor #C97612
+    FontColor #23282F
+}
+
+skinparam title {
+    FontColor #142B4B
+    FontSize 20
+    FontStyle Bold
+}
 
 title Diagramme de classes — Vue d'ensemble simplifiée (IAT Academy)
 
@@ -42,7 +60,7 @@ abstract class AuditableEntity {
 }
 
 ' ============================================================
-' UTILISATEURS & GROUPES (3 classes)
+' PAQUETAGES FONCTIONNELS (1 à 3 classes représentatives chacun)
 ' ============================================================
 
 package "Utilisateurs & Groupes (3)" as PKG_USERS {
@@ -56,10 +74,6 @@ package "Utilisateurs & Groupes (3)" as PKG_USERS {
     - name : String
   }
 }
-
-' ============================================================
-' CONTENU PÉDAGOGIQUE (6 classes)
-' ============================================================
 
 package "Contenu pédagogique (6)" as PKG_CONTENU {
   class Formation {
@@ -76,10 +90,6 @@ package "Contenu pédagogique (6)" as PKG_CONTENU {
   }
 }
 
-' ============================================================
-' ÉVALUATION (9 classes)
-' ============================================================
-
 package "Évaluation (9)" as PKG_EVAL {
   class Quiz {
     - id : UUID
@@ -93,10 +103,6 @@ package "Évaluation (9)" as PKG_EVAL {
   }
 }
 
-' ============================================================
-' STAGE & CERTIFICATION (4 classes)
-' ============================================================
-
 package "Stage & Certification (4)" as PKG_STAGE {
   class LearnerUfValidation {
     - id : UUID
@@ -109,10 +115,6 @@ package "Stage & Certification (4)" as PKG_STAGE {
   }
 }
 
-' ============================================================
-' COMMUNICATION (5 classes)
-' ============================================================
-
 package "Communication (5)" as PKG_COMM {
   class Conversation {
     - id : UUID
@@ -123,10 +125,6 @@ package "Communication (5)" as PKG_COMM {
     - title : String
   }
 }
-
-' ============================================================
-' MARKETING & EMPLOI (5 classes)
-' ============================================================
 
 package "Marketing & Emploi (5)" as PKG_MARKETING {
   class EmailCampaign {
@@ -139,10 +137,6 @@ package "Marketing & Emploi (5)" as PKG_MARKETING {
   }
 }
 
-' ============================================================
-' MÉDIAS (3 classes)
-' ============================================================
-
 package "Médias (3)" as PKG_MEDIAS {
   class Asset {
     - id : UUID
@@ -150,16 +144,24 @@ package "Médias (3)" as PKG_MEDIAS {
   }
 }
 
-' ============================================================
-' SYSTÈME (4 classes)
-' ============================================================
-
 package "Système (4)" as PKG_SYSTEME {
   class AuditLogEntry {
     - id : UUID
     - action : String
   }
 }
+
+' ============================================================
+' DISPOSITION EN GRILLE — sans rapport avec le modèle métier
+' ============================================================
+
+PKG_USERS -[hidden]right- PKG_CONTENU
+PKG_CONTENU -[hidden]right- PKG_EVAL
+PKG_USERS -[hidden]down- PKG_STAGE
+PKG_STAGE -[hidden]right- PKG_COMM
+PKG_COMM -[hidden]right- PKG_MARKETING
+PKG_STAGE -[hidden]down- PKG_MEDIAS
+PKG_MEDIAS -[hidden]right- PKG_SYSTEME
 
 ' ============================================================
 ' HÉRITAGE TECHNIQUE
@@ -191,20 +193,20 @@ Formation "1" *-- "0..N" ModuleEntity
 ModuleEntity "1" *-- "0..N" Lesson
 
 Lesson "0..1" -- "0..N" Quiz
-User "1" -- "0..N" QuizAttempt
+User -- "0..N" QuizAttempt
 Quiz "1" -- "0..N" QuizAttempt
 
-User "1" -- "0..N" LearnerUfValidation
-User "1" -- "0..N" Certificate
+User -- "0..N" LearnerUfValidation
+User -- "0..N" Certificate
 Formation "1" -- "0..N" Certificate
 
 LearnerGroup "0..1" -- "0..N" Conversation
-User "1" -- "0..N" Notification : reçoit
+User -- "0..N" Notification : reçoit
 
 LearnerGroup "0..1" -- "0..N" EmailCampaign
 JobOffer ..> Certificate : vérifie l'éligibilité
 
-User "1" ..> Asset : consulte / télécharge
+User ..> Asset : consulte / télécharge
 
 User "0..1" -- "0..N" AuditLogEntry
 
