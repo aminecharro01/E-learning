@@ -44,12 +44,19 @@
 \counterwithin{figure}{chapter}
 \counterwithin{table}{chapter}
 
-% --- Tableaux enrichis ---
+% --- Tableaux enrichis, avec bordures complètes (lignes + colonnes) ---
 \usepackage{booktabs}
 \usepackage{longtable}
 \usepackage{array}
 \usepackage{multirow}
 \usepackage{enumitem}
+% Les tableaux du rapport utilisent des colonnes bordées (|p{...}|...|) ;
+% on redéfinit les commandes booktabs pour qu'elles tracent une ligne
+% horizontale pleine plutôt que la fine règle minimaliste par défaut,
+% cohérente avec ce choix de bordures visibles.
+\renewcommand{\toprule}{\hline}
+\renewcommand{\midrule}{\hline}
+\renewcommand{\bottomrule}{\hline}
 
 % --- Extraits de code (Java / SQL) ---
 \usepackage{xcolor}
@@ -117,7 +124,7 @@
   linkcolor=black,
   citecolor=black,
   urlcolor=blue,
-  pdftitle={Rapport de Projet de Fin d'Études — IAT Academy},
+  pdftitle={Rapport de stage — IAT Academy},
   breaklinks=true,
 }
 
@@ -145,11 +152,10 @@
 % Variables du rapport
 % =============================================================================
 \newcommand{\Etudiant}{Amine Charro}
-\newcommand{\Filiere}{Développement Digital et Systèmes d'Information Répartis (DDSIR) --- 4\textsuperscript{e} année}
+\newcommand{\Filiere}{Développement Digital et Systèmes d'Information --- 4\textsuperscript{e} année}
 \newcommand{\Entreprise}{IAT Academy}
 \newcommand{\TitreProjet}{Conception et réalisation d'une plateforme e-learning pour les métiers de l'aviation, de l'accueil et du tourisme}
 \newcommand{\EncadrantPedago}{Mme. El Amrani Nora}
-\newcommand{\EncadrantPro}{[Encadrant professionnel --- Nom]}
 \newcommand{\AnneeUniv}{2025 -- 2026}
 \newcommand{\Ville}{Casablanca}
 \newcommand{\DateDebutStage}{01/07/2026}

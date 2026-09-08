@@ -23,37 +23,38 @@ but de pouvoir être simulées par \texttt{Mockito.spy()} sans effectuer de
 véritable appel réseau lors des tests.
 
 \subsection{Couverture côté backend}
+\label{sec:tests-backend}
 
 \begin{table}[H]
   \centering
   \caption{Classes de test backend (\texttt{backend/src/test/java/ma/iatacademy/api/})}
   \label{tab:tests-backend}
-  \begin{tabular}{@{}ll@{}}
+  \begin{tabular}{|p{6cm}|p{8cm}|}
     \toprule
     Classe de test & Objet couvert \\
     \midrule
-    \texttt{QuizScoringLogicTest} & Logique de correction automatique des quiz \\
-    \texttt{SecurityRbacTest} & Contrôle d'accès par rôle (RBAC) \\
-    \texttt{AgendaServiceTest} & Planification / agenda \\
-    \texttt{AssignmentServiceTest} & Devoirs \\
-    \texttt{AuthServiceTest} & Authentification, inscription, mot de passe \\
-    \texttt{BadgeServiceTest} & Gamification (badges) \\
-    \texttt{CertificateServiceTest} & Délivrance et vérification de certificats \\
-    \texttt{CommentServiceTest} & Commentaires de leçon \\
-    \texttt{CourseAssistantServiceTest} & Assistant de cours (IA) \\
-    \texttt{EarlyWarningServiceTest} & Détection d'inactivité \\
-    \texttt{GradebookServiceTest} & Carnet de notes \\
-    \texttt{GroupServiceTest} & Groupes d'apprenants \\
-    \texttt{JobOfferServiceTest} & Bourse à l'emploi (accès diplômés) \\
-    \texttt{LessonLockServiceTest} & Verrou d'édition collaboratif \\
-    \texttt{LessonNoteServiceTest} & Notes personnelles de leçon \\
-    \texttt{MediaServiceTest} & Gestion des médias / extraction PDF \\
-    \texttt{MessagingServiceTest} & Messagerie interne \\
-    \texttt{ProgressionServiceTest} & Déblocage séquentiel du parcours \\
-    \texttt{QuestionGenerationServiceTest} & Génération de questions par IA \\
-    \texttt{RateLimitServiceTest} & Limitation de débit Redis \\
-    \texttt{SearchServiceTest} & Recherche globale \\
-    \texttt{StageServiceTest} & Gestion du stage \\
+    \texttt{QuizScoringLogicTest} & Logique de correction automatique des quiz \\ \hline
+    \texttt{SecurityRbacTest} & Contrôle d'accès par rôle (RBAC) \\ \hline
+    \texttt{AgendaServiceTest} & Planification / agenda \\ \hline
+    \texttt{AssignmentServiceTest} & Devoirs \\ \hline
+    \texttt{AuthServiceTest} & Authentification, inscription, mot de passe \\ \hline
+    \texttt{BadgeServiceTest} & Gamification (badges) \\ \hline
+    \texttt{CertificateServiceTest} & Délivrance et vérification de certificats \\ \hline
+    \texttt{CommentServiceTest} & Commentaires de leçon \\ \hline
+    \texttt{CourseAssistantServiceTest} & Assistant de cours (IA) \\ \hline
+    \texttt{EarlyWarningServiceTest} & Détection d'inactivité \\ \hline
+    \texttt{GradebookServiceTest} & Carnet de notes \\ \hline
+    \texttt{GroupServiceTest} & Groupes d'apprenants \\ \hline
+    \texttt{JobOfferServiceTest} & Bourse à l'emploi (accès diplômés) \\ \hline
+    \texttt{LessonLockServiceTest} & Verrou d'édition collaboratif \\ \hline
+    \texttt{LessonNoteServiceTest} & Notes personnelles de leçon \\ \hline
+    \texttt{MediaServiceTest} & Gestion des médias / extraction PDF \\ \hline
+    \texttt{MessagingServiceTest} & Messagerie interne \\ \hline
+    \texttt{ProgressionServiceTest} & Déblocage séquentiel du parcours \\ \hline
+    \texttt{Question\allowbreak Generation\allowbreak Service\allowbreak Test} & Génération de questions par IA \\ \hline
+    \texttt{RateLimitServiceTest} & Limitation de débit Redis \\ \hline
+    \texttt{SearchServiceTest} & Recherche globale \\ \hline
+    \texttt{StageServiceTest} & Gestion du stage \\ \hline
     \texttt{UfValidationServiceTest} & Validation d'unité de formation \\
     \bottomrule
   \end{tabular}
@@ -79,14 +80,14 @@ seconde branche ne concernant qu'une catégorie précise d'apprenants.
   \centering
   \caption{Tests frontend}
   \label{tab:tests-frontend}
-  \begin{tabular}{@{}lll@{}}
+  \begin{tabular}{|p{3.2cm}|p{3.5cm}|p{7.3cm}|}
     \toprule
     Type & Outil & Fichiers \\
     \midrule
     Tests unitaires / composants & Vitest + React Testing Library &
       \texttt{QuizTimer.test.tsx}, \texttt{QuizAttemptReview.test.tsx},
       \texttt{Loader.test.tsx}, \texttt{programme.test.ts},
-      \texttt{toast-store.test.ts} \\
+      \texttt{toast-store.test.ts} \\ \hline
     Tests de bout en bout & Playwright & \texttt{auth.spec.ts}, \texttt{quiz.spec.ts} \\
     \bottomrule
   \end{tabular}

@@ -209,28 +209,28 @@ frontend pour une seule page de la plateforme.
   \centering
   \caption{Stack technique et justification}
   \label{tab:stack}
-  \begin{tabular}{@{}p{3.2cm}p{9cm}@{}}
+  \begin{tabular}{|p{3.2cm}|p{9cm}|}
     \toprule
     Technologie & Justification \\
     \midrule
     Spring Boot 3 / Java 21~\cite{springboot-docs} & Écosystème mature,
       sécurité (Spring Security~\cite{spring-security-docs}) et accès aux
       données (Spring Data JPA) intégrés, adapté à une application métier
-      avec des règles de progression complexes. \\
+      avec des règles de progression complexes. \\ \hline
     PostgreSQL~\cite{postgresql-docs} + Flyway~\cite{flyway-docs} & Base
       relationnelle fiable pour un modèle fortement structuré
       (formations/modules/leçons) ; migrations versionnées reproductibles
-      entre environnements. \\
+      entre environnements. \\ \hline
     Redis~\cite{redis-docs} & Structures de données en mémoire adaptées
       aux besoins transverses à courte durée de vie (compteurs de débit,
       verrous d'édition, état de tentative de quiz) sans alourdir
-      PostgreSQL de lectures/écritures fréquentes et volatiles. \\
+      PostgreSQL de lectures/écritures fréquentes et volatiles. \\ \hline
     JWT + cookie httpOnly & Authentification sans état, compatible avec un
       frontend découplé (Next.js), sans exposer le jeton au JavaScript
-      (protection XSS). \\
+      (protection XSS). \\ \hline
     Next.js 15~\cite{nextjs-docs} (frontend) & Rendu serveur pour les
       pages publiques exigeant des métadonnées SEO/Open Graph (ex.
-      vérification de certificat, voir \S\ref{sec:certificat-linkedin}). \\
+      vérification de certificat, voir \S\ref{sec:certificat-linkedin}). \\ \hline
     Docker / Docker Compose~\cite{docker-docs} & Conteneurisation
       reproductible du backend et de ses dépendances (PostgreSQL, Redis),
       voir chapitre~\ref{ch:tests-deploiement-bilan}. \\

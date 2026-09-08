@@ -46,15 +46,10 @@ verticale.
 
 ## À personnaliser avant remise
 
-- **`preambule.tex`** : le bloc de variables (`\EncadrantPro`, année
-  universitaire, etc.) est en haut de fichier. `\EncadrantPro` reste un
-  espace réservé (`[Encadrant professionnel — Nom]`) tant que le nom réel
-  n'est pas fourni.
-- **`page_de_garde.tex`** : aucun logo EMSI réel n'est disponible pour
-  l'instant (`\placeholder{Logo EMSI}{...}` affiche un encadré à la
-  place) — remplacez-le par le vrai logo EMSI dès qu'il est disponible.
-  Les membres du jury (président, examinateur) sont aussi des espaces
-  réservés à compléter.
+- **`preambule.tex`** : le bloc de variables (année universitaire, etc.)
+  est en haut de fichier.
+- **`page_de_garde.tex`** : utilise déjà les vrais logos EMSI
+  (`images/emsi.png`) et IAT Academy (`images/logo_iat.png`).
 - **`main.tex`** : les sections « Remerciements », « Introduction
   générale » et « Conclusion générale » contiennent un texte déjà rédigé
   et réutilisable tel quel.

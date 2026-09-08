@@ -22,12 +22,12 @@ prolongeant la salle de classe au-delà des heures de cours.
 
 \begin{table}[H]
 \centering
-\begin{tabular}{@{}>{\bfseries}p{4.5cm}p{9cm}@{}}
+\begin{tabular}{|>{\bfseries}p{4.5cm}|p{9cm}|}
 \toprule
-Raison sociale & \Entreprise \\
-Secteur d'activité & Formation professionnelle --- aviation, accueil, tourisme \\
-Filières préparées & Hôtesse de l'air / Steward, Agent d'escale, Accompagnateur touristique, Réception hôtelière \\
-Durée du cursus & 2 ans (formation continue, présentiel + stage intégré) \\
+Raison sociale & \Entreprise \\ \hline
+Secteur d'activité & Formation professionnelle --- aviation, accueil, tourisme \\ \hline
+Filières préparées & Hôtesse de l'air / Steward, Agent d'escale, Accompagnateur touristique, Réception hôtelière \\ \hline
+Durée du cursus & 2 ans (formation continue, présentiel + stage intégré) \\ \hline
 Siège social & \Ville, Maroc \\
 \bottomrule
 \end{tabular}
@@ -81,17 +81,17 @@ chapitre~\ref{ch:analyse-besoins}.
 
 \begin{table}[H]
 \centering
-\begin{tabular}{@{}>{\bfseries}p{4cm}p{9.5cm}@{}}
+\begin{tabular}{|>{\bfseries}p{4cm}|p{9.5cm}|}
 \toprule
 Acteur métier & Rôle vis-à-vis du projet \\
 \midrule
 Directeur pédagogique & Valide manuellement les étapes du cursus qui ne
   peuvent pas se réduire à un critère automatique (stage, soutenance),
-  gère les utilisateurs et les campagnes de communication. \\
+  gère les utilisateurs et les campagnes de communication. \\ \hline
 Formateurs & Conçoivent le contenu de cours et les quiz, corrigent les
-  réponses libres, encadrent les cohortes. \\
+  réponses libres, encadrent les cohortes. \\ \hline
 Apprenants & Suivent leur parcours, passent les évaluations, déposent
-  leur dossier de stage, obtiennent leur certificat. \\
+  leur dossier de stage, obtiennent leur certificat. \\ \hline
 Tuteur de stage (externe) & Signe électroniquement l'attestation de stage
   via un lien à usage unique, sans posséder de compte sur la plateforme. \\
 \bottomrule
@@ -210,7 +210,7 @@ qu'elle s'est réellement déroulée : itérative et incrémentale, guidée par
 la dépendance fonctionnelle entre les blocs plutôt que par un calendrier
 de sprints fixe.
 
-Des points d'avancement réguliers avec l'encadrant professionnel au sein
+Des points d'avancement réguliers avec l'équipe pédagogique au sein
 d'\Entreprise{} ont permis de confronter les choix techniques aux
 contraintes réelles de l'académie, notamment sur les points où une règle
 métier n'était pas immédiatement évidente à traduire en logique
@@ -233,18 +233,18 @@ ci-dessus, et une phase finale de consolidation.
   \centering
   \caption{Répartition indicative des grandes phases du projet}
   \label{tab:planning}
-  \begin{tabular}{@{}>{\bfseries}p{4cm}p{2.8cm}p{6.2cm}@{}}
+  \begin{tabular}{|>{\bfseries}p{4cm}|p{2.8cm}|p{6.2cm}|}
     \toprule
     Phase & Durée indicative & Contenu principal \\
     \midrule
     Cadrage et analyse des besoins & Semaines 1--2 & Immersion dans le
       fonctionnement d'\Entreprise, recueil des règles métier, définition
-      du périmètre. \\
+      du périmètre. \\ \hline
     Conception & Semaines 2--3 & Modélisation des entités, choix
-      d'architecture, définition des mécanismes de sécurité. \\
+      d'architecture, définition des mécanismes de sécurité. \\ \hline
     Développement & Semaines 3--8 & Implémentation backend et frontend,
       fonctionnalité par fonctionnalité (authentification, contenu, quiz,
-      stage, certification, communication). \\
+      stage, certification, communication). \\ \hline
     Consolidation & Semaines 8--9 & Rédaction et exécution des tests,
       correction des anomalies, rédaction du rapport. \\
     \bottomrule

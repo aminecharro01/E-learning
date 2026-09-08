@@ -12,18 +12,18 @@ technique réelle du projet.
 
 \begin{table}[H]
 \centering
-\begin{tabular}{@{}>{\bfseries}p{3.5cm}p{10.5cm}@{}}
+\begin{tabular}{|>{\bfseries}p{3.5cm}|p{10.5cm}|}
 \toprule
 Composant & Version / outil \\
 \midrule
-Backend & Spring Boot 3.4.5, Java 17+, Maven \\
-Frontend & Next.js 15 (App Router, Turbopack), TypeScript strict, Tailwind v4 \\
-Base de données & PostgreSQL 16, migrations versionnées Flyway \\
-Cache / verrous & Redis 7 \\
-Conteneurisation & Docker, Docker Compose \\
-Versionnement & Git / GitHub \\
+Backend & Spring Boot 3.4.5, Java 17+, Maven \\ \hline
+Frontend & Next.js 15 (App Router, Turbopack), TypeScript strict, Tailwind v4 \\ \hline
+Base de données & PostgreSQL 16, migrations versionnées Flyway \\ \hline
+Cache / verrous & Redis 7 \\ \hline
+Conteneurisation & Docker, Docker Compose \\ \hline
+Versionnement & Git / GitHub \\ \hline
 Modélisation UML & PlantUML (diagrammes de classes, cas d'utilisation,
-  séquence), Python/\texttt{mingrammer} (architecture, déploiement) \\
+  séquence), Python/\texttt{mingrammer} (architecture, déploiement) \\ \hline
 Tests & JUnit 5 + Mockito (backend), Vitest + React Testing Library
   (frontend), Playwright (bout en bout) \\
 \bottomrule
@@ -68,8 +68,8 @@ d'IA générative peut accélérer ce travail, mais dépendre d'un seul
 fournisseur externe (quota, panne, latence) rendrait la fonctionnalité peu
 fiable en production.
 
-\textbf{Solution apportée.} \texttt{QuestionGenerationService}
-(\texttt{service/QuestionGenerationService.java}) interroge d'abord l'API
+\textbf{Solution apportée.} \texttt{Question\allowbreak Generation\allowbreak Service}
+(\texttt{service/\allowbreak Question\allowbreak Generation\allowbreak Service.java}) interroge d'abord l'API
 Gemini (\texttt{callGemini}, ligne 120) ; en cas d'échec --- réseau, réponse
 HTTP non-2xx, JSON invalide, ou aucune question extraite --- il bascule
 automatiquement vers l'API Grok (\texttt{callGrok}, ligne 140), avant
@@ -128,8 +128,8 @@ jugement humain). Une solution naïve traiterait chaque soumission comme
 « terminée » dès l'envoi, ce qui est incorrect si une partie de la note
 dépend encore d'une correction à venir.
 
-\textbf{Solution apportée.} \texttt{QuizAttemptService.submit()}
-(\texttt{service/QuizAttemptService.java}) calcule le score des questions
+\textbf{Solution apportée.} \texttt{Quiz\allowbreak Attempt\allowbreak Service.submit()}
+(\texttt{service/\allowbreak Quiz\allowbreak Attempt\allowbreak Service.java}) calcule le score des questions
 auto-corrigeables par égalité stricte d'ensembles d'identifiants
 d'options sélectionnées --- ce qui signifie qu'un choix multiple ne donne
 \emph{aucun} crédit partiel : une réponse presque correcte compte comme
@@ -342,10 +342,10 @@ réservé aux diplômés --- une notion qui pourrait être modélisée par un
 simple champ booléen \texttt{isAlumni} sur \texttt{User}, au risque de se
 désynchroniser de la réalité (diplôme révoqué, erreur manuelle).
 
-\textbf{Solution apportée.} \texttt{JobOfferService.listForLearner()} ne
+\textbf{Solution apportée.} \texttt{Job\allowbreak Offer\allowbreak Service.listForLearner()} ne
 stocke aucun champ dédié : le statut de diplômé est \emph{dérivé} de
 l'existence d'une ligne \texttt{Certificate} pour cet utilisateur et cette
-formation (\texttt{certificateRepository.findByUserIdAndFormationId}),
+formation (\texttt{certificate\allowbreak Repository.find\allowbreak By\allowbreak User\allowbreak Id\allowbreak And\allowbreak Formation\allowbreak Id}),
 exactement la même requête que celle utilisée pour afficher le certificat
 lui-même. Un apprenant non diplômé reçoit une erreur 403 explicite
 (« Réservé aux diplômés »). Le staff, lui, passe par une route
@@ -440,23 +440,23 @@ support de soutenance.
 
 \begin{table}[H]
   \centering
-  \small
+  \footnotesize
   \caption{Synthèse des points forts techniques et de leur valeur ajoutée}
   \label{tab:synthese-points-forts}
-  \begin{tabular}{@{}p{2.6cm}p{4.1cm}p{6.3cm}@{}}
+  \begin{tabular}{|p{2.6cm}|p{4.1cm}|p{6.3cm}|}
     \toprule
     Mécanisme & Localisation & Valeur ajoutée \\
     \midrule
-    Génération de questions par IA (repli Gemini/Grok) & \texttt{Question\allowbreak Generation\allowbreak Service} & Fonctionnalité IA fiable en production, jamais dépendante d'un seul fournisseur externe. \\
-    Correction hybride de quiz (auto + manuelle) & \texttt{QuizAttempt\allowbreak Service}, \texttt{QuizGrading\allowbreak Service} & Un score final toujours cohérent, jamais figé avant qu'une correction manuelle en attente ne soit terminée. \\
-    Progression séquentielle par UF $\rightarrow$ certificat & \texttt{Progression\allowbreak Service}, \texttt{UfValidation\allowbreak Service}, \texttt{Certificate\allowbreak Service} & Respecte les validations humaines obligatoires (stage, soutenance) sans jamais les court-circuiter automatiquement. \\
-    Contrôle d'accès à granularité fine & \texttt{Messaging\allowbreak Service}, \texttt{Notification\allowbreak Service}, \texttt{LessonNote\allowbreak Service}, \texttt{Stage\allowbreak Service} & Ferme une classe de vulnérabilités IDOR que le seul RBAC ne peut pas couvrir. \\
-    Limitation de débit Redis transverse & \texttt{RateLimit\allowbreak Service} & Protège à la fois la sécurité (force brute) et le budget d'exploitation (appels IA payants) avec un seul mécanisme réutilisable. \\
-    Certificat vérifiable publiquement + partage LinkedIn & \texttt{Certificate\allowbreak Service}, page \texttt{/verify/[code]} & Transforme un diplôme statique en preuve vérifiable et en outil d'employabilité réelle. \\
-    Recherche globale avec confidentialité des questions & \texttt{Search\allowbreak Service}, \texttt{Search\allowbreak Controller} & Un outil pédagogique qui ne peut jamais devenir un outil de triche. \\
-    Bourse à l'emploi dérivée du certificat & \texttt{JobOffer\allowbreak Service} & Le statut « diplômé » ne peut jamais se désynchroniser de la réalité (source de vérité unique). \\
-    Campagnes email asynchrones à débit maîtrisé & \texttt{EmailCampaign\allowbreak Service}, \texttt{CampaignSender\allowbreak Worker} & L'administrateur n'attend jamais l'envoi complet, sans jamais saturer le serveur SMTP. \\
-    Détection d'inactivité & \texttt{EarlyWarning\allowbreak Service} & Signal fiable pour l'intervention pédagogique, sans mécanisme de suivi dédié supplémentaire. \\
+    Génération de questions par IA (repli Gemini/Grok) & \texttt{Question\allowbreak Generation\allowbreak Service} & Fonctionnalité IA fiable en production, jamais dépendante d'un seul fournisseur externe. \\ \hline
+    Correction hybride de quiz (auto + manuelle) & \texttt{QuizAttempt\allowbreak Service}, \texttt{QuizGrading\allowbreak Service} & Un score final toujours cohérent, jamais figé avant qu'une correction manuelle en attente ne soit terminée. \\ \hline
+    Progression séquentielle par UF $\rightarrow$ certificat & \texttt{Progression\allowbreak Service}, \texttt{UfValidation\allowbreak Service}, \texttt{Certificate\allowbreak Service} & Respecte les validations humaines obligatoires (stage, soutenance) sans jamais les court-circuiter automatiquement. \\ \hline
+    Contrôle d'accès à granularité fine & \texttt{Messaging\allowbreak Service}, \texttt{Notification\allowbreak Service}, \texttt{LessonNote\allowbreak Service}, \texttt{Stage\allowbreak Service} & Ferme une classe de vulnérabilités IDOR que le seul RBAC ne peut pas couvrir. \\ \hline
+    Limitation de débit Redis transverse & \texttt{RateLimit\allowbreak Service} & Protège à la fois la sécurité (force brute) et le budget d'exploitation (appels IA payants) avec un seul mécanisme réutilisable. \\ \hline
+    Certificat vérifiable publiquement + partage LinkedIn & \texttt{Certificate\allowbreak Service}, page \texttt{/verify/[code]} & Transforme un diplôme statique en preuve vérifiable et en outil d'employabilité réelle. \\ \hline
+    Recherche globale avec confidentialité des questions & \texttt{Search\allowbreak Service}, \texttt{Search\allowbreak Controller} & Un outil pédagogique qui ne peut jamais devenir un outil de triche. \\ \hline
+    Bourse à l'emploi dérivée du certificat & \texttt{JobOffer\allowbreak Service} & Le statut « diplômé » ne peut jamais se désynchroniser de la réalité (source de vérité unique). \\ \hline
+    Campagnes email asynchrones à débit maîtrisé & \texttt{EmailCampaign\allowbreak Service}, \texttt{CampaignSender\allowbreak Worker} & L'administrateur n'attend jamais l'envoi complet, sans jamais saturer le serveur SMTP. \\ \hline
+    Détection d'inactivité & \texttt{EarlyWarning\allowbreak Service} & Signal fiable pour l'intervention pédagogique, sans mécanisme de suivi dédié supplémentaire. \\ \hline
     Verrou d'édition collaboratif & \texttt{LessonLock\allowbreak Service} & Prévient un conflit d'édition entre formateurs plutôt que de le constater après coup. \\
     \bottomrule
   \end{tabular}

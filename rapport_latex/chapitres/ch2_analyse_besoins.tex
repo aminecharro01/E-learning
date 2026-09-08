@@ -19,14 +19,14 @@ contact, infolettre, vérification de certificat).
   \centering
   \caption{Rôles applicatifs et responsabilités}
   \label{tab:roles}
-  \begin{tabular}{@{}p{2.8cm}p{9.5cm}@{}}
+  \begin{tabular}{|p{2.8cm}|p{9.5cm}|}
     \toprule
     Rôle & Responsabilités \\
     \midrule
-    \texttt{SUPER\_ADMIN} & Paramètres système globaux, en plus de tous les droits Admin. \\
-    \texttt{ADMIN} (Directeur) & Gestion pédagogique complète, validation des UF sensibles, gestion des groupes et des campagnes email, en plus de tous les droits Formateur. \\
-    \texttt{FORMATEUR} & Studio de cours, gestion des quiz, correction manuelle, messagerie, bourse à l'emploi. \\
-    \texttt{ETUDIANT} & Espace apprenant : contenu, quiz, stage, certificat, messagerie. \\
+    \texttt{SUPER\_ADMIN} & Paramètres système globaux, en plus de tous les droits Admin. \\ \hline
+    \texttt{ADMIN} (Directeur) & Gestion pédagogique complète, validation des UF sensibles, gestion des groupes et des campagnes email, en plus de tous les droits Formateur. \\ \hline
+    \texttt{FORMATEUR} & Studio de cours, gestion des quiz, correction manuelle, messagerie, bourse à l'emploi. \\ \hline
+    \texttt{ETUDIANT} & Espace apprenant : contenu, quiz, stage, certificat, messagerie. \\ \hline
     \texttt{SUPPORT} & Accès limité, essentiellement en lecture. \\
     \bottomrule
   \end{tabular}
@@ -67,27 +67,27 @@ cas d'utilisation en section~\ref{sec:modelisation-besoins}.
 
 \begin{table}[H]
 \centering
-\begin{tabular}{@{}p{3.5cm}p{10.5cm}@{}}
+\begin{tabular}{|p{3.5cm}|p{10.5cm}|}
 \toprule
 \textbf{Besoin} & \textbf{Exigence associée} \\
 \midrule
 Sécurité & Authentification JWT signée HS256 transportée par cookie
   \texttt{httpOnly} (protection XSS), 2FA optionnelle, mots de passe
   hachés (BCrypt), RBAC déclaratif complété par un contrôle de propriété
-  au niveau service (voir \S\ref{sec:acces-proprietaire}). \\
+  au niveau service (voir \S\ref{sec:acces-proprietaire}). \\ \hline
 Protection contre les abus & Limitation de débit Redis sur les endpoints
   sensibles (ex. 20 requêtes/5 minutes pour la génération de questions
-  par IA), voir \S\ref{sec:rate-limiting}. \\
+  par IA), voir \S\ref{sec:rate-limiting}. \\ \hline
 Fiabilité fonctionnelle & Les règles de progression et de contrôle
   d'accès sont vérifiées côté serveur, jamais uniquement suggérées côté
-  interface. \\
+  interface. \\ \hline
 Scalabilité & Backend \texttt{STATELESS} (aucune session en mémoire) ---
   l'état d'authentification est reconstruit à chaque requête à partir du
-  seul jeton JWT, ce qui simplifie la mise à l'échelle horizontale. \\
+  seul jeton JWT, ce qui simplifie la mise à l'échelle horizontale. \\ \hline
 Maintenabilité & Architecture en couches stricte (\texttt{Controller
   $\rightarrow$ Service $\rightarrow$ Repository $\rightarrow$ Entity}),
   migrations de schéma versionnées (Flyway), suite de 138 tests
-  automatisés. \\
+  automatisés. \\ \hline
 Portabilité & Backend et frontend conteneurisés (Docker), configuration
   exclusivement par variables d'environnement (principe \emph{Twelve-Factor
   Apps}). \\
