@@ -11,8 +11,8 @@ skinparam packageStyle rectangle
 skinparam classAttributeIconSize 0
 skinparam linetype ortho
 
-skinparam nodesep 55
-skinparam ranksep 60
+skinparam nodesep 20
+skinparam ranksep 35
 
 skinparam class {
     BackgroundColor White
@@ -34,12 +34,6 @@ skinparam package {
     FontColor #142B4B
     FontStyle Bold
     FontSize 13
-}
-
-skinparam note {
-    BackgroundColor #FFF8EC
-    BorderColor #C97612
-    FontColor #23282F
 }
 
 skinparam title {
@@ -209,24 +203,5 @@ JobOffer ..> Certificate : vérifie l'éligibilité
 User ..> Asset : consulte / télécharge
 
 User "0..1" -- "0..N" AuditLogEntry
-
-' ============================================================
-' NOTES
-' ============================================================
-
-note right of AuditableEntity
-  Superclasse technique (@MappedSuperclass).
-  38 des 39 entités concrètes en héritent ;
-  seule AssetDownload n'a pas d'audit trail.
-end note
-
-note bottom of Quiz
-  Portée réelle déterminée par quizType :
-  Lesson (APPLICATIF), ModuleEntity (FIN_MODULE)
-  ou Formation (FIN_UF / FIN_ANNEE) — simplifiée
-  ici à Lesson. Détail complet : diagramme Évaluation.
-end note
-
-note "Vue d'ensemble SIMPLIFIÉE : 15 classes représentatives sur les 39\nentités JPA concrètes (+ 1 superclasse abstraite AuditableEntity),\nune à trois par paquetage. Seules les relations et cardinalités les\nplus structurantes sont représentées. Le détail complet (toutes les\nclasses, tous les attributs, toutes les associations) est donné par\nles diagrammes de classes par domaine (Figures suivantes)." as N1
 
 @enduml
