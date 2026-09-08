@@ -8,83 +8,120 @@ hide empty members
 title Diagramme de classes — Évaluation (quiz, devoirs, notation)
 
 abstract class AuditableEntity {
-  +UUID id
-  +Instant createdAt
-  +Instant updatedAt
+  - id : UUID
+  # createdAt : Instant
+  # updatedAt : Instant
 }
 
 class User {
-  +String email
-  +String fullName
-  +Role role
+  - email : String
+  - fullName : String
+  - role : Role
 }
 
 class ModuleEntity {
-  +String code
-  +String title
+  - code : String
+  - title : String
 }
 
 class Lesson {
-  +String title
+  - title : String
 }
 
 class Formation {
-  +String title
+  - title : String
 }
 
 class Quiz {
-  +String title
-  +QuizType quizType
-  +int passingScore
-  +int maxAttempts
-  +int timeLimitSeconds
-  +int retryDelayMinutes
-  +boolean blocking
+  - title : String
+  - quizType : QuizType
+  - passingScore : int
+  - maxAttempts : int
+  - timeLimitSeconds : int
+  - retryDelayMinutes : int
+  - blocking : boolean
 }
 
 class Question {
-  +String prompt
-  +QuestionType questionType
-  +int orderIndex
+  - prompt : String
+  - questionType : QuestionType
+  - orderIndex : int
 }
 
 class AnswerOption {
-  +String label
-  +boolean correct
+  - label : String
+  - correct : boolean
 }
 
 class QuizAttempt {
-  +Instant startedAt
-  +Instant submittedAt
-  +BigDecimal score
-  +AttemptStatus status
+  - startedAt : Instant
+  - submittedAt : Instant
+  - score : BigDecimal
+  - status : AttemptStatus
 }
 
 class EssayGrade {
-  +BigDecimal score
-  +String feedback
-  +Instant gradedAt
+  - score : BigDecimal
+  - feedback : String
+  - gradedAt : Instant
 }
 
 class ProctoringEvent {
-  +ProctoringEventType eventType
-  +Instant occurredAt
+  - eventType : ProctoringEventType
+  - occurredAt : Instant
 }
 
 class Assignment {
-  +String title
-  +Instant dueAt
-  +BigDecimal maxScore
+  - title : String
+  - dueAt : Instant
+  - maxScore : BigDecimal
 }
 
 class Submission {
-  +SubmissionStatus status
-  +BigDecimal grade
+  - status : SubmissionStatus
+  - grade : BigDecimal
 }
 
 class GradeAdjustment {
-  +BigDecimal points
-  +String reason
+  - points : BigDecimal
+  - reason : String
+}
+
+enum QuizType {
+  APPLICATIF
+  FIN_MODULE
+  FIN_UF
+  FIN_ANNEE
+}
+
+enum QuestionType {
+  SINGLE_CHOICE
+  MULTI_CHOICE
+  TRUE_FALSE
+  ESSAY
+}
+
+enum AttemptStatus {
+  IN_PROGRESS
+  SUBMITTED
+  EXPIRED
+  PASSED
+  FAILED
+  PENDING_REVIEW
+}
+
+enum ProctoringEventType {
+  FOCUS_LOST
+  TAB_HIDDEN
+  COPY_ATTEMPT
+  PASTE_ATTEMPT
+  FULLSCREEN_EXIT
+}
+
+enum SubmissionStatus {
+  SUBMITTED
+  LATE
+  GRADED
 }
 
 AuditableEntity <|-- Quiz
@@ -96,6 +133,12 @@ AuditableEntity <|-- ProctoringEvent
 AuditableEntity <|-- Assignment
 AuditableEntity <|-- Submission
 AuditableEntity <|-- GradeAdjustment
+
+Quiz ..> QuizType
+Question ..> QuestionType
+QuizAttempt ..> AttemptStatus
+ProctoringEvent ..> ProctoringEventType
+Submission ..> SubmissionStatus
 
 Lesson "0..1" -- "0..N" Quiz : section >
 ModuleEntity "0..1" -- "0..N" Quiz : fin de module >

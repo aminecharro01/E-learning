@@ -8,59 +8,76 @@ hide empty members
 title Diagramme de classes — Stage et certification
 
 abstract class AuditableEntity {
-  +UUID id
-  +Instant createdAt
-  +Instant updatedAt
+  - id : UUID
+  # createdAt : Instant
+  # updatedAt : Instant
 }
 
 class User {
-  +String email
-  +String fullName
-  +Role role
+  - email : String
+  - fullName : String
+  - role : Role
 }
 
 class Formation {
-  +String title
+  - title : String
 }
 
 class LearnerUfValidation {
-  +String ufCode
-  +boolean validated
-  +Instant validatedAt
-  +String note
+  - ufCode : String
+  - validated : boolean
+  - validatedAt : Instant
+  - note : String
 }
 
 class StageSignoffInvite {
-  +String token
-  +String tutorEmail
-  +String tutorName
-  +Instant expiresAt
-  +Instant usedAt
+  - token : String
+  - tutorEmail : String
+  - tutorName : String
+  - expiresAt : Instant
+  - usedAt : Instant
 }
 
 class LearnerDocument {
-  +LearnerDocType docType
-  +LearnerDocStatus status
-  +String notes
+  - docType : LearnerDocType
+  - status : LearnerDocStatus
+  - notes : String
 }
 
 class Asset {
-  +String filename
-  +String assetKind
-  +String extractedText
+  - filename : String
+  - assetKind : String
+  - extractedText : String
 }
 
 class Certificate {
-  +String verificationCode
-  +Instant issuedAt
-  +String pdfPath
-  +boolean physicallyDelivered
+  - verificationCode : String
+  - issuedAt : Instant
+  - pdfPath : String
+  - physicallyDelivered : boolean
+}
+
+enum LearnerDocType {
+  CONVENTION_ECOLE
+  ASSURANCE
+  CONVENTION_ENTREPRISE
+  RAPPORT_STAGE
+  PRESENTATION_SOUTENANCE
+}
+
+enum LearnerDocStatus {
+  SUBMITTED
+  ACCEPTED
+  REJECTED
 }
 
 AuditableEntity <|-- LearnerUfValidation
 AuditableEntity <|-- StageSignoffInvite
 AuditableEntity <|-- LearnerDocument
 AuditableEntity <|-- Certificate
+
+LearnerDocument ..> LearnerDocType
+LearnerDocument ..> LearnerDocStatus
 
 User "1" -- "0..N" LearnerUfValidation : apprenant >
 User "0..1" -- "0..N" LearnerUfValidation : validé par >

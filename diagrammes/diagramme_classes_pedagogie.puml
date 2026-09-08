@@ -8,63 +8,83 @@ hide empty members
 title Diagramme de classes — Structure pédagogique et groupes
 
 abstract class AuditableEntity {
-  +UUID id
-  +Instant createdAt
-  +Instant updatedAt
+  - id : UUID
+  # createdAt : Instant
+  # updatedAt : Instant
 }
 
 class User {
-  +String email
-  +String fullName
-  +Role role
-  +boolean enabled
-  +boolean year2AccessEnabled
+  - email : String
+  - fullName : String
+  - role : Role
+  - enabled : boolean
+  - year2AccessEnabled : boolean
 }
 
 class LearnerGroup {
-  +String name
-  +String code
-  +LocalDate startDate
-  +LocalDate endDate
-  +EnrollmentMode enrollmentMode
+  - name : String
+  - code : String
+  - startDate : LocalDate
+  - endDate : LocalDate
+  - enrollmentMode : EnrollmentMode
 }
 
 class GroupContentAssignment {
-  +String ufCode
-  +Instant unlockAt
+  - ufCode : String
+  - unlockAt : Instant
 }
 
 class Formation {
-  +String title
-  +boolean published
+  - title : String
+  - published : boolean
 }
 
 class ModuleEntity {
-  +String code
-  +String title
-  +int orderIndex
-  +int yearNumber
-  +String ufCode
-  +String ufTitle
-  +boolean published
+  - code : String
+  - title : String
+  - orderIndex : int
+  - yearNumber : int
+  - ufCode : String
+  - ufTitle : String
+  - published : boolean
 }
 
 class Lesson {
-  +String title
-  +int orderIndex
-  +boolean published
+  - title : String
+  - orderIndex : int
+  - published : boolean
 }
 
 class LessonBlock {
-  +BlockType blockType
-  +Map content
-  +int orderIndex
+  - blockType : BlockType
+  - content : Map
+  - orderIndex : int
 }
 
 class LessonProgress {
-  +double videoWatchedPercent
-  +boolean completed
-  +Instant completedAt
+  - videoWatchedPercent : double
+  - completed : boolean
+  - completedAt : Instant
+}
+
+enum Role {
+  SUPER_ADMIN
+  ADMIN
+  FORMATEUR
+  ETUDIANT
+  SUPPORT
+}
+
+enum EnrollmentMode {
+  EN_LIGNE
+  HYBRIDE
+}
+
+enum BlockType {
+  VIDEO
+  TEXT
+  PDF
+  IMAGE
 }
 
 AuditableEntity <|-- User
@@ -75,6 +95,10 @@ AuditableEntity <|-- ModuleEntity
 AuditableEntity <|-- Lesson
 AuditableEntity <|-- LessonBlock
 AuditableEntity <|-- LessonProgress
+
+User ..> Role
+LearnerGroup ..> EnrollmentMode
+LessonBlock ..> BlockType
 
 User "0..N" -- "0..1" LearnerGroup : membre >
 LearnerGroup "1" *-- "0..N" GroupContentAssignment
