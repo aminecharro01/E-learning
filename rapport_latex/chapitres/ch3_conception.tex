@@ -127,8 +127,14 @@ ressource précise ?}
 
 \subsection{Authentification}
 
-L'authentification de la plateforme repose sur un jeton JWT (signé en
-HS256) transporté par un cookie \texttt{httpOnly} --- c'est-à-dire un
+\figimg{screenshots/capture_connexion.png}{0.85}
+  {Page de connexion --- authentification par courriel et mot de passe}{capture-connexion}
+  {La case « Rester connecté » pilote la durée de validité du cookie
+   \texttt{httpOnly} décrit ci-dessous. Le champ accepte indifféremment un
+   courriel ou un matricule (CIN) selon le profil de l'utilisateur.}
+
+L'authentification de la plateforme repose sur un jeton JWT~\cite{jwt-rfc7519}
+(signé en HS256) transporté par un cookie \texttt{httpOnly} --- c'est-à-dire un
 cookie que le JavaScript exécuté dans le navigateur ne peut ni lire ni
 manipuler, ce qui ferme la voie la plus commune d'exfiltration de jeton en
 cas de faille de type \emph{cross-site scripting} (XSS) sur le frontend.
@@ -207,29 +213,34 @@ frontend pour une seule page de la plateforme.
     \toprule
     Technologie & Justification \\
     \midrule
-    Spring Boot 3 / Java 21 & Écosystème mature, sécurité (Spring Security)
-      et accès aux données (Spring Data JPA) intégrés, adapté à une
-      application métier avec des règles de progression complexes. \\
-    PostgreSQL + Flyway & Base relationnelle fiable pour un modèle fortement
-      structuré (formations/modules/leçons) ; migrations versionnées
-      reproductibles entre environnements. \\
-    Redis & Structures de données en mémoire adaptées aux besoins
-      transverses à courte durée de vie (compteurs de débit, verrous
-      d'édition, état de tentative de quiz) sans alourdir PostgreSQL de
-      lectures/écritures fréquentes et volatiles. \\
+    Spring Boot 3 / Java 21~\cite{springboot-docs} & Écosystème mature,
+      sécurité (Spring Security~\cite{spring-security-docs}) et accès aux
+      données (Spring Data JPA) intégrés, adapté à une application métier
+      avec des règles de progression complexes. \\
+    PostgreSQL~\cite{postgresql-docs} + Flyway~\cite{flyway-docs} & Base
+      relationnelle fiable pour un modèle fortement structuré
+      (formations/modules/leçons) ; migrations versionnées reproductibles
+      entre environnements. \\
+    Redis~\cite{redis-docs} & Structures de données en mémoire adaptées
+      aux besoins transverses à courte durée de vie (compteurs de débit,
+      verrous d'édition, état de tentative de quiz) sans alourdir
+      PostgreSQL de lectures/écritures fréquentes et volatiles. \\
     JWT + cookie httpOnly & Authentification sans état, compatible avec un
       frontend découplé (Next.js), sans exposer le jeton au JavaScript
       (protection XSS). \\
-    Next.js 15 (frontend) & Rendu serveur pour les pages publiques exigeant
-      des métadonnées SEO/Open Graph (ex. vérification de certificat, voir
-      \S\ref{sec:certificat-linkedin}). \\
+    Next.js 15~\cite{nextjs-docs} (frontend) & Rendu serveur pour les
+      pages publiques exigeant des métadonnées SEO/Open Graph (ex.
+      vérification de certificat, voir \S\ref{sec:certificat-linkedin}). \\
+    Docker / Docker Compose~\cite{docker-docs} & Conteneurisation
+      reproductible du backend et de ses dépendances (PostgreSQL, Redis),
+      voir chapitre~\ref{ch:tests-deploiement-bilan}. \\
     \bottomrule
   \end{tabular}
 \end{table}
 
 \section*{Conclusion du chapitre}
-Ce chapitre a présenté l'architecture logicielle et de déploiement, le
-modèle de données et la stratégie de sécurité qui structurent
-\Entreprise. Le chapitre~\ref{ch:realisation} détaille maintenant comment
-ces choix se traduisent dans l'implémentation, en particulier sur les
+L'architecture logicielle et de déploiement, le modèle de données et la
+stratégie de sécurité qui structurent \Entreprise{} sont maintenant
+posés. Reste à voir comment ces choix prennent forme dans le code : le
+chapitre~\ref{ch:realisation} y répond, en particulier sur les
 mécanismes qui dépassent le CRUD simple.

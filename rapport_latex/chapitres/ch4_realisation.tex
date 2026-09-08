@@ -92,6 +92,24 @@ par utilisateur) pour contenir le coût d'un appel à une API payante.
   \label{fig:seq-generation-ia}
 \end{figure}
 
+Côté interface, cette mécanique reste volontairement discrète : le
+formateur travaille depuis la banque de quiz habituelle
+(Figure~\ref{fig:capture-banque-quiz}) et déclenche la génération par une
+seule icône, sans quitter l'écran d'édition des questions.
+
+\figimg{screenshots/capture_banque_quiz.png}{0.95}
+  {Interface formateur --- banque de quiz}{capture-banque-quiz}
+  {Chaque question est affichée avec ses options et la bonne réponse
+   surlignée en vert ; l'icône en forme d'étincelle (en haut à droite du
+   quiz sélectionné) ouvre la modale de génération par IA
+   (Figure~\ref{fig:capture-generation-ia}).}
+
+\figimg{screenshots/capture_generation_ia.png}{0.75}
+  {Modale de génération de questions par IA}{capture-generation-ia}
+  {Le formateur colle un extrait de cours, choisit le type de question et
+   le nombre à générer ; les questions produites arrivent directement
+   dans la banque, prêtes à être relues avant publication.}
+
 \textbf{Bénéfice concret.} Une simple intégration à un seul fournisseur
 aurait suffi pour une démonstration, mais pas pour un usage réel en
 production, où une panne ou un changement de quota chez Gemini aurait
@@ -136,6 +154,12 @@ par un script de test de charge (\texttt{loadtest/quiz-start-concurrency.js}).
   \caption{Correction hybride d'un quiz et réconciliation d'état}
   \label{fig:seq-correction-hybride}
 \end{figure}
+
+\figimg{screenshots/capture_quiz_passation.png}{0.7}
+  {Passation d'un quiz --- côté apprenant}{capture-quiz-passation}
+  {Chronomètre, navigation question par question et libellé du quiz sont
+   affichés en continu ; la soumission finale déclenche côté serveur la
+   logique de correction hybride décrite ci-dessus.}
 
 \textbf{Bénéfice concret.} Sans cette réconciliation explicite, un
 formateur pourrait involontairement déclencher une notification
@@ -270,6 +294,13 @@ balises Open Graph directement dans le HTML initial --- condition
 nécessaire pour que le robot d'indexation de LinkedIn, qui n'exécute pas
 de JavaScript, affiche un aperçu correct lors du partage.
 
+\figimg{screenshots/capture_verification_certificat.png}{0.7}
+  {Page publique de vérification d'un certificat}{capture-verification}
+  {Accessible sans authentification à l'adresse \texttt{/verify/[code]},
+   cette page ne révèle que des informations déjà publiques (nom,
+   formation, date) et propose un bouton de partage direct vers
+   LinkedIn.}
+
 \textbf{Bénéfice concret.} Cette fonctionnalité transforme un document
 statique en preuve vérifiable et en outil de visibilité professionnelle
 pour l'apprenant --- une valeur ajoutée directement alignée sur la mission
@@ -320,6 +351,12 @@ lui-même. Un apprenant non diplômé reçoit une erreur 403 explicite
 (« Réservé aux diplômés »). Le staff, lui, passe par une route
 \texttt{/admin/job-offers} entièrement distincte qui ne traverse jamais
 cette vérification.
+
+\figimg{screenshots/capture_bourse_emploi.png}{0.95}
+  {Espace alumni --- bourse à l'emploi}{capture-bourse-emploi}
+  {Vue telle qu'affichée à un apprenant diplômé : offres réelles
+   d'entreprises partenaires du secteur, avec lien de candidature et
+   contact direct par courriel pour chacune.}
 
 \textbf{Bénéfice concret.} L'état « diplômé » ne peut jamais être
 incohérent avec la réalité du certificat --- il n'existe qu'un seul endroit

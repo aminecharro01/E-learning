@@ -10,15 +10,16 @@
 \usepackage[T1]{fontenc}
 \usepackage[utf8]{inputenc}
 
-% --- Police : rendu proche Times New Roman ---
-\usepackage{mathptmx}
+% --- Police : Latin Modern, la police "native" de toute distribution LaTeX
+% (remplace mathptmx/Times, qui imite une police non libre) ---
+\usepackage{lmodern}
 
 % --- Micro-typographie + tolérance de justification ---
 % Nécessaire avec les marges resserrées du modèle (left=3cm) : de longs
 % identifiants \texttt{...} (noms de méthode, annotations Spring) ne
 % peuvent pas se couper et débordaient sinon visiblement dans la marge.
 \usepackage{microtype}
-\setlength{\emergencystretch}{3em}
+\setlength{\emergencystretch}{4em}
 
 % --- Interligne 1,5 et retrait de première ligne ---
 \usepackage{setspace}
@@ -53,8 +54,10 @@
 % --- Extraits de code (Java / SQL) ---
 \usepackage{xcolor}
 \usepackage{listings}
-\definecolor{emsiblue}{RGB}{0,70,140}
-\definecolor{emsigreen}{RGB}{0,138,79}
+% Palette de marque IAT Academy (navy/gold), reprise de
+% frontend/src/app/globals.css plutôt que des couleurs génériques
+\definecolor{emsiblue}{HTML}{142B4B}   % navy — titres, accents primaires
+\definecolor{emsigreen}{HTML}{C97612}  % gold-700 — accents secondaires
 \definecolor{gristexte}{RGB}{90,90,90}
 \definecolor{grisclair}{RGB}{240,240,240}
 \lstdefinestyle{javastyle}{
