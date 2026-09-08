@@ -1,10 +1,15 @@
 \chapter{Contexte général du projet}
 \label{ch:contexte}
 
-\section{Organisme d'accueil}
+\section*{Introduction du chapitre}
+Ce premier chapitre situe le cadre du stage. Il présente l'organisme
+d'accueil, analyse le système existant, formule la problématique et
+justifie la démarche méthodologique adoptée pour la conduite du projet.
 
-IAT Academy est une académie de formation professionnelle spécialisée dans
-les métiers de l'aviation, de l'accueil et du tourisme, préparant en
+\section{Présentation de l'organisme d'accueil}
+
+\Entreprise{} est une académie de formation professionnelle spécialisée
+dans les métiers de l'aviation, de l'accueil et du tourisme, préparant en
 particulier aux filières Hôtesse de l'air et Steward, Agent d'escale,
 Accompagnateur touristique, et Réception hôtelière. La formation se
 déroule sur un cycle professionnel de deux années, structuré autour d'un
@@ -15,6 +20,25 @@ milieu réel intégré au cursus plutôt que relégué à une simple option de
 fin de parcours, et, désormais, un espace d'apprentissage numérique
 prolongeant la salle de classe au-delà des heures de cours.
 
+\begin{table}[H]
+\centering
+\begin{tabular}{@{}>{\bfseries}p{4.5cm}p{9cm}@{}}
+\toprule
+Raison sociale & \Entreprise \\
+Secteur d'activité & Formation professionnelle --- aviation, accueil, tourisme \\
+Filières préparées & Hôtesse de l'air / Steward, Agent d'escale, Accompagnateur touristique, Réception hôtelière \\
+Durée du cursus & 2 ans (formation continue, présentiel + stage intégré) \\
+Siège social & \Ville, Maroc \\
+\bottomrule
+\end{tabular}
+\caption{Fiche signalétique de \Entreprise}
+\label{tab:fiche}
+\end{table}
+\tabdesc{Ce tableau regroupe les informations qui situent le positionnement
+sectoriel de l'organisme d'accueil. Les informations administratives et
+financières (forme juridique, effectif, chiffre d'affaires) ne sont pas
+communiquées publiquement par l'académie et ne figurent donc pas ici.}
+
 Cette double identité --- académie de formation aux métiers du transport
 aérien et du tourisme, mais aussi organisme dont l'indicateur de réussite
 premier reste l'insertion professionnelle effective de ses diplômés ---
@@ -23,9 +47,9 @@ pourquoi le référentiel de compétences se traduit directement dans
 l'organisation du contenu pédagogique (unités de formation alignées sur
 les compétences métier attendues par les employeurs du secteur), pourquoi
 le stage occupe une place aussi centrale dans le modèle de progression
-(voir chapitre~\ref{ch:analyse-conception}), et pourquoi la plateforme
-intègre jusqu'à un mécanisme de certification vérifiable publiquement et
-de partage professionnel sur les réseaux sociaux (voir
+(voir chapitre~\ref{ch:conception}), et pourquoi la plateforme intègre
+jusqu'à un mécanisme de certification vérifiable publiquement et de
+partage professionnel sur les réseaux sociaux (voir
 chapitre~\ref{ch:realisation}) --- un choix qui, sur un plan strictement
 académique, pourrait sembler périphérique, mais qui prend tout son sens
 dès lors que l'on considère la mission réelle de l'académie : préparer ses
@@ -36,9 +60,39 @@ métaphore de la carte d'embarquement --- un choix esthétique qui ancre
 délibérément l'expérience numérique dans l'univers professionnel visé par
 les apprenants.
 
+\subsection{Acteurs clés de l'académie}
+
+Plutôt qu'un organigramme hiérarchique complet --- dont la structure
+administrative précise n'entre pas dans le périmètre de ce rapport ---, le
+Tableau~\ref{tab:acteurs-academie} recense les acteurs de l'académie dont
+le rôle a directement conditionné les choix fonctionnels de la
+plateforme ; ils correspondent un à un aux rôles applicatifs détaillés au
+chapitre~\ref{ch:analyse-besoins}.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{@{}>{\bfseries}p{4cm}p{9.5cm}@{}}
+\toprule
+Acteur métier & Rôle vis-à-vis du projet \\
+\midrule
+Directeur pédagogique & Valide manuellement les étapes du cursus qui ne
+  peuvent pas se réduire à un critère automatique (stage, soutenance),
+  gère les utilisateurs et les campagnes de communication. \\
+Formateurs & Conçoivent le contenu de cours et les quiz, corrigent les
+  réponses libres, encadrent les cohortes. \\
+Apprenants & Suivent leur parcours, passent les évaluations, déposent
+  leur dossier de stage, obtiennent leur certificat. \\
+Tuteur de stage (externe) & Signe électroniquement l'attestation de stage
+  via un lien à usage unique, sans posséder de compte sur la plateforme. \\
+\bottomrule
+\end{tabular}
+\caption{Acteurs clés de l'académie ayant conditionné les besoins fonctionnels}
+\label{tab:acteurs-academie}
+\end{table}
+
 \section{Contexte et problématique}
 
-Avant ce projet, le suivi pédagogique d'IAT Academy reposait sur des
+Avant ce projet, le suivi pédagogique d'\Entreprise{} reposait sur des
 supports et des outils non centralisés : le contenu de cours, l'évaluation
 des apprenants et le suivi de leur progression n'étaient réunis dans aucun
 espace numérique unique. Cette situation, courante dans de nombreux
@@ -63,7 +117,7 @@ conception technique du projet, était l'absence de tout mécanisme fiable
 de validation d'étape : rien, dans l'organisation existante, n'empêchait
 techniquement un apprenant d'accéder à du contenu avancé sans avoir
 réellement validé les prérequis correspondants --- une lacune d'autant
-plus problématique que certaines étapes du cursus d'IAT Academy, comme la
+plus problématique que certaines étapes du cursus d'\Entreprise, comme la
 validation du stage en entreprise ou de la soutenance finale, ne peuvent
 pas se réduire à un critère automatique et exigent le jugement explicite
 du Directeur pédagogique. Enfin, la délivrance et la vérification des
@@ -80,9 +134,9 @@ se réduisent jamais à de simples critères automatiques, puisque certaines
 pédagogique ?} C'est cette tension entre automatisation et jugement
 humain, plus que la seule numérisation d'un contenu de cours, qui a guidé
 l'ensemble des choix de conception présentés au
-chapitre~\ref{ch:analyse-conception}.
+chapitre~\ref{ch:conception}.
 
-\section{Objectifs du projet}
+\section{Solution proposée et objectifs}
 
 Pour répondre à cette problématique, six objectifs concrets ont structuré
 le travail réalisé durant ce stage.
@@ -93,7 +147,7 @@ Formation, Année, Unité de Formation, Module, Leçon, puis Bloc de contenu
 --- sans pour autant complexifier inutilement le schéma relationnel sous-jacent ;
 ce choix de modélisation, en apparence anodin, s'est révélé être l'une des
 décisions de conception les plus structurantes du projet, comme le détaille
-la section~\ref{sec:analyse-conception} du chapitre suivant. Le deuxième
+la section~\ref{sec:modele-donnees} du chapitre suivant. Le deuxième
 objectif visait à mettre en place un système d'évaluation complet, capable
 de gérer plusieurs types de quiz selon leur portée --- section, module, fin
 d'unité de formation, fin d'année --- ainsi que plusieurs types de
@@ -105,7 +159,7 @@ Le troisième objectif était de garantir un déblocage séquentiel du contenu
 pédagogique fondé sur des règles vérifiées côté serveur, et non pas
 seulement suggérées côté interface --- une exigence de sécurité autant que
 de fiabilité pédagogique. Le quatrième objectif consistait à fournir à
-l'équipe pédagogique d'IAT Academy un espace d'administration complet,
+l'équipe pédagogique d'\Entreprise{} un espace d'administration complet,
 lui permettant de produire le contenu de cours, de corriger les
 évaluations, de suivre individuellement chaque apprenant et de réaliser les
 validations manuelles qui, comme évoqué plus haut, ne peuvent être
@@ -120,10 +174,12 @@ nécessaire à une exploitation réelle au-delà du cadre du stage.
 
 \section{Méthodologie de travail et planning}
 
-Le développement du projet a suivi une démarche itérative, par
-fonctionnalité plutôt que par couche technique : chaque bloc fonctionnel
---- authentification, catalogue de cours, système de quiz, gestion du
-stage, certification, puis les fonctionnalités transverses de
+\subsection{Une approche itérative et incrémentale, transparente}
+
+Le développement du projet a suivi une démarche itérative et incrémentale,
+par fonctionnalité plutôt que par couche technique : chaque bloc
+fonctionnel --- authentification, catalogue de cours, système de quiz,
+gestion du stage, certification, puis les fonctionnalités transverses de
 communication et de sécurité --- a été conçu, implémenté et testé de bout
 en bout (du modèle de données jusqu'à l'interface) avant de passer au
 suivant, plutôt que de développer séparément l'intégralité du backend puis
@@ -133,49 +189,65 @@ la charge des règles métier réelles --- en particulier la logique de
 progression par unité de formation --- avant d'investir du temps de
 développement sur les fonctionnalités qui en dépendent.
 
+Ce stage étant mené par un développeur unique en lien direct et continu
+avec l'équipe pédagogique --- sans équipe de développement dédiée ni
+\textit{Product Owner} au sens strict du terme ---, un découpage formel en
+sprints Scrum de deux semaines, avec cérémonies dédiées (\textit{daily
+stand-up}, \textit{sprint review}) et estimation en points de complexité,
+n'aurait pas reflété fidèlement la réalité du travail effectué. Le choix a
+donc été fait, en toute transparence, de présenter la démarche telle
+qu'elle s'est réellement déroulée : itérative et incrémentale, guidée par
+la dépendance fonctionnelle entre les blocs plutôt que par un calendrier
+de sprints fixe.
+
 Des points d'avancement réguliers avec l'encadrant professionnel au sein
-d'IAT Academy ont permis de confronter les choix techniques aux
+d'\Entreprise{} ont permis de confronter les choix techniques aux
 contraintes réelles de l'académie, notamment sur les points où une règle
 métier n'était pas immédiatement évidente à traduire en logique
 applicative --- la distinction entre les unités de formation exigeant une
 validation manuelle du Directeur et celles n'en exigeant pas en est
-l'exemple le plus révélateur (voir section~\ref{sec:progression-uf}).
+l'exemple le plus révélateur (voir \S\ref{sec:progression-uf}).
 
-Le temps du stage s'est réparti, dans ses grandes masses, entre une phase
-initiale de cadrage et d'analyse des besoins auprès de l'équipe
-pédagogique, une phase de conception du modèle de données et de
-l'architecture --- la plus déterminante pour la suite, dans la mesure où
-une erreur de modélisation à ce stade se serait répercutée sur l'ensemble
-du développement ---, une phase de développement à proprement parler,
-volontairement la plus longue, menée fonctionnalité par fonctionnalité
-comme décrit ci-dessus, et enfin une phase de consolidation regroupant les
-tests, la correction des anomalies détectées et la rédaction du présent
-rapport. Le tableau~\ref{tab:planning} synthétise cette répartition ; il
-peut être complété par un diagramme de Gantt détaillé si le format attendu
-par l'établissement l'exige.
+\subsection{Planification indicative}
+
+Le stage s'est déroulé du \DateDebutStage{} au \DateFinStage. Le
+Tableau~\ref{tab:planning} synthétise, dans ses grandes masses, la
+répartition du temps entre les quatre phases qui ont structuré le
+travail --- une phase initiale de cadrage, une phase de conception
+déterminante pour la suite, une phase de développement volontairement la
+plus longue puisque menée fonctionnalité par fonctionnalité comme décrit
+ci-dessus, et une phase finale de consolidation.
 
 \begin{table}[H]
   \centering
   \caption{Répartition indicative des grandes phases du projet}
   \label{tab:planning}
-  \begin{tabular}{@{}p{5cm}p{8cm}@{}}
+  \begin{tabular}{@{}>{\bfseries}p{4cm}p{2.8cm}p{6.2cm}@{}}
     \toprule
-    Phase & Contenu principal \\
+    Phase & Durée indicative & Contenu principal \\
     \midrule
-    Cadrage et analyse des besoins & Immersion dans le fonctionnement d'IAT Academy, recueil des règles métier, définition du périmètre. \\
-    Conception & Modélisation des entités, choix d'architecture, définition des mécanismes de sécurité. \\
-    Développement & Implémentation backend et frontend, fonctionnalité par fonctionnalité. \\
-    Consolidation & Rédaction et exécution des tests, correction des anomalies, rédaction du rapport. \\
+    Cadrage et analyse des besoins & Semaines 1--2 & Immersion dans le
+      fonctionnement d'\Entreprise, recueil des règles métier, définition
+      du périmètre. \\
+    Conception & Semaines 2--3 & Modélisation des entités, choix
+      d'architecture, définition des mécanismes de sécurité. \\
+    Développement & Semaines 3--8 & Implémentation backend et frontend,
+      fonctionnalité par fonctionnalité (authentification, contenu, quiz,
+      stage, certification, communication). \\
+    Consolidation & Semaines 8--9 & Rédaction et exécution des tests,
+      correction des anomalies, rédaction du rapport. \\
     \bottomrule
   \end{tabular}
 \end{table}
+\tabdesc{Cette répartition est indicative : les phases de conception et de
+développement se sont partiellement chevauchées, une caractéristique
+assumée de l'approche itérative par fonctionnalité décrite ci-dessus
+plutôt qu'un enchaînement strictement séquentiel de type cycle en V.}
 
-\section{Conclusion}
-
-Ce chapitre a présenté le contexte métier d'IAT Academy, la problématique
+\section*{Conclusion du chapitre}
+Ce chapitre a présenté le contexte métier d'\Entreprise, la problématique
 qui a motivé ce projet --- automatiser un parcours pédagogique complexe
 sans sacrifier les validations qui exigent un jugement humain --- ainsi
 que les objectifs et la méthodologie qui en découlent. Le
-chapitre~\ref{ch:analyse-conception} détaille maintenant l'analyse
-fonctionnelle et les choix de conception qui répondent concrètement à ces
-objectifs.
+chapitre~\ref{ch:analyse-besoins} détaille maintenant l'analyse
+fonctionnelle qui répond concrètement à ces objectifs.

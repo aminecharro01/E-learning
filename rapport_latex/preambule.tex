@@ -1,30 +1,43 @@
 % =============================================================================
-% preambule.tex — packages et réglages de mise en forme (normes PFE marocaines)
+% preambule.tex — packages et réglages de mise en forme
+% Style adapté du modèle EMSI (mix 4e/5e année) : titres de chapitre colorés,
+% en-têtes/pieds de page, style listings. Bibliographie gérée par biblatex
+% (base réelle : bibliographie.bib) plutôt que par une liste manuelle.
 % =============================================================================
 
-% --- Langue ---
-\usepackage[french]{babel}
+% --- Langue (français principal, anglais pour le bloc Abstract) ---
+\usepackage[english,french]{babel}
 \usepackage[T1]{fontenc}
 \usepackage[utf8]{inputenc}
 
 % --- Police : rendu proche Times New Roman ---
 \usepackage{mathptmx}
 
-% --- Interligne 1,5 ---
+% --- Micro-typographie + tolérance de justification ---
+% Nécessaire avec les marges resserrées du modèle (left=3cm) : de longs
+% identifiants \texttt{...} (noms de méthode, annotations Spring) ne
+% peuvent pas se couper et débordaient sinon visiblement dans la marge.
+\usepackage{microtype}
+\setlength{\emergencystretch}{3em}
+
+% --- Interligne 1,5 et retrait de première ligne ---
 \usepackage{setspace}
 \onehalfspacing
+\usepackage{indentfirst}
+\setlength{\parindent}{1cm}
 
-% --- Marges 2,5 cm ---
-\usepackage[margin=2.5cm]{geometry}
+% --- Marges ---
+\usepackage[top=2.5cm,bottom=2.5cm,left=3cm,right=2.5cm]{geometry}
 
 % --- Figures / tableaux ---
 \usepackage{graphicx}
 \graphicspath{{images/}{../diagrammes/images/}}
 \usepackage{float}                 % positionnement stable avec [H]
 \usepackage{rotating}              % figures en paysage (sidewaysfigure) pour les diagrammes très larges
-\usepackage{caption}
+\usepackage{tikz}                  % encadrés (fiche signalétique, schémas simples)
+\usepackage[font=small,labelfont=bf,labelsep=period]{caption}
 \captionsetup[table]{position=above}   % légendes tableaux au-dessus
-\captionsetup[figure]{position=below}  % légendes figures en dessous (par défaut, explicite ici)
+\captionsetup[figure]{position=below}  % légendes figures en dessous
 
 % Numérotation des figures et tableaux par chapitre → Figure 2.1, Tableau 3.2
 \counterwithin{figure}{chapter}
@@ -34,29 +47,67 @@
 \usepackage{booktabs}
 \usepackage{longtable}
 \usepackage{array}
+\usepackage{multirow}
+\usepackage{enumitem}
 
-% --- Extraits de code (Java / PlantUML) ---
+% --- Extraits de code (Java / SQL) ---
 \usepackage{xcolor}
 \usepackage{listings}
-\definecolor{codegray}{rgb}{0.95,0.95,0.95}
-\definecolor{codekeyword}{rgb}{0.0,0.0,0.6}
-\definecolor{codecomment}{rgb}{0.35,0.55,0.35}
+\definecolor{emsiblue}{RGB}{0,70,140}
+\definecolor{emsigreen}{RGB}{0,138,79}
+\definecolor{gristexte}{RGB}{90,90,90}
+\definecolor{grisclair}{RGB}{240,240,240}
 \lstdefinestyle{javastyle}{
-  backgroundcolor=\color{codegray},
+  backgroundcolor=\color{grisclair},
   basicstyle=\ttfamily\footnotesize,
-  keywordstyle=\color{codekeyword}\bfseries,
-  commentstyle=\color{codecomment}\itshape,
+  keywordstyle=\color{emsiblue}\bfseries,
+  commentstyle=\color{emsigreen}\itshape,
+  stringstyle=\color{red!60!black},
   numbers=left,
-  numberstyle=\tiny,
+  numberstyle=\tiny\color{gray},
   frame=single,
+  rulecolor=\color{gray},
   breaklines=true,
   showstringspaces=false,
   language=Java,
   captionpos=b,
+  tabsize=2,
 }
 \lstset{style=javastyle}
 
-% --- Liens cliquables (table des matières, \ref, bibliographie) ---
+% --- En-têtes et pieds de page ---
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage{tocloft}
+\usepackage{emptypage}
+
+% Style des titres de chapitre
+\titleformat{\chapter}[display]
+  {\normalfont\huge\bfseries\color{emsiblue}}
+  {\filright\Large\chaptertitlename\ \thechapter}
+  {10pt}{\Huge}
+\titlespacing*{\chapter}{0pt}{-20pt}{30pt}
+
+\titleformat{\section}
+  {\normalfont\Large\bfseries\color{emsiblue}}{\thesection}{1em}{}
+\titleformat{\subsection}
+  {\normalfont\large\bfseries\color{emsigreen}}{\thesubsection}{1em}{}
+
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0.4pt}
+\fancyhead[L]{\small\itshape\nouppercase{\leftmark}}
+\fancyhead[R]{\small IAT Academy}
+\fancyfoot[C]{\thepage}
+\fancypagestyle{plain}{\fancyhf{}\fancyfoot[C]{\thepage}%
+  \renewcommand{\headrulewidth}{0pt}}
+
+% Profondeur de la table des matières (3 niveaux : 1. / 1.1 / 1.1.1)
+\setcounter{tocdepth}{2}
+\setcounter{secnumdepth}{3}
+
+% --- Liens cliquables (toujours en dernier avant hyperref lui-même) ---
 \usepackage{hyperref}
 \hypersetup{
   colorlinks=true,
@@ -64,15 +115,79 @@
   citecolor=black,
   urlcolor=blue,
   pdftitle={Rapport de Projet de Fin d'Études — IAT Academy},
+  breaklinks=true,
 }
 
-% --- Bibliographie ---
-% Style ieee par défaut (adapté à un rapport d'ingénierie logicielle) ;
-% remplacer par style=apa si l'établissement l'exige.
+% --- Bibliographie (biblatex, base réelle bibliographie.bib) ---
 \usepackage[backend=biber,style=ieee,sorting=none]{biblatex}
 \addbibresource{bibliographie.bib}
 
 % --- Divers ---
-\usepackage{enumitem}
 \usepackage{textcomp}
 \usepackage{csquotes}
+
+% Libellés français
+% Appliqués via \addto\captionsfrench plutôt qu'un \renewcommand direct :
+% avec deux langues chargées dans babel, \selectlanguage{french} au
+% \begin{document} réapplique les légendes françaises et écraserait
+% silencieusement un \renewcommand placé ici.
+\addto\captionsfrench{%
+  \renewcommand{\chaptername}{Chapitre}
+  \renewcommand{\appendixname}{Annexe}
+  \renewcommand{\figurename}{Figure}
+  \renewcommand{\tablename}{Tableau}
+}
+
+% =============================================================================
+% Variables du rapport
+% =============================================================================
+\newcommand{\Etudiant}{Amine Charro}
+\newcommand{\Filiere}{Développement Digital et Systèmes d'Information Répartis (DDSIR) --- 4\textsuperscript{e} année}
+\newcommand{\Entreprise}{IAT Academy}
+\newcommand{\TitreProjet}{Conception et réalisation d'une plateforme e-learning pour les métiers de l'aviation, de l'accueil et du tourisme}
+\newcommand{\EncadrantPedago}{Mme. El Amrani Nora}
+\newcommand{\EncadrantPro}{[Encadrant professionnel --- Nom]}
+\newcommand{\AnneeUniv}{2025 -- 2026}
+\newcommand{\Ville}{Casablanca}
+\newcommand{\DateDebutStage}{01/07/2026}
+\newcommand{\DateFinStage}{31/08/2026}
+
+% --- Boîte de remplacement (à supprimer quand un vrai logo est disponible) ---
+% Usage : \placeholder{texte affiché}{hauteur en cm}
+\newcommand{\placeholder}[2]{%
+  \begin{tikzpicture}
+    \draw[dashed,gray,fill=grisclair,rounded corners]
+      (0,0) rectangle (0.80\linewidth,#2);
+    \node[align=center,text width=0.70\linewidth,gristexte]
+      at (0.40\linewidth,{#2/2}) {\itshape #1};
+  \end{tikzpicture}}
+
+% =============================================================================
+% Commandes pour figures avec légende + descriptif
+% =============================================================================
+
+% --- Figure = image + légende numérotée + descriptif explicatif ---
+% Usage : \figemsi{<contenu>}{<légende>}{<label>}{<descriptif>}
+\newcommand{\figemsi}[4]{%
+  \begin{figure}[H]
+    \centering
+    #1
+    \caption{#2}
+    \label{fig:#3}
+    \vspace{-2pt}
+    \begin{minipage}{0.92\linewidth}
+      \small\itshape\color{gristexte}
+      \textbf{Descriptif~:} #4
+    \end{minipage}
+  \end{figure}}
+
+% --- Version prête pour une image déjà présente sur disque ---
+% Usage : \figimg{chemin/image}{largeur}{légende}{label}{descriptif}
+\newcommand{\figimg}[5]{%
+  \figemsi{\includegraphics[width=#2\linewidth]{#1}}{#3}{#4}{#5}}
+
+% --- Tableau avec descriptif ---
+\newcommand{\tabdesc}[1]{%
+  \begin{center}\begin{minipage}{0.92\linewidth}
+    \small\itshape\color{gristexte}\textbf{Descriptif~:} #1
+  \end{minipage}\end{center}}

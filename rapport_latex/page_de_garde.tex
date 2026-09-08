@@ -1,50 +1,63 @@
 % =============================================================================
-% page_de_garde.tex — personnalisez les champs ci-dessous (établissement,
-% filière, noms, encadrants, année universitaire).
+% page_de_garde.tex — personnaliser le logo EMSI (aucun asset réel disponible
+% pour l'instant, cf. placeholder ci-dessous) et les membres du jury.
 % =============================================================================
 
 \begin{titlepage}
-  \centering
+\thispagestyle{empty}
+\centering
 
-  % --- Logo établissement (remplacez par le vôtre dans rapport_latex/images/) ---
-  \includegraphics[width=3.5cm]{logo_ecole_placeholder.png} % TODO: remplacez ce fichier
+\begin{minipage}{0.45\textwidth}
+  \raggedright
+  \placeholder{Logo EMSI}{2.2}
+  % \includegraphics[height=2.5cm]{logo_emsi.png} % TODO: remplacer par le vrai logo EMSI
+\end{minipage}
+\hfill
+\begin{minipage}{0.45\textwidth}
+  \raggedleft
+  \includegraphics[height=2.6cm]{logo_iat.png}
+\end{minipage}
 
-  \vspace{0.5cm}
-  {\large \MakeUppercase{[Nom de l'établissement]} \par}
-  {\normalsize [Filière — ex. Génie Informatique / Ingénierie Logicielle] \par}
+\vspace{0.8cm}
+{\large École Marocaine des Sciences de l'Ingénieur\par}
+{\normalsize \Filiere\par}
 
-  \vspace{2cm}
-  \rule{0.9\textwidth}{1pt}\par
-  \vspace{0.4cm}
-  {\Huge\bfseries Rapport de Projet de Fin d'Études \par}
-  \vspace{0.4cm}
-  \rule{0.9\textwidth}{1pt}\par
+\vspace{1.2cm}
+\rule{\linewidth}{1.2pt}
+\vspace{0.5cm}
 
-  \vspace{1cm}
-  {\LARGE \bfseries IAT Academy \par}
-  {\large Conception et réalisation d'une plateforme e-learning pour les métiers \\
-   de l'aviation, de l'accueil et du tourisme \par}
+{\large\scshape Rapport de stage de fin d'études\par}
+\vspace{0.6cm}
+{\huge\bfseries\color{emsiblue} \TitreProjet \par}
+\vspace{0.5cm}
+\rule{\linewidth}{1.2pt}
 
-  \vspace{2cm}
-  \includegraphics[width=2.6cm]{logo_iat.png}
+\vspace{1cm}
+{\normalsize Effectué au sein de \textbf{\Entreprise}\par}
+{\small Période du \DateDebutStage{} au \DateFinStage\par}
 
-  \vspace{2cm}
-  \begin{minipage}[t]{0.45\textwidth}
-    \begin{flushleft} \large
-      \textbf{Réalisé par :} \\{}
-      [Prénom NOM]
-    \end{flushleft}
-  \end{minipage}
-  \hfill
-  \begin{minipage}[t]{0.45\textwidth}
-    \begin{flushright} \large
-      \textbf{Encadré par :} \\{}
-      [Encadrant académique — Prénom NOM] \\{}
-      [Encadrant professionnel — Prénom NOM]
-    \end{flushright}
-  \end{minipage}
+\vspace{1.5cm}
+\begin{minipage}[t]{0.38\textwidth}
+  \raggedright
+  \textbf{Réalisé par~:}\\[3pt]
+  \Etudiant
+\end{minipage}
+\hfill
+\begin{minipage}[t]{0.55\textwidth}
+  \raggedleft
+  \textbf{Encadré par~:}\\[3pt]
+  \EncadrantPedago{} \textit{(EMSI)}\\
+  \EncadrantPro{} \textit{(\Entreprise)}
+\end{minipage}
 
-  \vfill
-  {\large Année universitaire [2025 -- 2026] \par}
+\vfill
+\textbf{Membres du jury~:}\\[3pt]
+\begin{tabular}{ll}
+  {Nom du président} & Président \\
+  {Nom de l'examinateur} & Examinateur \\
+  \EncadrantPedago & Encadrant \\
+\end{tabular}
 
+\vfill
+{\normalsize Année universitaire \AnneeUniv\par}
 \end{titlepage}

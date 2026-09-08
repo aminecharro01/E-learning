@@ -2,85 +2,161 @@
 % main.tex — document maître
 % Compilation : voir README.md à la racine du dossier rapport_latex/
 % =============================================================================
-\documentclass[12pt,a4paper]{report}
+\documentclass[12pt,a4paper,oneside]{report}
 
 \input{preambule}
 
 \begin{document}
 
-% -----------------------------------------------------------------------------
-% Pages liminaires — pagination romaine
-% -----------------------------------------------------------------------------
-\pagenumbering{roman}
-
+% #############################################################################
+% PAGE DE GARDE
+% #############################################################################
 \include{page_de_garde}
 
+% #############################################################################
+% PAGES PRÉLIMINAIRES — numérotation romaine
+% #############################################################################
+\pagenumbering{roman}
+\setcounter{page}{1}
+
+% ----------------------------- DÉDICACE -------------------------------------
+\chapter*{Dédicace}
+\addcontentsline{toc}{chapter}{Dédicace}
+\markboth{Dédicace}{}
+\vspace{2cm}
+\begin{center}
+\itshape\large
+À mes parents, pour leur soutien constant tout au long de mon parcours~;\\[1em]
+à ma famille et à mes proches, pour leurs encouragements~;\\[1em]
+à mes professeurs de l'EMSI, pour la formation reçue~;\\[1em]
+je dédie ce modeste travail.
+\end{center}
+
+% -------------------------- REMERCIEMENTS -----------------------------------
 \chapter*{Remerciements}
-Je tiens à exprimer ma sincère gratitude à mon encadrant académique pour
-son suivi attentif tout au long de ce projet, sa disponibilité et la
-pertinence de ses remarques, qui ont considérablement enrichi la démarche
-suivie dans ce travail. Mes remerciements vont également à mon encadrant
-professionnel au sein d'IAT Academy, pour la confiance qu'il m'a accordée
-dès le début du stage en me confiant un périmètre technique aussi complet,
-et pour le temps consacré à clarifier les règles métier propres au cursus
-de l'académie --- sans lesquelles la conception du système de progression
-par unité de formation n'aurait pas pu aboutir à une solution fidèle à la
-réalité du terrain.
+\addcontentsline{toc}{chapter}{Remerciements}
+\markboth{Remerciements}{}
+
+Je tiens à exprimer ma sincère gratitude à \EncadrantPedago, mon encadrante
+académique à l'EMSI, pour son suivi attentif tout au long de ce projet, sa
+disponibilité et la pertinence de ses remarques, qui ont considérablement
+enrichi la démarche suivie dans ce travail.
+
+Mes remerciements vont également à mon encadrant professionnel au sein
+d'\Entreprise, pour la confiance qu'il m'a accordée dès le début du stage en
+me confiant un périmètre technique aussi complet, et pour le temps consacré à
+clarifier les règles métier propres au cursus de l'académie --- sans
+lesquelles la conception du système de progression par unité de formation
+n'aurait pas pu aboutir à une solution fidèle à la réalité du terrain.
 
 Je remercie chaleureusement l'ensemble de l'équipe pédagogique et
-administrative d'IAT Academy pour son accueil, sa bienveillance et sa
-disponibilité à répondre à mes questions tout au long de l'immersion dans
-le fonctionnement de l'académie. Cette collaboration au quotidien a été
+administrative d'\Entreprise{} pour son accueil, sa bienveillance et sa
+disponibilité à répondre à mes questions tout au long de l'immersion dans le
+fonctionnement de l'académie. Cette collaboration au quotidien a été
 déterminante pour comprendre non seulement les besoins fonctionnels
-exprimés, mais aussi les contraintes réelles d'exploitation d'une
-plateforme destinée à des apprenants et des formateurs aux profils variés.
+exprimés, mais aussi les contraintes réelles d'exploitation d'une plateforme
+destinée à des apprenants et des formateurs aux profils variés.
 
-Je souhaite également remercier le corps professoral de mon établissement
-pour la formation théorique et pratique reçue tout au long de mon cursus,
-qui a constitué le socle indispensable à la réalisation de ce projet, ainsi
-que les membres du jury pour l'intérêt qu'ils porteront à ce travail.
+Je souhaite également remercier le corps professoral et administratif de
+l'EMSI pour la formation théorique et pratique reçue tout au long de mon
+cursus, qui a constitué le socle indispensable à la réalisation de ce
+projet, ainsi que les membres du jury pour l'intérêt qu'ils porteront à ce
+travail.
 
 Enfin, mes remerciements les plus personnels vont à ma famille et à mes
 proches, pour leur soutien constant et leurs encouragements tout au long de
 cette période de stage.
 
+% ----------------------------- RÉSUMÉ ----------------------------------------
 \chapter*{Résumé}
-IAT Academy est une plateforme e-learning destinée aux métiers de l'aviation, de
-l'accueil et du tourisme, développée avec Spring Boot (backend) et Next.js
-(frontend). Ce rapport présente le contexte du projet, l'analyse et la
-conception de la solution, les choix techniques réalisés lors de l'implémentation
-— en particulier les mécanismes qui dépassent le simple CRUD (correction de
-quiz, génération de questions par intelligence artificielle, contrôle d'accès à
-granularité fine, etc. — voir chapitre 3) — ainsi que la démarche de tests et de
-déploiement.
+\addcontentsline{toc}{chapter}{Résumé / Abstract}
+\markboth{Résumé}{}
 
-\textbf{Mots-clés :} e-learning, Spring Boot, Spring Security, PostgreSQL,
-Redis, intelligence artificielle, architecture en couches.
+\Entreprise{} est une plateforme e-learning destinée aux métiers de
+l'aviation, de l'accueil et du tourisme, développée avec Spring Boot
+(backend) et Next.js (frontend). Ce rapport présente le contexte du
+projet, l'analyse et la spécification des besoins, la conception de la
+solution, les choix techniques réalisés lors de la réalisation --- en
+particulier les mécanismes qui dépassent le simple CRUD (correction hybride
+de quiz, génération de questions par intelligence artificielle, contrôle
+d'accès à granularité fine, etc., voir chapitre~4) --- ainsi que la
+démarche de tests, de déploiement et le bilan du stage.
 
-\chapter*{Abstract}
-IAT Academy is an e-learning platform for aviation, hospitality and tourism
-training programs, built with Spring Boot (backend) and Next.js (frontend).
-This report presents the project context, the analysis and design of the
-solution, the technical decisions made during implementation — particularly the
-mechanisms that go beyond simple CRUD (quiz grading, AI-assisted question
-generation, fine-grained access control, etc. — see Chapter 3) — and the
-testing and deployment approach.
+\vspace{0.5cm}
+\noindent\textbf{Mots-clés~:} \textit{e-learning, Spring Boot, Spring
+Security, PostgreSQL, Redis, intelligence artificielle, architecture en
+couches, UML.}
 
-\textbf{Keywords:} e-learning, Spring Boot, Spring Security, PostgreSQL, Redis,
-artificial intelligence, layered architecture.
+\vspace{1.5cm}
+\begin{otherlanguage}{english}
+\section*{Abstract}
+\Entreprise{} is an e-learning platform for aviation, hospitality and
+tourism training programs, built with Spring Boot (backend) and Next.js
+(frontend). This report presents the project context, the analysis and
+specification of requirements, the design of the solution, the technical
+decisions made during implementation --- particularly the mechanisms that
+go beyond simple CRUD (hybrid quiz grading, AI-assisted question
+generation, fine-grained access control, etc., see chapter~4) --- and the
+testing, deployment approach and internship review.
 
+\vspace{0.5cm}
+\noindent\textbf{Keywords:} \textit{e-learning, Spring Boot, Spring
+Security, PostgreSQL, Redis, artificial intelligence, layered
+architecture, UML.}
+\end{otherlanguage}
+
+% ------------------------- ABRÉVIATIONS -------------------------------------
+\chapter*{Liste des abréviations}
+\addcontentsline{toc}{chapter}{Liste des abréviations}
+\markboth{Liste des abréviations}{}
+
+\begin{longtable}{@{}p{3cm}p{11cm}@{}}
+\toprule
+\textbf{Abréviation} & \textbf{Signification} \\
+\midrule
+\endhead
+2FA   & \textit{Two-Factor Authentication} (authentification à deux facteurs) \\
+API   & \textit{Application Programming Interface} \\
+CRUD  & \textit{Create, Read, Update, Delete} \\
+IA    & Intelligence Artificielle \\
+IDOR  & \textit{Insecure Direct Object Reference} \\
+JPA   & \textit{Jakarta Persistence API} \\
+JWT   & \textit{JSON Web Token} \\
+ORM   & \textit{Object Relational Mapping} \\
+PFE   & Projet de Fin d'Études \\
+RBAC  & \textit{Role-Based Access Control} \\
+REST  & \textit{Representational State Transfer} \\
+SGBD  & Système de Gestion de Base de Données \\
+SSR   & \textit{Server-Side Rendering} \\
+TOTP  & \textit{Time-based One-Time Password} \\
+UF    & Unité de Formation \\
+UML   & \textit{Unified Modeling Language} \\
+XSS   & \textit{Cross-Site Scripting} \\
+\bottomrule
+\end{longtable}
+
+% ---------------------------- SOMMAIRES -------------------------------------
+\renewcommand{\contentsname}{Table des matières}
 \tableofcontents
-\listoffigures
-\listoftables
+\addcontentsline{toc}{chapter}{Table des matières}
 
-% -----------------------------------------------------------------------------
-% Corps du rapport — pagination arabe à partir de l'introduction
-% -----------------------------------------------------------------------------
+\listoffigures
+\addcontentsline{toc}{chapter}{Liste des figures}
+
+\listoftables
+\addcontentsline{toc}{chapter}{Liste des tableaux}
+
+% #############################################################################
+% CORPS DU RAPPORT — numérotation arabe
+% #############################################################################
 \cleardoublepage
 \pagenumbering{arabic}
+\setcounter{page}{1}
 
+% ---------------------- INTRODUCTION GÉNÉRALE -------------------------------
 \chapter*{Introduction générale}
 \addcontentsline{toc}{chapter}{Introduction générale}
+\markboth{Introduction générale}{}
 
 La transformation numérique des organismes de formation professionnelle ne
 se limite plus, aujourd'hui, à la simple mise en ligne de supports de
@@ -89,13 +165,13 @@ inscription, le suivi minutieux de sa progression, l'évaluation de ses
 compétences par des modalités variées, l'accompagnement individualisé
 jusqu'à l'obtention d'un diplôme, et jusqu'à la valorisation de ce diplôme
 sur le marché de l'emploi. C'est dans ce contexte qu'a été pensé et
-développé IAT Academy, une plateforme e-learning destinée à un cycle
+développé \Entreprise, une plateforme e-learning destinée à un cycle
 professionnel de deux années dans les métiers de l'aviation, de l'accueil
 et du tourisme --- des filières où l'employabilité concrète des diplômés
 constitue l'indicateur de réussite ultime, bien plus qu'un simple taux de
 réussite académique.
 
-Avant ce projet, la gestion pédagogique d'IAT Academy s'appuyait sur des
+Avant ce projet, la gestion pédagogique d'\Entreprise{} s'appuyait sur des
 outils et des supports dispersés, sans espace numérique centralisé
 permettant de suivre en temps réel la progression d'un apprenant à travers
 les différentes unités de formation qui composent son cursus, ni de
@@ -122,30 +198,34 @@ générative pour assister la création de contenu pédagogique --- ainsi que
 la validation de l'ensemble par une suite de tests automatisés et une
 démarche de déploiement conteneurisé.
 
-Ce rapport est organisé en quatre chapitres. Le premier chapitre présente
-le contexte général du projet : l'organisme d'accueil, la problématique
-métier identifiée et les objectifs poursuivis. Le deuxième chapitre détaille
-l'analyse des besoins et les choix de conception qui en découlent ---
-acteurs, cas d'utilisation, modèle de données et architecture logicielle.
-Le troisième chapitre, cœur technique de ce rapport, présente
-l'implémentation réalisée en mettant l'accent sur les mécanismes qui
-constituent la véritable valeur ajoutée du projet, classés par ordre
-d'impact et systématiquement rattachés au code source qui les concrétise.
-Le quatrième et dernier chapitre décrit la démarche de validation par les
-tests et l'architecture de déploiement retenue. Une conclusion générale
-revient enfin sur les apports de ce travail et ouvre sur ses perspectives
-d'évolution.
+Ce rapport est organisé en cinq chapitres. Le premier présente l'organisme
+d'accueil, le contexte du projet, sa problématique et la méthodologie de
+travail retenue. Le deuxième est consacré à l'analyse et à la
+spécification des besoins --- acteurs, cas d'utilisation, besoins
+fonctionnels et non fonctionnels. Le troisième détaille la conception de
+la solution : architecture logicielle et de déploiement, modèle de
+données, sécurité. Le quatrième, cœur technique de ce rapport, présente la
+réalisation en mettant l'accent sur les mécanismes qui constituent la
+véritable valeur ajoutée du projet, classés par ordre d'impact. Le
+cinquième et dernier chapitre décrit la démarche de validation par les
+tests, l'architecture de déploiement retenue, et dresse le bilan du stage.
+Une conclusion générale revient enfin sur les apports de ce travail et
+ouvre sur ses perspectives d'évolution.
 
 \include{chapitres/ch1_contexte}
-\include{chapitres/ch2_analyse_conception}
-\include{chapitres/ch3_realisation}
-\include{chapitres/ch4_tests_deploiement}
+\include{chapitres/ch2_analyse_besoins}
+\include{chapitres/ch3_conception}
+\include{chapitres/ch4_realisation}
+\include{chapitres/ch5_tests_deploiement_bilan}
 
-\chapter*{Conclusion générale}
-\addcontentsline{toc}{chapter}{Conclusion générale}
+% =============================================================================
+\chapter*{Conclusion générale et perspectives}
+\addcontentsline{toc}{chapter}{Conclusion générale et perspectives}
+\markboth{Conclusion générale}{}
+% =============================================================================
 
-Ce projet de fin d'études a permis de concevoir et de développer IAT
-Academy, une plateforme e-learning complète destinée aux métiers de
+Ce projet de fin d'études a permis de concevoir et de développer
+\Entreprise, une plateforme e-learning complète destinée aux métiers de
 l'aviation, de l'accueil et du tourisme, en couvrant l'ensemble du cycle de
 vie d'un projet logiciel : analyse des besoins, modélisation d'un domaine
 métier de 39 entités, conception d'une architecture en couches robuste,
@@ -162,22 +242,24 @@ d'un même quiz, une logique de progression pédagogique en cascade jusqu'à
 l'éligibilité au certificat, et un contrôle d'accès à granularité fine qui
 dépasse le simple contrôle par rôle.
 
-Ce travail n'a pas été mené sans difficultés. La principale d'entre elles a
-consisté à traduire des règles métier parfois implicites --- notamment la
-distinction entre les UF qui exigent une validation manuelle du Directeur
-et celles qui n'en exigent pas, ou encore la coexistence de deux stratégies
-de déblocage du contenu selon qu'un apprenant suit son parcours en ligne de
-façon autonome ou qu'il appartient à une cohorte encadrée --- en un modèle
-de données et une logique applicative à la fois simples et fidèles à la
-réalité du terrain. La confrontation régulière avec l'équipe pédagogique
-d'IAT Academy a été déterminante pour éviter qu'une simplification
-excessive du modèle ne finisse par trahir ces règles. Le chapitre~3 assume
-également, en toute transparence, deux limites concrètes identifiées dans
-le code existant --- une incohérence dans l'application du contrôle de
-propriété au niveau du service de gestion des devoirs, et l'absence d'une
-reprise automatique après l'interruption d'une campagne email --- qui
-constituent naturellement les premières pistes d'amélioration à court
-terme.
+Sur le plan méthodologique, l'approche itérative et incrémentale par
+fonctionnalité --- plutôt qu'un découpage artificiel en sprints Scrum
+formels, qui aurait été peu représentatif d'un stage mené par un seul
+développeur en lien direct avec l'équipe pédagogique --- a permis de
+valider très tôt, sur des cas concrets, que le modèle de données retenu
+tenait effectivement la charge des règles métier réelles avant d'investir
+du temps de développement sur les fonctionnalités qui en dépendent.
+
+Ce travail n'a pas été mené sans difficultés, exposées en toute
+transparence au \S\ref{sec:bilan-difficultes} : traduire des règles métier
+parfois implicites en un modèle de données à la fois simple et fidèle à la
+réalité du terrain a exigé plusieurs allers-retours avec l'équipe
+pédagogique d'\Entreprise. Le chapitre~\ref{ch:realisation} assume
+également deux limites concrètes identifiées dans le code existant --- une
+incohérence dans l'application du contrôle de propriété au niveau du
+service de gestion des devoirs, et l'absence d'une reprise automatique
+après l'interruption d'une campagne email --- qui constituent naturellement
+les premières pistes d'amélioration à court terme.
 
 À plus long terme, plusieurs évolutions permettraient d'enrichir encore la
 plateforme : l'activation complète de la topologie de déploiement déjà
@@ -195,6 +277,42 @@ exercice académique classique.
 % -----------------------------------------------------------------------------
 % Bibliographie
 % -----------------------------------------------------------------------------
-\printbibliography[title={Bibliographie}]
+\printbibliography[title={Bibliographie et webographie}]
+
+% #############################################################################
+% ANNEXES
+% #############################################################################
+\appendix
+\chapter{Annexes}
+
+\section{Annexe A~: Diagramme de classes complet (vue d'ensemble)}
+
+\figimg{diagramme_classes_ensemble.png}{1.0}
+  {Diagramme de classes --- vue d'ensemble complète (annexe)}{annexeclasses}
+  {Version pleine page du diagramme présenté en section~\ref{sec:modele-donnees},
+   utile pour une lecture détaillée des paquetages et des associations
+   principales entre domaines fonctionnels.}
+
+\section{Annexe B~: Extrait d'une migration Flyway}
+
+Contrairement à un script SQL de création monolithique, le schéma de base
+de données est géré par des migrations Flyway versionnées et jamais
+modifiées après déploiement (\texttt{backend/src/main/resources/db/migration/}).
+L'extrait ci-dessous illustre la convention de nommage et de structure
+retenue pour l'ensemble des 39 entités du domaine.
+
+\begin{lstlisting}[language=SQL,caption={Convention de migration Flyway (exemple simplifié)},label=lst:flyway]
+-- V1__create_users_table.sql
+CREATE TABLE users (
+    id              UUID PRIMARY KEY,
+    email           VARCHAR(255) NOT NULL UNIQUE,
+    password_hash   VARCHAR(255) NOT NULL,
+    full_name       VARCHAR(255) NOT NULL,
+    role            VARCHAR(30)  NOT NULL,
+    enabled         BOOLEAN      NOT NULL DEFAULT TRUE,
+    created_at      TIMESTAMPTZ  NOT NULL,
+    updated_at      TIMESTAMPTZ  NOT NULL
+);
+\end{lstlisting}
 
 \end{document}

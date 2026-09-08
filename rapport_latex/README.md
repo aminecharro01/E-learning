@@ -13,9 +13,10 @@ rapport_latex/
 ├── bibliographie.bib                 # références (à compléter)
 ├── chapitres/
 │   ├── ch1_contexte.tex
-│   ├── ch2_analyse_conception.tex
-│   ├── ch3_realisation.tex            # cœur du rapport : points forts techniques
-│   └── ch4_tests_deploiement.tex
+│   ├── ch2_analyse_besoins.tex
+│   ├── ch3_conception.tex
+│   ├── ch4_realisation.tex             # cœur du rapport : points forts techniques
+│   └── ch5_tests_deploiement_bilan.tex
 └── images/                           # logos + diagrammes inclus dans le rapport
 
 diagrammes/
@@ -45,18 +46,22 @@ verticale.
 
 ## À personnaliser avant remise
 
-- **`page_de_garde.tex`** : nom de l'établissement, filière, votre nom,
-  noms des encadrants, année universitaire, et remplacez
-  `images/logo_ecole_placeholder.png` par le logo réel de votre
-  établissement.
+- **`preambule.tex`** : le bloc de variables (`\EncadrantPro`, année
+  universitaire, etc.) est en haut de fichier. `\EncadrantPro` reste un
+  espace réservé (`[Encadrant professionnel — Nom]`) tant que le nom réel
+  n'est pas fourni.
+- **`page_de_garde.tex`** : aucun logo EMSI réel n'est disponible pour
+  l'instant (`\placeholder{Logo EMSI}{...}` affiche un encadré à la
+  place) — remplacez-le par le vrai logo EMSI dès qu'il est disponible.
+  Les membres du jury (président, examinateur) sont aussi des espaces
+  réservés à compléter.
 - **`main.tex`** : les sections « Remerciements », « Introduction
   générale » et « Conclusion générale » contiennent un texte déjà rédigé
-  et réutilisable tel quel, mais méritent d'être relues et ajustées à
-  votre expérience personnelle (noms des encadrants dans les
-  remerciements, par exemple).
+  et réutilisable tel quel.
 - **`chapitres/ch1_contexte.tex`** : le planning (§1.4) est une
-  répartition indicative des grandes phases ; ajoutez vos dates réelles
-  et un diagramme de Gantt si votre établissement l'exige.
+  répartition indicative des grandes phases sur la durée réelle du stage
+  (01/07/2026 – 31/08/2026) ; affinez les dates si un diagramme de Gantt
+  détaillé est exigé par l'établissement.
 - **`bibliographie.bib`** : quelques références de départ sont fournies
   (Spring, Spring Security, JWT, PlantUML, OWASP, Redis, Flyway) ;
   complétez-la au fil de la rédaction.
@@ -155,8 +160,8 @@ doivent pas être édités à la main.
 
 ## Tableau de synthèse des points forts techniques
 
-Le Tableau 3.7 du rapport (chapitre 3, section « Points forts techniques
-et valeur ajoutée ») liste les onze mécanismes qui distinguent ce projet
+Le tableau de synthèse du rapport (chapitre 4, section « Points forts
+techniques et valeur ajoutée ») liste les onze mécanismes qui distinguent ce projet
 d'une application CRUD classique, avec leur emplacement exact dans le
 code source et l'argument de valeur ajoutée associé. Il est reproduit
 ci-dessous pour être réutilisé directement comme support de soutenance.
@@ -175,7 +180,7 @@ ci-dessous pour être réutilisé directement comme support de soutenance.
 | Détection d'inactivité | `EarlyWarningService` | Signal fiable pour l'intervention pédagogique, sans mécanisme de suivi dédié supplémentaire. |
 | Verrou d'édition collaboratif | `LessonLockService` | Prévient un conflit d'édition entre formateurs plutôt que de le constater après coup. |
 
-## Limites assumées (chapitre 3, §3.3)
+## Limites assumées (chapitre 4, § Limites identifiées)
 
 Deux limites ont été identifiées en analysant le code (et non supposées a
 priori) et sont documentées en toute transparence dans le rapport :

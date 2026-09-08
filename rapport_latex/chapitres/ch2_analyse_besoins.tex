@@ -1,0 +1,125 @@
+\chapter{Analyse et spécification des besoins}
+\label{ch:analyse-besoins}
+
+\section*{Introduction du chapitre}
+Ce chapitre identifie les acteurs du système, recense les besoins
+fonctionnels et non fonctionnels, puis les formalise à l'aide du langage
+UML.
+
+\section{Identification des acteurs}
+
+Le système distingue cinq rôles internes, organisés en une hiérarchie de
+sécurité (\texttt{ROLE\_SUPER\_ADMIN > ROLE\_ADMIN}), à laquelle s'ajoutent
+deux acteurs externes ne possédant pas de compte : le tuteur de stage
+(accès par lien à usage unique) et le visiteur public (formulaire de
+contact, infolettre, vérification de certificat).
+
+\begin{table}[H]
+  \centering
+  \caption{Rôles applicatifs et responsabilités}
+  \label{tab:roles}
+  \begin{tabular}{@{}p{2.8cm}p{9.5cm}@{}}
+    \toprule
+    Rôle & Responsabilités \\
+    \midrule
+    \texttt{SUPER\_ADMIN} & Paramètres système globaux, en plus de tous les droits Admin. \\
+    \texttt{ADMIN} (Directeur) & Gestion pédagogique complète, validation des UF sensibles, gestion des groupes et des campagnes email, en plus de tous les droits Formateur. \\
+    \texttt{FORMATEUR} & Studio de cours, gestion des quiz, correction manuelle, messagerie, bourse à l'emploi. \\
+    \texttt{ETUDIANT} & Espace apprenant : contenu, quiz, stage, certificat, messagerie. \\
+    \texttt{SUPPORT} & Accès limité, essentiellement en lecture. \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+\tabdesc{Ce tableau met en correspondance chaque rôle applicatif avec les
+acteurs métier identifiés au Tableau~\ref{tab:acteurs-academie} du chapitre
+précédent, et sert de base à la hiérarchie \texttt{@PreAuthorize} détaillée
+au chapitre~\ref{ch:conception}.}
+
+\section{Spécification des besoins fonctionnels}
+\label{sec:besoins-fonctionnels}
+
+Le système doit permettre de~:
+\begin{enumerate}[label=\textbf{BF\arabic*.}]
+  \item représenter fidèlement la structure pédagogique réelle du cursus
+    (Formation, Année, Unité de Formation, Module, Leçon, Bloc de contenu)~;
+  \item gérer un système d'évaluation complet~: plusieurs types de quiz
+    selon leur portée (section, module, fin d'UF, fin d'année), plusieurs
+    types de questions, avec correction automatique et correction
+    manuelle convergeant vers un score final cohérent~;
+  \item garantir un déblocage séquentiel du contenu pédagogique, vérifié
+    côté serveur~;
+  \item fournir à l'équipe pédagogique un espace d'administration complet
+    (contenu, correction, suivi des apprenants, validations manuelles)~;
+  \item automatiser la délivrance de certificats numériquement
+    vérifiables et outiller le suivi du stage jusqu'à sa signature par un
+    tuteur externe~;
+  \item sécuriser transversalement la plateforme (authentification,
+    séparation des rôles, protection contre les abus) et permettre un
+    déploiement reproductible.
+\end{enumerate}
+
+Ces six besoins reprennent directement les six objectifs du projet
+énoncés au chapitre~\ref{ch:contexte} ; ils sont repris sous forme de
+cas d'utilisation en section~\ref{sec:modelisation-besoins}.
+
+\section{Spécification des besoins non fonctionnels}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{@{}p{3.5cm}p{10.5cm}@{}}
+\toprule
+\textbf{Besoin} & \textbf{Exigence associée} \\
+\midrule
+Sécurité & Authentification JWT signée HS256 transportée par cookie
+  \texttt{httpOnly} (protection XSS), 2FA optionnelle, mots de passe
+  hachés (BCrypt), RBAC déclaratif complété par un contrôle de propriété
+  au niveau service (voir \S\ref{sec:acces-proprietaire}). \\
+Protection contre les abus & Limitation de débit Redis sur les endpoints
+  sensibles (ex. 20 requêtes/5 minutes pour la génération de questions
+  par IA), voir \S\ref{sec:rate-limiting}. \\
+Fiabilité fonctionnelle & Les règles de progression et de contrôle
+  d'accès sont vérifiées côté serveur, jamais uniquement suggérées côté
+  interface. \\
+Scalabilité & Backend \texttt{STATELESS} (aucune session en mémoire) ---
+  l'état d'authentification est reconstruit à chaque requête à partir du
+  seul jeton JWT, ce qui simplifie la mise à l'échelle horizontale. \\
+Maintenabilité & Architecture en couches stricte (\texttt{Controller
+  $\rightarrow$ Service $\rightarrow$ Repository $\rightarrow$ Entity}),
+  migrations de schéma versionnées (Flyway), suite de 138 tests
+  automatisés. \\
+Portabilité & Backend et frontend conteneurisés (Docker), configuration
+  exclusivement par variables d'environnement (principe \emph{Twelve-Factor
+  Apps}). \\
+\bottomrule
+\end{tabular}
+\caption{Besoins non fonctionnels}
+\label{tab:bnf}
+\end{table}
+\tabdesc{Ces exigences transversales conditionnent les choix
+d'architecture présentés au chapitre~\ref{ch:conception}. Elles servent
+également de critères d'acceptation lors de la phase de tests
+(chapitre~\ref{ch:tests-deploiement-bilan}).}
+
+\section{Modélisation des besoins}
+\label{sec:modelisation-besoins}
+
+\subsection{Diagramme de cas d'utilisation}
+
+La Figure~\ref{fig:cas-utilisation} synthétise l'ensemble des cas
+d'utilisation identifiés à partir des 29 contrôleurs REST exposés par le
+backend, organisés en quatre paquetages fonctionnels (Sécurité \& Accès,
+Parcours \& Évaluations, Stage \& Diplomation, Administration \&
+Services), avec la hiérarchie de généralisation des acteurs et les
+relations \textit{include}/\textit{extend} entre cas d'utilisation.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth,height=0.85\textheight,keepaspectratio]{diagramme_cas_utilisation.png}
+  \caption{Diagramme de cas d'utilisation}
+  \label{fig:cas-utilisation}
+\end{figure}
+
+\section*{Conclusion du chapitre}
+Les besoins ayant été recensés et formalisés, le chapitre suivant présente
+les choix de conception --- architecture, modèle de données, sécurité ---
+permettant d'y répondre.

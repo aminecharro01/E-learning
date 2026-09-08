@@ -1,5 +1,10 @@
-\chapter{Tests et déploiement}
-\label{ch:tests-deploiement}
+\chapter{Tests, déploiement et bilan du stage}
+\label{ch:tests-deploiement-bilan}
+
+\section*{Introduction du chapitre}
+Ce dernier chapitre décrit la stratégie de validation de l'application,
+les modalités de son déploiement, puis dresse le bilan personnel et
+professionnel du stage.
 
 \section{Stratégie de tests}
 
@@ -53,20 +58,20 @@ véritable appel réseau lors des tests.
     \bottomrule
   \end{tabular}
 \end{table}
-
-Au total, cette suite comporte \textbf{138 méthodes de test}
+\tabdesc{Au total, cette suite comporte 138 méthodes de test
 (\texttt{@Test}), couvrant en priorité les services identifiés au
 chapitre~\ref{ch:realisation} comme porteurs de la logique métier la plus
 sensible : notation, sécurité, validation d'UF, intégration à des services
-d'intelligence artificielle externes. Cette priorisation n'est pas
-anodine : un service comme \texttt{ProgressionServiceTest}, par exemple,
-teste explicitement les deux branches distinctes du calcul de
-progression --- apprenant individuel suivant la règle séquentielle
-automatique par UF, et apprenant rattaché à un groupe suivant les
-assignations manuelles du Directeur --- puisqu'une régression sur l'une de
-ces deux branches serait particulièrement difficile à détecter par simple
-observation manuelle de l'application, la seconde branche ne concernant
-qu'une catégorie précise d'apprenants.
+d'intelligence artificielle externes.}
+
+Cette priorisation n'est pas anodine : un service comme
+\texttt{ProgressionServiceTest}, par exemple, teste explicitement les deux
+branches distinctes du calcul de progression --- apprenant individuel
+suivant la règle séquentielle automatique par UF, et apprenant rattaché à
+un groupe suivant les assignations manuelles du Directeur --- puisqu'une
+régression sur l'une de ces deux branches serait particulièrement
+difficile à détecter par simple observation manuelle de l'application, la
+seconde branche ne concernant qu'une catégorie précise d'apprenants.
 
 \subsection{Couverture côté frontend et tests de charge}
 
@@ -107,10 +112,9 @@ empiriquement --- et non uniquement par lecture du code --- que les
 mécanismes de concurrence et de limitation de débit se comportaient
 comme attendu sous une charge simultanée réaliste.
 
-\section{Architecture de déploiement}
+\section{Déploiement}
 
-La Figure~\ref{fig:deploiement} présente la topologie de déploiement du
-projet. À l'heure actuelle, le fichier \texttt{docker-compose.yml} placé à
+À l'heure actuelle, le fichier \texttt{docker-compose.yml} placé à
 la racine du dépôt active uniquement les services PostgreSQL 16 et Redis~7,
 respectivement exposés sur les ports hôtes 5433 et 6379 et adossés chacun
 à un volume nommé (\texttt{postgres\_data}, \texttt{redis\_data}) garantissant
@@ -149,7 +153,7 @@ compilation unique.
   \centering
   \includegraphics[width=0.9\textwidth,height=0.85\textheight,keepaspectratio]{diagramme_deploiement.png}
   \caption{Architecture de déploiement}
-  \label{fig:deploiement}
+  \label{fig:deploiement-detail}
 \end{figure}
 
 Sur le plan de la configuration, l'ensemble des paramètres sensibles ---
@@ -167,12 +171,60 @@ Gemini et à Grok décrite au \S\ref{sec:generation-ia} : un fournisseur est
 considéré comme configuré dès lors que sa clé d'API n'est pas vide,
 sans qu'aucun indicateur booléen supplémentaire ne soit nécessaire.
 
-\section{Conclusion}
+\section{Bilan du stage}
+\label{sec:bilan-difficultes}
 
+\subsection{Difficultés rencontrées}
+
+Ce travail n'a pas été mené sans difficultés. La principale d'entre elles
+a consisté à traduire des règles métier parfois implicites --- notamment
+la distinction entre les UF qui exigent une validation manuelle du
+Directeur et celles qui n'en exigent pas, ou encore la coexistence de deux
+stratégies de déblocage du contenu selon qu'un apprenant suit son parcours
+en ligne de façon autonome ou qu'il appartient à une cohorte encadrée ---
+en un modèle de données et une logique applicative à la fois simples et
+fidèles à la réalité du terrain. La confrontation régulière avec l'équipe
+pédagogique d'\Entreprise{} a été déterminante pour éviter qu'une
+simplification excessive du modèle ne finisse par trahir ces règles.
+
+Le chapitre~\ref{ch:realisation} assume également, en toute transparence,
+deux limites concrètes identifiées dans le code existant --- une
+incohérence dans l'application du contrôle de propriété au niveau du
+service de gestion des devoirs, et l'absence d'une reprise automatique
+après l'interruption d'une campagne email (\S\ref{sec:limites}) --- qui
+constituent naturellement les premières pistes d'amélioration à court
+terme plutôt que des défauts dissimulés.
+
+\subsection{Apports techniques}
+
+Ce stage a permis d'approfondir des compétences qui dépassent largement la
+simple implémentation de fonctionnalités CRUD : la conception d'un modèle
+de données fidèle à des règles métier complexes et partiellement
+implicites, l'intégration résiliente de services externes (IA générative,
+service SMTP, hébergement vidéo) avec gestion explicite des scénarios
+d'échec, la sécurisation d'une API REST à plusieurs niveaux (RBAC et
+contrôle de propriété), et la mise en place d'une suite de tests
+automatisés couvrant en priorité la logique métier la plus sensible plutôt
+que l'ensemble du code de façon uniforme.
+
+\subsection{Apports personnels et professionnels}
+
+Sur le plan personnel, mener seul --- en lien direct et continu avec
+l'équipe pédagogique d'\Entreprise{} --- l'intégralité d'un projet logiciel
+réel, de l'analyse des besoins jusqu'au déploiement, a été une expérience
+professionnelle formatrice à part entière. Elle a permis de mettre en
+pratique, sur un projet destiné à des utilisateurs réels, des compétences
+d'analyse, de conception et de rigueur technique qui dépassent largement
+le cadre d'un exercice académique classique, ainsi qu'une autonomie
+accrue dans la priorisation du travail au sein d'une démarche itérative
+non encadrée par des cérémonies Scrum formelles.
+
+\section*{Conclusion du chapitre}
 Ce chapitre a présenté la démarche de validation du projet --- une suite
 de 138 tests backend complétée par des tests frontend et des scripts de
 montée en charge ciblés sur les mécanismes de concurrence les plus
-sensibles --- ainsi que l'architecture de déploiement retenue, dont la
-topologie cible est déjà anticipée par la configuration nginx du projet
-en attendant son activation complète. La conclusion générale de ce rapport
-revient à présent sur l'ensemble du travail réalisé durant ce stage.
+sensibles --- l'architecture de déploiement retenue, dont la topologie
+cible est déjà anticipée par la configuration nginx du projet en attendant
+son activation complète, ainsi que le bilan du stage. La conclusion
+générale de ce rapport revient à présent sur l'ensemble du travail réalisé
+durant ce stage.

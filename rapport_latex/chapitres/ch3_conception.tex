@@ -1,105 +1,15 @@
-\chapter{Analyse et conception}
-\label{ch:analyse-conception}
+\chapter{Conception de la solution}
+\label{ch:conception}
 
-\section{Acteurs et cas d'utilisation}
+\section*{Introduction du chapitre}
+Ce chapitre traduit les besoins spécifiés au chapitre précédent en une
+architecture logicielle, un modèle de données et une stratégie de
+sécurité. Les choix technologiques qui en découlent sont justifiés en fin
+de chapitre.
 
-Le système distingue cinq rôles internes, organisés en une hiérarchie de
-sécurité (\texttt{ROLE\_SUPER\_ADMIN > ROLE\_ADMIN}), à laquelle s'ajoutent
-deux acteurs externes ne possédant pas de compte : le tuteur de stage
-(accès par lien à usage unique) et le visiteur public (formulaire de
-contact, infolettre, vérification de certificat).
+\section{Architecture de la solution}
 
-\begin{table}[H]
-  \centering
-  \caption{Rôles applicatifs et responsabilités}
-  \label{tab:roles}
-  \begin{tabular}{@{}p{2.8cm}p{9.5cm}@{}}
-    \toprule
-    Rôle & Responsabilités \\
-    \midrule
-    \texttt{SUPER\_ADMIN} & Paramètres système globaux, en plus de tous les droits Admin. \\
-    \texttt{ADMIN} (Directeur) & Gestion pédagogique complète, validation des UF sensibles, gestion des groupes et des campagnes email, en plus de tous les droits Formateur. \\
-    \texttt{FORMATEUR} & Studio de cours, gestion des quiz, correction manuelle, messagerie, bourse à l'emploi. \\
-    \texttt{ETUDIANT} & Espace apprenant : contenu, quiz, stage, certificat, messagerie. \\
-    \texttt{SUPPORT} & Accès limité, essentiellement en lecture. \\
-    \bottomrule
-  \end{tabular}
-\end{table}
-
-La Figure~\ref{fig:cas-utilisation} synthétise l'ensemble des cas
-d'utilisation identifiés à partir des 29 contrôleurs REST exposés par le
-backend.
-
-\begin{figure}[H]
-  \centering
-  \includegraphics[width=\textwidth,height=0.85\textheight,keepaspectratio]{diagramme_cas_utilisation.png}
-  \caption{Diagramme de cas d'utilisation}
-  \label{fig:cas-utilisation}
-\end{figure}
-
-\section{Modèle de données}
-\label{sec:analyse-conception}
-
-Le modèle de données regroupe 39 entités JPA concrètes, toutes héritant
---- à l'exception d'\texttt{AssetDownload} --- d'une superclasse technique
-abstraite \texttt{AuditableEntity} (\texttt{createdAt}/\texttt{updatedAt}).
-Plutôt qu'un diagramme unique tentant de représenter les 39 classes et
-la cinquantaine d'associations qui les relient --- illisible à cette
-échelle ---, la Figure~\ref{fig:classes-ensemble} en donne une vue
-d'ensemble volontairement simplifiée : les huit paquetages fonctionnels,
-une à trois classes représentatives par paquetage, et uniquement les
-associations et cardinalités les plus structurantes. Trois domaines
-jugés les plus importants sont ensuite détaillés intégralement, avec
-toutes leurs classes, attributs et cardinalités : structure pédagogique
-et groupes (Figure~\ref{fig:classes-pedagogie}), évaluation
-(Figure~\ref{fig:classes-evaluation}), et stage et certification
-(Figure~\ref{fig:classes-stage}). Les domaines restants (communication,
-marketing/emploi, médias, suivi système) suivent les mêmes conventions de
-modélisation et sont détaillés au besoin dans le code source
-(\texttt{domain/entity/}).
-
-\begin{figure}[H]
-  \centering
-  \includegraphics[width=\textwidth,height=0.85\textheight,keepaspectratio]{diagramme_classes_ensemble.png}
-  \caption{Diagramme de classes — vue d'ensemble simplifiée de l'application}
-  \label{fig:classes-ensemble}
-\end{figure}
-
-\begin{figure}[H]
-  \centering
-  \includegraphics[width=\textwidth,height=0.85\textheight,keepaspectratio]{diagramme_classes_pedagogie.png}
-  \caption{Diagramme de classes — structure pédagogique et groupes}
-  \label{fig:classes-pedagogie}
-\end{figure}
-
-\begin{figure}[H]
-  \centering
-  \includegraphics[width=\textwidth,height=0.85\textheight,keepaspectratio]{diagramme_classes_evaluation.png}
-  \caption{Diagramme de classes — évaluation}
-  \label{fig:classes-evaluation}
-\end{figure}
-
-\begin{figure}[H]
-  \centering
-  \includegraphics[width=\textwidth,height=0.85\textheight,keepaspectratio]{diagramme_classes_stage_certification.png}
-  \caption{Diagramme de classes — stage et certification}
-  \label{fig:classes-stage}
-\end{figure}
-
-\subsection{Un choix de modélisation délibéré : l'UF comme attribut}
-
-Un choix de conception mérite d'être souligné : l'Unité de Formation (UF)
-et l'année du cursus ne sont \emph{pas} modélisées comme des entités
-séparées avec leur propre table et clé primaire. Ce sont des attributs
-(\texttt{ufCode}, \texttt{ufTitle}, \texttt{yearNumber}) portés directement
-par \texttt{ModuleEntity}. Ce choix évite une jointure supplémentaire pour
-une notion qui, dans les règles métier réelles, sert uniquement de
-\emph{clé de regroupement} (voir \S\ref{sec:progression-uf}) --- il garde
-le schéma relationnel simple sans sacrifier la logique de progression par
-UF, qui est recalculée dynamiquement à partir de ces attributs plutôt que
-stockée redondamment.
-
-\section{Architecture logicielle}
+\subsection{Architecture logicielle}
 
 L'application suit une architecture en couches classique
 (Figure~\ref{fig:architecture}) : \texttt{Controller} $\rightarrow$
@@ -121,6 +31,84 @@ suivante : un contrôleur ne fait que du routage HTTP, de la validation
 logique métier --- y compris les vérifications de propriété de ressource
 détaillées au chapitre~\ref{ch:realisation} --- vit dans la couche
 service, jamais dans le contrôleur.
+
+\subsection{Architecture physique et de déploiement}
+
+La Figure~\ref{fig:deploiement} présente la topologie de déploiement
+retenue --- conteneurs Docker orchestrés par Docker Compose, reverse
+proxy nginx routant vers l'API Spring Boot et le frontend Next.js. Le
+détail de la configuration (upstreams nginx, build Docker en deux étapes,
+gestion des secrets) est décrit au chapitre~\ref{ch:tests-deploiement-bilan},
+qui porte spécifiquement sur le déploiement.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.9\textwidth,height=0.85\textheight,keepaspectratio]{diagramme_deploiement.png}
+  \caption{Diagramme de déploiement}
+  \label{fig:deploiement}
+\end{figure}
+
+\section{Modèle de données}
+\label{sec:modele-donnees}
+
+Le modèle de données regroupe 39 entités JPA concrètes, toutes héritant
+--- à l'exception d'\texttt{AssetDownload} --- d'une superclasse technique
+abstraite \texttt{AuditableEntity} (\texttt{createdAt}/\texttt{updatedAt}).
+Plutôt qu'un diagramme unique tentant de représenter les 39 classes et
+la cinquantaine d'associations qui les relient --- illisible à cette
+échelle ---, la Figure~\ref{fig:classes-ensemble} en donne une vue
+d'ensemble volontairement simplifiée : les huit paquetages fonctionnels,
+une à trois classes représentatives par paquetage, et uniquement les
+associations et cardinalités les plus structurantes. Trois domaines
+jugés les plus importants sont ensuite détaillés intégralement, avec
+toutes leurs classes, attributs et cardinalités : structure pédagogique
+et groupes (Figure~\ref{fig:classes-pedagogie}), évaluation
+(Figure~\ref{fig:classes-evaluation}), et stage et certification
+(Figure~\ref{fig:classes-stage}). Les domaines restants (communication,
+marketing/emploi, médias, suivi système) suivent les mêmes conventions de
+modélisation et sont détaillés au besoin dans le code source
+(\texttt{domain/entity/}) ; le diagramme complet figure en Annexe~A.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth,height=0.85\textheight,keepaspectratio]{diagramme_classes_ensemble.png}
+  \caption{Diagramme de classes --- vue d'ensemble simplifiée de l'application}
+  \label{fig:classes-ensemble}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth,height=0.85\textheight,keepaspectratio]{diagramme_classes_pedagogie.png}
+  \caption{Diagramme de classes --- structure pédagogique et groupes}
+  \label{fig:classes-pedagogie}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth,height=0.85\textheight,keepaspectratio]{diagramme_classes_evaluation.png}
+  \caption{Diagramme de classes --- évaluation}
+  \label{fig:classes-evaluation}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth,height=0.85\textheight,keepaspectratio]{diagramme_classes_stage_certification.png}
+  \caption{Diagramme de classes --- stage et certification}
+  \label{fig:classes-stage}
+\end{figure}
+
+\subsection{Un choix de modélisation délibéré : l'UF comme attribut}
+
+Un choix de conception mérite d'être souligné : l'Unité de Formation (UF)
+et l'année du cursus ne sont \emph{pas} modélisées comme des entités
+séparées avec leur propre table et clé primaire. Ce sont des attributs
+(\texttt{ufCode}, \texttt{ufTitle}, \texttt{yearNumber}) portés directement
+par \texttt{ModuleEntity}. Ce choix évite une jointure supplémentaire pour
+une notion qui, dans les règles métier réelles, sert uniquement de
+\emph{clé de regroupement} (voir \S\ref{sec:progression-uf}) --- il garde
+le schéma relationnel simple sans sacrifier la logique de progression par
+UF, qui est recalculée dynamiquement à partir de ces attributs plutôt que
+stockée redondamment.
 
 \section{Sécurité}
 
@@ -187,7 +175,7 @@ répondent pas à la même question. Le premier niveau est un
 \textbf{RBAC déclaratif}, appliqué au moyen de l'annotation
 \texttt{@PreAuthorize} posée sur chaque endpoint sensible, et résolu
 contre la hiérarchie de rôles \texttt{ROLE\_SUPER\_ADMIN > ROLE\_ADMIN}
-présentée au chapitre~\ref{ch:realisation}. Ce niveau répond correctement
+présentée au chapitre~\ref{ch:analyse-besoins}. Ce niveau répond correctement
 à la question \og cet utilisateur a-t-il le \emph{type} de compte requis
 pour accéder à cette fonctionnalité ? \fg, mais il est structurellement
 incapable de répondre à une seconde question, tout aussi critique dès lors
@@ -239,10 +227,9 @@ frontend pour une seule page de la plateforme.
   \end{tabular}
 \end{table}
 
-\section{Conclusion}
-
-Ce chapitre a présenté les cas d'utilisation, le modèle de données, les
-choix d'architecture et de sécurité qui structurent IAT Academy. Le
-chapitre~\ref{ch:realisation} détaille maintenant comment ces choix se
-traduisent dans l'implémentation, en particulier sur les mécanismes qui
-dépassent le CRUD simple.
+\section*{Conclusion du chapitre}
+Ce chapitre a présenté l'architecture logicielle et de déploiement, le
+modèle de données et la stratégie de sécurité qui structurent
+\Entreprise. Le chapitre~\ref{ch:realisation} détaille maintenant comment
+ces choix se traduisent dans l'implémentation, en particulier sur les
+mécanismes qui dépassent le CRUD simple.

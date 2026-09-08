@@ -1,5 +1,40 @@
-\chapter{Réalisation}
+\chapter{Réalisation et mise en œuvre}
 \label{ch:realisation}
+
+\section*{Introduction du chapitre}
+Ce chapitre présente l'environnement de travail retenu, puis se
+concentre --- conformément à la démarche itérative par fonctionnalité
+décrite au chapitre~\ref{ch:contexte} --- sur les mécanismes qui
+\emph{dépassent} le CRUD simple et qui constituent la valeur ajoutée
+technique réelle du projet.
+
+\section{Environnement de travail}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{@{}>{\bfseries}p{3.5cm}p{10.5cm}@{}}
+\toprule
+Composant & Version / outil \\
+\midrule
+Backend & Spring Boot 3.4.5, Java 17+, Maven \\
+Frontend & Next.js 15 (App Router, Turbopack), TypeScript strict, Tailwind v4 \\
+Base de données & PostgreSQL 16, migrations versionnées Flyway \\
+Cache / verrous & Redis 7 \\
+Conteneurisation & Docker, Docker Compose \\
+Versionnement & Git / GitHub \\
+Modélisation UML & PlantUML (diagrammes de classes, cas d'utilisation,
+  séquence), Python/\texttt{mingrammer} (architecture, déploiement) \\
+Tests & JUnit 5 + Mockito (backend), Vitest + React Testing Library
+  (frontend), Playwright (bout en bout) \\
+\bottomrule
+\end{tabular}
+\caption{Environnement logiciel et outils du projet}
+\label{tab:techno-outils}
+\end{table}
+\tabdesc{Chaque outil retenu répond à une contrainte du projet plutôt qu'à
+une préférence personnelle ; le Tableau~\ref{tab:stack} du chapitre
+précédent détaille la justification des choix technologiques
+d'architecture proprement dits.}
 
 \section{Vue d'ensemble des modules implémentés}
 
@@ -11,7 +46,7 @@ certification, messagerie, notifications, campagnes email, bourse à
 l'emploi, recherche globale et outils d'administration (utilisateurs,
 groupes, journal d'audit, paramètres système). Plutôt que de décrire
 exhaustivement chaque endpoint CRUD --- déjà couvert au
-chapitre~\ref{ch:analyse-conception} --- ce chapitre se concentre sur les
+chapitre~\ref{ch:analyse-besoins} --- ce chapitre se concentre sur les
 mécanismes qui \emph{dépassent} le CRUD simple et qui constituent la
 valeur ajoutée technique réelle du projet.
 
@@ -415,11 +450,10 @@ supposées, sont assumées ici plutôt que passées sous silence :
     relance \texttt{sendAsync()}.
 \end{itemize}
 
-\section{Conclusion}
-
+\section*{Conclusion du chapitre}
 Ce chapitre a détaillé, par ordre d'impact, les mécanismes qui distinguent
-IAT Academy d'une simple application CRUD : intégration IA résiliente,
+\Entreprise{} d'une simple application CRUD : intégration IA résiliente,
 correction hybride avec réconciliation d'état, progression métier en
 cascade, contrôle d'accès à granularité fine, et les limites identifiées
-en toute transparence. Le chapitre~\ref{ch:tests-deploiement} présente
-maintenant la démarche de validation et de déploiement.
+en toute transparence. Le chapitre~\ref{ch:tests-deploiement-bilan} présente
+maintenant la démarche de validation, de déploiement et le bilan du stage.
