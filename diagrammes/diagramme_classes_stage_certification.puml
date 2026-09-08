@@ -1,9 +1,34 @@
 @startuml diagramme_classes_stage_certification
 !theme plain
+
 skinparam dpi 300
+skinparam shadowing false
 skinparam classAttributeIconSize 0
+skinparam linetype ortho
 hide circle
 hide empty members
+
+skinparam nodesep 100
+skinparam ranksep 48
+
+skinparam class {
+    BackgroundColor White
+    BorderColor #142B4B
+    BorderThickness 1.2
+    ArrowColor #142B4B
+    ArrowThickness 1.3
+    FontColor #142B4B
+    FontStyle Bold
+    AttributeFontColor #23282F
+    AttributeFontStyle Normal
+    AttributeFontSize 12
+}
+
+skinparam title {
+    FontColor #142B4B
+    FontSize 20
+    FontStyle Bold
+}
 
 title Diagramme de classes — Stage et certification
 
@@ -79,22 +104,15 @@ AuditableEntity <|-- Certificate
 LearnerDocument ..> LearnerDocType
 LearnerDocument ..> LearnerDocStatus
 
-User "1" -- "0..N" LearnerUfValidation : apprenant >
+User -- "0..N" LearnerUfValidation : apprenant >
 User "0..1" -- "0..N" LearnerUfValidation : validé par >
-LearnerUfValidation "1" -- "0..N" StageSignoffInvite
+LearnerUfValidation -- "0..N" StageSignoffInvite
 
-User "1" -- "0..N" LearnerDocument : apprenant >
-User "1" -- "0..N" LearnerDocument : déposé par >
-Asset "1" -- "0..N" LearnerDocument
+User -- "0..N" LearnerDocument : apprenant >
+User -- "0..N" LearnerDocument : déposé par >
+Asset -- "0..N" LearnerDocument
 
-User "1" -- "0..N" Certificate
-Formation "1" -- "0..N" Certificate
-
-note bottom of LearnerUfValidation
-  Gate manuel du Directeur limité à deux UF :
-  "UF 5" (stage) et "UF 11" (soutenance).
-  Pour toute autre UF, isValidated() renvoie
-  toujours true (voir ch. 3, §3.2.3).
-end note
+User -- "0..N" Certificate
+Formation -- "0..N" Certificate
 
 @enduml

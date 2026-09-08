@@ -1,9 +1,34 @@
 @startuml diagramme_classes_pedagogie
 !theme plain
+
 skinparam dpi 300
+skinparam shadowing false
 skinparam classAttributeIconSize 0
+skinparam linetype ortho
 hide circle
 hide empty members
+
+skinparam nodesep 20
+skinparam ranksep 48
+
+skinparam class {
+    BackgroundColor White
+    BorderColor #142B4B
+    BorderThickness 1.2
+    ArrowColor #142B4B
+    ArrowThickness 1.3
+    FontColor #142B4B
+    FontStyle Bold
+    AttributeFontColor #23282F
+    AttributeFontStyle Normal
+    AttributeFontSize 12
+}
+
+skinparam title {
+    FontColor #142B4B
+    FontSize 20
+    FontStyle Bold
+}
 
 title Diagramme de classes — Structure pédagogique et groupes
 
@@ -107,14 +132,7 @@ GroupContentAssignment "0..N" --> "1" ModuleEntity
 Formation "1" *-- "0..N" ModuleEntity
 ModuleEntity "1" *-- "0..N" Lesson
 Lesson "1" *-- "0..N" LessonBlock
-User "1" -- "0..N" LessonProgress
-Lesson "1" -- "0..N" LessonProgress
-
-note bottom of ModuleEntity
-  L'Unité de Formation (UF) et l'année ne sont **pas**
-  des entités séparées : ce sont des attributs
-  (ufCode/ufTitle, yearNumber) portés directement par
-  ModuleEntity (choix de modèle volontaire, voir ch. 2).
-end note
+User -- "0..N" LessonProgress
+Lesson -- "0..N" LessonProgress
 
 @enduml

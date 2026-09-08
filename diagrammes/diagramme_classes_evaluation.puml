@@ -1,9 +1,34 @@
 @startuml diagramme_classes_evaluation
 !theme plain
+
 skinparam dpi 300
+skinparam shadowing false
 skinparam classAttributeIconSize 0
+skinparam linetype ortho
 hide circle
 hide empty members
+
+skinparam nodesep 20
+skinparam ranksep 48
+
+skinparam class {
+    BackgroundColor White
+    BorderColor #142B4B
+    BorderThickness 1.2
+    ArrowColor #142B4B
+    ArrowThickness 1.3
+    FontColor #142B4B
+    FontStyle Bold
+    AttributeFontColor #23282F
+    AttributeFontStyle Normal
+    AttributeFontSize 12
+}
+
+skinparam title {
+    FontColor #142B4B
+    FontSize 20
+    FontStyle Bold
+}
 
 title Diagramme de classes — Évaluation (quiz, devoirs, notation)
 
@@ -146,23 +171,16 @@ Formation "0..1" -- "0..N" Quiz : fin d'UF / d'année >
 Quiz "1" *-- "0..N" Question
 Question "1" *-- "0..N" AnswerOption
 
-User "1" -- "0..N" QuizAttempt
-Quiz "1" -- "0..N" QuizAttempt
-QuizAttempt "1" -- "0..N" EssayGrade
-QuizAttempt "1" -- "0..N" ProctoringEvent
-Question "1" -- "0..N" EssayGrade
+User -- "0..N" QuizAttempt
+Quiz -- "0..N" QuizAttempt
+QuizAttempt -- "0..N" EssayGrade
+QuizAttempt -- "0..N" ProctoringEvent
+Question -- "0..N" EssayGrade
 
-ModuleEntity "1" -- "0..N" Assignment
-Assignment "1" -- "0..N" Submission
-User "1" -- "0..N" Submission
-User "1" -- "0..N" GradeAdjustment
-ModuleEntity "1" -- "0..N" GradeAdjustment
-
-note bottom of AnswerOption
-  Correction auto : égalité stricte entre
-  options sélectionnées et correct=true
-  (pas de crédit partiel). ESSAY : jamais
-  auto-noté, uniquement via EssayGrade.
-end note
+ModuleEntity -- "0..N" Assignment
+Assignment -- "0..N" Submission
+User -- "0..N" Submission
+User -- "0..N" GradeAdjustment
+ModuleEntity -- "0..N" GradeAdjustment
 
 @enduml
