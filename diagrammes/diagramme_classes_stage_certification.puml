@@ -30,7 +30,7 @@ skinparam title {
     FontStyle Bold
 }
 
-title Diagramme de classes — Stage et certification
+title Diagramme de classes — Stage, certification et badges
 
 abstract class AuditableEntity {
   - id : UUID
@@ -82,6 +82,22 @@ class Certificate {
   - physicallyDelivered : boolean
 }
 
+class UserBadge {
+  - badgeCode : BadgeCode
+  - awardedAt : Instant
+  - shareCode : String
+}
+
+enum BadgeCode {
+  FIRST_MODULE
+  PERFECT_QUIZ
+  STAGE_VALIDATED
+  PROFILE_COMPLETE
+  FORUM_CONTRIBUTOR
+  YEAR1_VALIDATED
+  YEAR2_VALIDATED
+}
+
 enum LearnerDocType {
   CONVENTION_ECOLE
   ASSURANCE
@@ -100,9 +116,11 @@ AuditableEntity <|-- LearnerUfValidation
 AuditableEntity <|-- StageSignoffInvite
 AuditableEntity <|-- LearnerDocument
 AuditableEntity <|-- Certificate
+AuditableEntity <|-- UserBadge
 
 LearnerDocument ..> LearnerDocType
 LearnerDocument ..> LearnerDocStatus
+UserBadge ..> BadgeCode
 
 User -- "0..N" LearnerUfValidation : apprenant >
 User "0..1" -- "0..N" LearnerUfValidation : validé par >
@@ -114,5 +132,7 @@ Asset -- "0..N" LearnerDocument
 
 User -- "0..N" Certificate
 Formation -- "0..N" Certificate
+
+User -- "0..N" UserBadge : apprenant >
 
 @enduml

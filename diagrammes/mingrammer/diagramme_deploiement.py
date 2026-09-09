@@ -47,7 +47,7 @@ EDGE_ATTR = {"fontsize": "12", "fontname": "Helvetica", "penwidth": "1.6"}
 ICONS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "icons")
 
 with Diagram(
-    "Diagramme de déploiement - IAT Academy",
+    "Diagramme de déploiement - IAT Academy (architecture cible)",
     filename="../images/diagramme_deploiement",
     show=False,
     direction="TB",
@@ -59,7 +59,7 @@ with Diagram(
     user = Users("Utilisateur")
 
     with Cluster(
-        "Docker Compose",
+        "Docker Compose (postgres + redis actifs aujourd'hui — api/frontend/nginx cibles)",
         graph_attr={"bgcolor": "#EAF2FB", "pencolor": NAVY, "fontcolor": NAVY},
     ):
         proxy = Nginx("nginx\n(reverse proxy :80)")

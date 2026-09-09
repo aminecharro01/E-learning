@@ -38,7 +38,7 @@ d'architecture proprement dits.}
 
 \section{Vue d'ensemble des modules implémentés}
 
-Le backend expose 29 contrôleurs REST couvrant l'ensemble du cycle de vie
+Le backend expose 31 contrôleurs REST couvrant l'ensemble du cycle de vie
 pédagogique : authentification (avec 2FA optionnelle), catalogue de cours
 et éditeur de contenu par blocs, système de quiz à quatre portées
 (section, module, UF, année), gestion de stage avec signature externe,
@@ -122,11 +122,14 @@ sans code de persistance dupliqué.
 \subsection{Correction hybride des quiz : automatique et manuelle, avec réconciliation d'état}
 \label{sec:correction-hybride}
 
-\textbf{Contexte du problème.} Un même quiz peut mélanger des questions à
-choix (auto-corrigeables) et des questions à réponse libre (nécessitant un
-jugement humain). Une solution naïve traiterait chaque soumission comme
-« terminée » dès l'envoi, ce qui est incorrect si une partie de la note
-dépend encore d'une correction à venir.
+\textbf{Contexte du problème.} Un quiz peut contenir des questions à choix
+(auto-corrigeables) et des questions à réponse libre (nécessitant un
+jugement humain) --- historiquement dans le même quiz, et désormais, depuis
+l'isolation par mode décrite en \S\ref{sec:quiz-mode}, au moins pour toute
+tentative sur un quiz \texttt{OPEN\_ENDED} pris isolément. Une solution
+naïve traiterait chaque soumission comme « terminée » dès l'envoi, ce qui
+est incorrect si une partie de la note dépend encore d'une correction à
+venir.
 
 \textbf{Solution apportée.} \texttt{Quiz\allowbreak Attempt\allowbreak Service.submit()}
 (\texttt{service/\allowbreak Quiz\allowbreak Attempt\allowbreak Service.java}) calcule le score des questions

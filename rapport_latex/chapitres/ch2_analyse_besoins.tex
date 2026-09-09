@@ -86,7 +86,7 @@ Scalabilité & Backend \texttt{STATELESS} (aucune session en mémoire) ---
   seul jeton JWT, ce qui simplifie la mise à l'échelle horizontale. \\ \hline
 Maintenabilité & Architecture en couches stricte (\texttt{Controller
   $\rightarrow$ Service $\rightarrow$ Repository $\rightarrow$ Entity}),
-  migrations de schéma versionnées (Flyway), suite de 138 tests
+  migrations de schéma versionnées (Flyway), suite de 151 tests
   automatisés. \\ \hline
 Portabilité & Backend et frontend conteneurisés (Docker), configuration
   exclusivement par variables d'environnement (principe \emph{Twelve-Factor
@@ -113,7 +113,7 @@ dessinée dans un outil graphique séparé --- un choix qui facilite leur
 mise à jour au fil de l'évolution du modèle de données réel.
 
 La Figure~\ref{fig:cas-utilisation} synthétise l'ensemble des cas
-d'utilisation identifiés à partir des 29 contrôleurs REST exposés par le
+d'utilisation identifiés à partir des 31 contrôleurs REST exposés par le
 backend, organisés en quatre paquetages fonctionnels (Sécurité \& Accès,
 Parcours \& Évaluations, Stage \& Diplomation, Administration \&
 Services), avec la hiérarchie de généralisation des acteurs et les

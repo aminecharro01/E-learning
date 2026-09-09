@@ -104,6 +104,8 @@ rectangle "Système IAT Academy" {
 
     usecase "Inviter le tuteur\nà signer" as UC_InviteSignoff #line:red
 
+    usecase "Partager une réussite\n(badge, diplôme)" as UC_ShareAchievement
+
 
     ' -----------------------------------------------------
     ' ADMINISTRATION ET SERVICES
@@ -138,6 +140,7 @@ rectangle "Système IAT Academy" {
     UC_AccessSpace -[hidden]down-> UC_Profile
     UC_Profile -[hidden]down-> UC_Message
     UC_Message -[hidden]down-> UC_JobsView
+    UC_JobsView -[hidden]down-> UC_ShareAchievement
 
 
     ' ----- Colonne 3 -----
@@ -210,6 +213,7 @@ Etudiant --> UC_TakeQuiz
 Etudiant --> UC_ViewResults
 Etudiant --> UC_StageDossier
 Etudiant --> UC_Certificate
+Etudiant --> UC_ShareAchievement
 Etudiant --> UC_JobsView
 
 

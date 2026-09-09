@@ -52,6 +52,8 @@ véritable appel réseau lors des tests.
     \texttt{MessagingServiceTest} & Messagerie interne \\ \hline
     \texttt{ProgressionServiceTest} & Déblocage séquentiel du parcours \\ \hline
     \texttt{Question\allowbreak Generation\allowbreak Service\allowbreak Test} & Génération de questions par IA \\ \hline
+    \texttt{QuestionServiceTest} & Verrouillage du mode de correction d'un quiz \\ \hline
+    \texttt{QuizServiceTest} & Cycle de vie d'un quiz (création, changement de mode) \\ \hline
     \texttt{RateLimitServiceTest} & Limitation de débit Redis \\ \hline
     \texttt{SearchServiceTest} & Recherche globale \\ \hline
     \texttt{StageServiceTest} & Gestion du stage \\ \hline
@@ -59,7 +61,7 @@ véritable appel réseau lors des tests.
     \bottomrule
   \end{tabular}
 \end{table}
-\tabdesc{Au total, cette suite comporte 138 méthodes de test
+\tabdesc{Au total, cette suite comporte 151 méthodes de test
 (\texttt{@Test}), couvrant en priorité les services identifiés au
 chapitre~\ref{ch:realisation} comme porteurs de la logique métier la plus
 sensible : notation, sécurité, validation d'UF, intégration à des services
@@ -237,7 +239,7 @@ accrue dans la priorisation du travail au sein d'une démarche itérative
 non encadrée par des cérémonies Scrum formelles.
 
 \section*{Conclusion du chapitre}
-Entre une suite de 138 tests backend complétée par des tests frontend et
+Entre une suite de 151 tests backend complétée par des tests frontend et
 des scripts de montée en charge ciblés sur les mécanismes de concurrence
 les plus sensibles, une architecture de déploiement dont la topologie
 cible est déjà anticipée par la configuration nginx du projet, et le

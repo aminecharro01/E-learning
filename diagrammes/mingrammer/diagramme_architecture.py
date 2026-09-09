@@ -64,7 +64,7 @@ with Diagram(
         graph_attr={"bgcolor": "#EAF2FB", "pencolor": NAVY, "fontcolor": NAVY},
     ):
         security = Vault("Sécurité\nJWT + RBAC")
-        controller = Spring("Contrôleurs REST\n(29 @RestController)")
+        controller = Spring("Contrôleurs REST\n(31 @RestController)")
         service = Spring("Services métier\n(logique applicative)")
         repository = Server("Repositories\nSpring Data JPA")
 

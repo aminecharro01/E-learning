@@ -87,7 +87,7 @@ class LessonBlock {
 }
 
 class LessonProgress {
-  - videoWatchedPercent : double
+  - videoWatchedPercent : int
   - completed : boolean
   - completedAt : Instant
 }
