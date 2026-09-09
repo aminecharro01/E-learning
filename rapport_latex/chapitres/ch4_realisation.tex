@@ -298,8 +298,9 @@ de JavaScript, affiche un aperçu correct lors du partage.
   {Page publique de vérification d'un certificat}{capture-verification}
   {Accessible sans authentification à l'adresse \texttt{/verify/[code]},
    cette page ne révèle que des informations déjà publiques (nom,
-   formation, date) et propose un bouton de partage direct vers
-   LinkedIn.}
+   formation, date). Le bouton « Ajouter au profil LinkedIn » utilise
+   depuis peu le vrai flux de certification (voir plus loin,
+   \S\ref{sec:badges-linkedin}) plutôt qu'un simple partage.}
 
 \textbf{Bénéfice concret.} Cette fonctionnalité transforme un document
 statique en preuve vérifiable et en outil de visibilité professionnelle
@@ -430,10 +431,130 @@ pédagogique.
 constaté après coup, avec un message explicite plutôt qu'un écrasement
 silencieux.
 
+%-----------------------------------------------------------------------
+\subsection{Isolation des quiz par mode de correction, fixée à la création}
+\label{sec:quiz-mode}
+
+\textbf{Contexte du problème.} Rien n'empêchait, avant ce correctif, un
+même quiz de mélanger des questions à choix (notées automatiquement, score
+immédiat) avec des questions à réponse libre (notées manuellement, score
+différé) --- \texttt{QuestionService.validateQuestionOptions} ne validait
+chaque question qu'isolément, sans jamais consulter ses voisines dans le
+même quiz.
+
+\textbf{Solution apportée.} Un nouveau champ \texttt{Quiz.questionMode}
+(\texttt{AUTO\_GRADED} / \texttt{OPEN\_ENDED}, migration Flyway V44,
+rétro-classée pour les quiz existants d'après leur contenu réel) est fixé
+obligatoirement à la création et verrouillé tant que le quiz contient des
+questions (\texttt{QuizService.updateQuiz}). Chaque ajout ou modification
+de question est validé contre ce mode
+(\texttt{QuestionService\#assertMatchesQuizMode}) --- un quiz
+\texttt{AUTO\_GRADED} rejette toute question \texttt{ESSAY}, et
+inversement. Côté frontend, le formulaire de question masque le sélecteur
+de type devenu incompatible plutôt que de le désactiver.
+
+\figimg{screenshots/capture_quiz_mode.png}{0.75}
+  {Sélecteur de mode de correction à la création d'un quiz}{capture-quiz-mode}
+  {Fixé une seule fois~: le formulaire d'ajout de question qui suit ne
+   proposera plus que les types compatibles avec le mode choisi ici.}
+
+\textbf{Bénéfice concret.} Le calcul du score reste prévisible dans les
+deux sens~: jamais de score partiel affiché avant qu'une correction
+manuelle en attente ne soit terminée, et jamais de quiz entièrement
+automatique bloqué en attente d'une correction manuelle qui n'existera
+jamais.
+
+%-----------------------------------------------------------------------
+\subsection{Messagerie~: contact direct du support et accès formateur aux salons de cohorte}
+\label{sec:messagerie-support}
+
+\textbf{Contexte du problème.} Le rôle \texttt{SUPPORT} existait en base
+sans jamais être atteignable~: \texttt{MessagingService.getOrCreateDirect}
+n'autorisait une conversation directe qu'entre un apprenant et un membre
+du staff pédagogique (\texttt{Role.isStaff()}), et \texttt{SUPPORT}
+n'appartient délibérément pas à ce groupe (il n'a pas les droits
+d'administration). Symétriquement, un salon de cohorte n'a jamais de ligne
+\texttt{ConversationParticipant} pour le staff (accès par rôle, non par
+appartenance) --- \texttt{listMyConversations} ne les incluait donc jamais
+dans la messagerie d'un formateur, qui ne pouvait pas y écrire alors que le
+contrôle d'accès l'y autorisait déjà.
+
+\textbf{Solution apportée.} Une exception ciblée
+(\texttt{isMessagingEligible}) admet \texttt{SUPPORT} comme partie valide
+d'une conversation directe sans lui accorder les autres droits liés à
+\texttt{isStaff()}. Un annuaire dédié
+(\texttt{GET~/api/conversations/support}), distinct de celui des
+professeurs, est épinglé séparément côté frontend. Pour les salons de
+cohorte, \texttt{listMyConversations} renvoie désormais, pour tout
+principal \texttt{isStaff()}, l'ensemble des salons existants
+(\texttt{ConversationRepository.findByType}).
+
+\figimg{screenshots/capture_messagerie_support.png}{0.85}
+  {Annuaire support épinglé, distinct des professeurs}{capture-messagerie-support}
+  {Côté apprenant~: le support technique et les professeurs apparaissent
+   comme deux listes de contact séparées, en plus des conversations déjà
+   existantes.}
+
+\figimg{screenshots/capture_messagerie_cohorte.png}{0.85}
+  {Salons de cohorte visibles dans la messagerie du formateur}{capture-messagerie-cohorte}
+  {Avant ce correctif, un formateur ne voyait jamais les salons de ses
+   cohortes dans sa propre messagerie, bien que le contrôle d'accès le lui
+   permette déjà.}
+
+\textbf{Bénéfice concret.} Un apprenant en difficulté technique atteint
+directement un canal dédié plutôt que d'attendre qu'un membre du staff
+pédagogique initie l'échange, et un formateur peut suivre et animer le
+salon de sa cohorte sans aucun changement de contrat d'API côté contrôle
+d'accès --- seule la visibilité manquait.
+
+%-----------------------------------------------------------------------
+\subsection{Badges de palier et image de partage générée dynamiquement}
+\label{sec:badges-linkedin}
+
+\textbf{Contexte du problème.} Le système de badges existait déjà
+(\texttt{BadgeCode}, \texttt{BadgeService}) mais restait interne à
+l'application --- aucun moyen de le partager, et aucun badge ne marquait le
+passage d'une année à l'autre du cursus. Le bouton LinkedIn du certificat
+(\S\ref{sec:certificat-linkedin}) n'ouvrait par ailleurs qu'un simple
+partage dans le fil d'actualité, sans laisser de trace durable sur le
+profil du diplômé.
+
+\textbf{Solution apportée.} Deux badges \texttt{YEAR1\_VALIDATED} /
+\texttt{YEAR2\_VALIDATED} sont désormais décernés dès que toutes les UF de
+l'année correspondante sont validées
+(\texttt{ProgressionService\#checkAndAwardYearBadges}, appelée depuis
+trois points d'entrée distincts pour un même évènement~: mise à jour de
+progression de leçon, validation d'UF par le directeur, et signature par
+un tuteur externe). Chaque badge obtenu porte un code public court
+(\texttt{UserBadge.shareCode}, même principe que
+\texttt{Certificate.verificationCode}) et une image de type « carte
+d'embarquement » composée à la volée en Java2D
+(\texttt{BadgeImageService}, \texttt{Graphics2D} sur un
+\texttt{BufferedImage}, sans bibliothèque externe), reprenant le motif
+déjà utilisé pour le tableau de bord apprenant. Cette image est servie
+sans authentification (\texttt{PublicBadgeController}) pour alimenter
+l'aperçu Open Graph de la page publique \texttt{/achievements/[code]} ---
+même principe de composant serveur que \texttt{/verify/[code]}. Le bouton
+du diplôme utilise désormais le vrai flux de certification LinkedIn
+(\texttt{linkedin.com/profile/add?startTask=CERTIFICATION\_NAME}), qui
+crée une entrée durable dans « Licences et certifications » plutôt qu'un
+simple post.
+
+\figimg{screenshots/capture_badge_partage.png}{0.85}
+  {Page publique de partage d'un badge obtenu}{capture-badge-partage}
+  {Générée côté serveur à l'adresse \texttt{/achievements/[code]}, avec un
+   texte de légende et des hashtags suggérés --- LinkedIn ne permettant pas
+   de pré-remplir le texte d'un post, seulement son URL.}
+
+\textbf{Bénéfice concret.} Chaque palier du parcours devient un objet
+partageable et vérifiable, sans dépendre d'une bibliothèque de génération
+d'image tierce ni d'un service externe~: l'image et la page qui
+l'accompagne sont entièrement produites par l'application elle-même.
+
 \subsection{Tableau de synthèse}
 
 Le Tableau~\ref{tab:synthese-points-forts} regroupe, dans l'ordre d'impact
-retenu tout au long de cette section, les onze mécanismes présentés :
+retenu tout au long de cette section, les quatorze mécanismes présentés :
 leur emplacement précis dans le code source, et l'argument de valeur
 ajoutée qui justifie leur mise en avant --- réutilisable tel quel comme
 support de soutenance.
@@ -457,7 +578,10 @@ support de soutenance.
     Bourse à l'emploi dérivée du certificat & \texttt{JobOffer\allowbreak Service} & Le statut « diplômé » ne peut jamais se désynchroniser de la réalité (source de vérité unique). \\ \hline
     Campagnes email asynchrones à débit maîtrisé & \texttt{EmailCampaign\allowbreak Service}, \texttt{CampaignSender\allowbreak Worker} & L'administrateur n'attend jamais l'envoi complet, sans jamais saturer le serveur SMTP. \\ \hline
     Détection d'inactivité & \texttt{EarlyWarning\allowbreak Service} & Signal fiable pour l'intervention pédagogique, sans mécanisme de suivi dédié supplémentaire. \\ \hline
-    Verrou d'édition collaboratif & \texttt{LessonLock\allowbreak Service} & Prévient un conflit d'édition entre formateurs plutôt que de le constater après coup. \\
+    Verrou d'édition collaboratif & \texttt{LessonLock\allowbreak Service} & Prévient un conflit d'édition entre formateurs plutôt que de le constater après coup. \\ \hline
+    Isolation des quiz par mode de correction & \texttt{Question\allowbreak Service}, \texttt{Quiz\allowbreak Service} & Le calcul du score reste toujours prévisible, jamais mélangé entre automatique et manuel. \\ \hline
+    Messagerie support + salons de cohorte pour le staff & \texttt{Messaging\allowbreak Service} & Ferme un accès prévu par le contrôle d'accès mais jamais exposé côté visibilité. \\ \hline
+    Badges de palier + image de partage générée en Java2D & \texttt{Progression\allowbreak Service}, \texttt{Badge\allowbreak Image\allowbreak Service} & Chaque étape du parcours devient un objet partageable et vérifiable, sans dépendance externe. \\
     \bottomrule
   \end{tabular}
 \end{table}

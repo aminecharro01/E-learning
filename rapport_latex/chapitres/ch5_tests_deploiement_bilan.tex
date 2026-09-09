@@ -196,6 +196,22 @@ après l'interruption d'une campagne email (\S\ref{sec:limites}) --- qui
 constituent naturellement les premières pistes d'amélioration à court
 terme plutôt que des défauts dissimulés.
 
+Un incident représentatif de ce travail de mise au point~: la mise en
+production locale de la fonctionnalité de badges
+(\S\ref{sec:badges-linkedin}) a fait apparaître une
+\texttt{LazyInitializationException} sur l'endpoint générant l'image de
+partage --- le proxy Hibernate de l'apprenant associé au badge n'était
+jamais initialisé pendant la transaction, et \texttt{spring.jpa.open-in-\allowbreak
+view} étant délibérément désactivé, tout accès à ce proxy en dehors de la
+transaction échouait.
+L'erreur n'est apparue qu'en conditions réelles --- une pile Docker
+complète, un vrai badge attribué en direct --- et jamais dans la suite de
+tests unitaires, qui simule les dépendances avec Mockito sans jamais
+manipuler de véritable proxy Hibernate. Ce constat a renforcé une
+conviction déjà présente tout au long du stage~: les tests unitaires
+valident une logique isolée, mais seule une vérification en conditions
+réelles expose les problèmes de frontière entre couches.
+
 \subsection{Apports techniques}
 
 Ce stage a permis d'approfondir des compétences qui dépassent largement la

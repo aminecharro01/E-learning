@@ -60,6 +60,7 @@ class Formation {
 class Quiz {
   - title : String
   - quizType : QuizType
+  - questionMode : QuizQuestionMode
   - passingScore : int
   - maxAttempts : int
   - timeLimitSeconds : int
