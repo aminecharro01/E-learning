@@ -562,15 +562,24 @@ leur emplacement précis dans le code source, et l'argument de valeur
 ajoutée qui justifie leur mise en avant --- réutilisable tel quel comme
 support de soutenance.
 
-\begin{table}[H]
-  \centering
+\begin{center}
   \footnotesize
-  \caption{Synthèse des points forts techniques et de leur valeur ajoutée}
-  \label{tab:synthese-points-forts}
-  \begin{tabular}{|p{2.6cm}|p{4.1cm}|p{6.3cm}|}
-    \toprule
+  \begin{longtable}{|p{2.6cm}|p{4.1cm}|p{6.3cm}|}
+    \caption{Synthèse des points forts techniques et de leur valeur ajoutée}
+    \label{tab:synthese-points-forts}\\
+    \hline
     Mécanisme & Localisation & Valeur ajoutée \\
-    \midrule
+    \hline
+    \endfirsthead
+    \multicolumn{3}{c}{\tablename~\thetable{} --- suite de la page précédente}\\
+    \hline
+    Mécanisme & Localisation & Valeur ajoutée \\
+    \hline
+    \endhead
+    \hline \multicolumn{3}{r}{\textit{Suite page suivante}} \\
+    \endfoot
+    \hline
+    \endlastfoot
     Génération de questions par IA (repli Gemini/Grok) & \texttt{Question\allowbreak Generation\allowbreak Service} & Fonctionnalité IA fiable en production, jamais dépendante d'un seul fournisseur externe. \\ \hline
     Correction hybride de quiz (auto + manuelle) & \texttt{QuizAttempt\allowbreak Service}, \texttt{QuizGrading\allowbreak Service} & Un score final toujours cohérent, jamais figé avant qu'une correction manuelle en attente ne soit terminée. \\ \hline
     Progression séquentielle par UF $\rightarrow$ certificat & \texttt{Progression\allowbreak Service}, \texttt{UfValidation\allowbreak Service}, \texttt{Certificate\allowbreak Service} & Respecte les validations humaines obligatoires (stage, soutenance) sans jamais les court-circuiter automatiquement. \\ \hline
@@ -584,10 +593,9 @@ support de soutenance.
     Verrou d'édition collaboratif & \texttt{LessonLock\allowbreak Service} & Prévient un conflit d'édition entre formateurs plutôt que de le constater après coup. \\ \hline
     Isolation des quiz par mode de correction & \texttt{Question\allowbreak Service}, \texttt{Quiz\allowbreak Service} & Le calcul du score reste toujours prévisible, jamais mélangé entre automatique et manuel. \\ \hline
     Messagerie support + salons de cohorte pour le staff & \texttt{Messaging\allowbreak Service} & Ferme un accès prévu par le contrôle d'accès mais jamais exposé côté visibilité. \\ \hline
-    Badges de palier + image de partage générée en Java2D & \texttt{Progression\allowbreak Service}, \texttt{Badge\allowbreak Image\allowbreak Service} & Chaque étape du parcours devient un objet partageable et vérifiable, sans dépendance externe. \\
-    \bottomrule
-  \end{tabular}
-\end{table}
+    Badges de palier + image de partage générée en Java2D & \texttt{Progression\allowbreak Service}, \texttt{Badge\allowbreak Image\allowbreak Service} & Chaque étape du parcours devient un objet partageable et vérifiable, sans dépendance externe. \\ \hline
+  \end{longtable}
+\end{center}
 
 \section{Limites identifiées et pistes d'amélioration}
 \label{sec:limites}
