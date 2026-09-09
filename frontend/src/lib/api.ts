@@ -610,6 +610,13 @@ export async function listMessagingStaffContacts() {
   return data;
 }
 
+export type SupportContact = { id: string; fullName: string; role: "SUPPORT" };
+
+export async function listMessagingSupportContacts() {
+  const { data } = await apiClient.get<SupportContact[]>("/api/conversations/support");
+  return data;
+}
+
 export async function getOrCreateDirectConversation(otherUserId: string) {
   const { data } = await apiClient.post<{ conversationId: string }>(`/api/conversations/direct/${otherUserId}`);
   return data.conversationId;

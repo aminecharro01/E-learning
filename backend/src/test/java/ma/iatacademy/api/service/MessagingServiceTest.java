@@ -190,4 +190,54 @@ class MessagingServiceTest {
         assertEquals(1, contacts.size());
         assertEquals("Prof A", contacts.get(0).fullName());
     }
+
+    @Test
+    void listSupportContactsReturnsOnlyEnabledSupportUsers() {
+        User enabledSupport = User.builder().id(UUID.randomUUID()).role(Role.SUPPORT)
+                .fullName("Support A").enabled(true).build();
+        User disabledSupport = User.builder().id(UUID.randomUUID()).role(Role.SUPPORT)
+                .fullName("Support B").enabled(false).build();
+        when(userRepository.findByRole(Role.SUPPORT)).thenReturn(List.of(enabledSupport, disabledSupport));
+
+        var contacts = messagingService.listSupportContacts();
+
+        assertEquals(1, contacts.size());
+        assertEquals("Support A", contacts.get(0).fullName());
+        assertEquals("SUPPORT", contacts.get(0).role());
+    }
+
+    @Test
+    void getOrCreateDirectAllowsSupportEvenThoughNotStaff() {
+        UUID userId = UUID.randomUUID();
+        UUID supportId = UUID.randomUUID();
+        when(userRepository.findById(userId)).thenReturn(Optional.of(
+                User.builder().id(userId).role(Role.ETUDIANT).build()));
+        when(userRepository.findById(supportId)).thenReturn(Optional.of(
+                User.builder().id(supportId).role(Role.SUPPORT).build()));
+        when(participantRepository.findDirectConversationId(userId, supportId)).thenReturn(Optional.empty());
+
+        messagingService.getOrCreateDirect(userId, supportId);
+
+        verify(conversationRepository, times(1)).save(any(Conversation.class));
+    }
+
+    @Test
+    void listMyConversationsIncludesAllCohortRoomsForStaff() {
+        UUID staffId = UUID.randomUUID();
+        UUID roomId = UUID.randomUUID();
+        Conversation room = Conversation.builder().id(roomId).type(ConversationType.COHORT_ROOM)
+                .group(LearnerGroup.builder().id(UUID.randomUUID()).name("Cohorte A").build()).build();
+        User staff = User.builder().id(staffId).role(Role.FORMATEUR).build();
+        UserPrincipal principal = new UserPrincipal(staff);
+
+        when(participantRepository.findByUserIdOrderByCreatedAtDesc(staffId)).thenReturn(List.of());
+        when(conversationRepository.findByType(ConversationType.COHORT_ROOM)).thenReturn(List.of(room));
+        when(messageRepository.findLastMessagePerConversation(List.of(roomId))).thenReturn(List.of());
+        when(messageRepository.countUnreadPerConversation(List.of(roomId), staffId)).thenReturn(List.of());
+
+        var conversations = messagingService.listMyConversations(principal);
+
+        assertEquals(1, conversations.size());
+        assertEquals(roomId, conversations.get(0).id());
+    }
 }

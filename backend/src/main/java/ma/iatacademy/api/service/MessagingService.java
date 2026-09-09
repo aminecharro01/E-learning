@@ -47,7 +47,7 @@ public class MessagingService {
         conversationRepository.save(conversation);
     }
 
-    /** Élève <-> staff uniquement (pas élève <-> élève) — récupère la conversation existante ou en crée une. */
+    /** Élève <-> staff/support uniquement (pas élève <-> élève) — récupère la conversation existante ou en crée une. */
     @Transactional
     public UUID getOrCreateDirect(UUID userId, UUID otherUserId) {
         if (userId.equals(otherUserId)) {
@@ -55,8 +55,8 @@ public class MessagingService {
         }
         User a = userRepository.findById(userId).orElseThrow(() -> new NotFoundException("Utilisateur introuvable."));
         User b = userRepository.findById(otherUserId).orElseThrow(() -> new NotFoundException("Utilisateur introuvable."));
-        if (!a.getRole().isStaff() && !b.getRole().isStaff()) {
-            throw new ForbiddenException("La messagerie directe est réservée aux échanges élève ↔ formateur.");
+        if (!isMessagingEligible(a.getRole()) && !isMessagingEligible(b.getRole())) {
+            throw new ForbiddenException("La messagerie directe est réservée aux échanges élève ↔ formateur/support.");
         }
         return participantRepository.findDirectConversationId(userId, otherUserId)
                 .orElseGet(() -> {
@@ -68,15 +68,31 @@ public class MessagingService {
                 });
     }
 
+    /** Le rôle SUPPORT n'est pas "staff" (isStaff() couvre les droits d'administration),
+     * mais il doit tout de même pouvoir être contacté en direct par un apprenant. */
+    private boolean isMessagingEligible(Role role) {
+        return role.isStaff() || role == Role.SUPPORT;
+    }
+
     /** Formateurs + Directeur — pour permettre à un apprenant sans cohorte (donc sans
      * salon commun) de démarrer lui-même une conversation, au lieu d'attendre que le
      * staff l'initie. */
     @Transactional(readOnly = true)
     public List<StaffContactResponse> listStaffContacts() {
-        return java.util.stream.Stream.concat(
-                        userRepository.findByRole(Role.FORMATEUR).stream(),
-                        userRepository.findByRole(Role.ADMIN).stream())
-                .filter(User::isEnabled)
+        return toContacts(java.util.stream.Stream.concat(
+                userRepository.findByRole(Role.FORMATEUR).stream(),
+                userRepository.findByRole(Role.ADMIN).stream()));
+    }
+
+    /** Annuaire du support technique, distinct des professeurs/administration — épinglé
+     * séparément côté frontend pour qu'un apprenant en difficulté le trouve immédiatement. */
+    @Transactional(readOnly = true)
+    public List<StaffContactResponse> listSupportContacts() {
+        return toContacts(userRepository.findByRole(Role.SUPPORT).stream());
+    }
+
+    private List<StaffContactResponse> toContacts(java.util.stream.Stream<User> users) {
+        return users.filter(User::isEnabled)
                 .sorted(Comparator.comparing(u -> u.getFullName() != null ? u.getFullName() : u.getEmail()))
                 .map(u -> new StaffContactResponse(
                         u.getId(),
@@ -91,13 +107,21 @@ public class MessagingService {
                 .map(ConversationParticipant::getConversation)
                 .toList();
 
-        List<Conversation> cohortRooms = principal.getRole() == Role.ETUDIANT
-                ? userRepository.findById(principal.getId())
-                        .map(User::getGroup)
-                        .flatMap(g -> g != null ? conversationRepository.findByGroupId(g.getId()) : java.util.Optional.<Conversation>empty())
-                        .map(List::of)
-                        .orElse(List.of())
-                : List.of();
+        List<Conversation> cohortRooms;
+        if (principal.getRole() == Role.ETUDIANT) {
+            cohortRooms = userRepository.findById(principal.getId())
+                    .map(User::getGroup)
+                    .flatMap(g -> g != null ? conversationRepository.findByGroupId(g.getId()) : java.util.Optional.<Conversation>empty())
+                    .map(List::of)
+                    .orElse(List.of());
+        } else if (principal.getRole().isStaff()) {
+            // Un salon de cohorte n'a pas de ConversationParticipant pour le staff (accès par
+            // rôle, voir assertAccess) — sans ça, un formateur/directeur ne verrait jamais les
+            // salons dans sa propre messagerie alors qu'il peut déjà y écrire une fois ouverts.
+            cohortRooms = conversationRepository.findByType(ConversationType.COHORT_ROOM);
+        } else {
+            cohortRooms = List.of();
+        }
 
         List<Conversation> conversations = java.util.stream.Stream.concat(direct.stream(), cohortRooms.stream())
                 .distinct()

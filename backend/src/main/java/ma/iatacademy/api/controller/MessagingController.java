@@ -35,6 +35,12 @@ public class MessagingController {
         return ResponseEntity.ok(messagingService.listStaffContacts());
     }
 
+    /** Annuaire support, distinct du staff pédagogique — épinglé côté frontend. */
+    @GetMapping("/support")
+    public ResponseEntity<List<StaffContactResponse>> listSupportContacts() {
+        return ResponseEntity.ok(messagingService.listSupportContacts());
+    }
+
     @PostMapping("/direct/{otherUserId}")
     public ResponseEntity<Map<String, UUID>> getOrCreateDirect(
             @PathVariable UUID otherUserId,

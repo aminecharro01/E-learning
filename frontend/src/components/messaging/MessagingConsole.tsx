@@ -1,18 +1,21 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, MessageCircle, Search, Send, Users } from "lucide-react";
+import { ArrowLeft, GraduationCap, LifeBuoy, MessageCircle, Search, Send, Users } from "lucide-react";
 import {
   getMe,
   getOrCreateDirectConversation,
   listConversationMessages,
   listConversations,
   listMessagingStaffContacts,
+  listMessagingSupportContacts,
   listUsersPaged,
   markConversationRead,
   sendConversationMessage,
   type ChatMessage,
   type Conversation,
+  type StaffContact,
+  type SupportContact,
 } from "@/lib/api";
 import type { User } from "@/types/domain";
 import { btn, inputClass } from "@/lib/ui";
@@ -76,6 +79,8 @@ export function MessagingConsole() {
   const [body, setBody] = useState("");
   const [search, setSearch] = useState("");
   const [candidates, setCandidates] = useState<User[]>([]);
+  const [supportContacts, setSupportContacts] = useState<SupportContact[]>([]);
+  const [staffContacts, setStaffContacts] = useState<StaffContact[]>([]);
   const [conversationsLoaded, setConversationsLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -142,6 +147,18 @@ export function MessagingConsole() {
     }, 300);
     return () => clearTimeout(t);
   }, [search, isStaff]);
+
+  // Annuaire "support" (épinglé) + "professeurs & administration" pour qu'un apprenant
+  // puisse lui-même choisir qui contacter, plutôt que d'attendre d'être contacté.
+  useEffect(() => {
+    if (!me || isStaff) return;
+    listMessagingSupportContacts()
+      .then(setSupportContacts)
+      .catch(() => setSupportContacts([]));
+    listMessagingStaffContacts()
+      .then(setStaffContacts)
+      .catch(() => setStaffContacts([]));
+  }, [me, isStaff]);
 
   // Un apprenant qui n'a encore aucune conversation (pas de cohorte, jamais contacté par
   // le staff) est automatiquement mis en relation avec l'administration — pas de liste à
@@ -243,6 +260,58 @@ export function MessagingConsole() {
                     </li>
                   ))}
                 </ul>
+              )}
+            </div>
+          )}
+          {!isStaff && (supportContacts.length > 0 || staffContacts.length > 0) && (
+            <div className="space-y-3 border-b border-theme p-3">
+              {supportContacts.length > 0 && (
+                <div>
+                  <p className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-heading">
+                    <LifeBuoy size={13} className="text-[var(--primary)]" aria-hidden />
+                    Support
+                  </p>
+                  <ul className="space-y-1">
+                    {supportContacts.map((c) => (
+                      <li key={c.id}>
+                        <button
+                          type="button"
+                          className="flex w-full items-center gap-2 rounded-lg border border-theme px-2 py-1.5 text-left text-xs hover:bg-surface-2"
+                          onClick={() => void onStartWith(c.id)}
+                        >
+                          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--primary)] text-[10px] font-semibold text-[var(--primary-fg)]">
+                            {initials(c.fullName)}
+                          </span>
+                          <span className="truncate">{c.fullName}</span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {staffContacts.length > 0 && (
+                <div>
+                  <p className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-heading">
+                    <GraduationCap size={13} aria-hidden />
+                    Professeurs & administration
+                  </p>
+                  <ul className="max-h-32 space-y-1 overflow-y-auto">
+                    {staffContacts.map((c) => (
+                      <li key={c.id}>
+                        <button
+                          type="button"
+                          className="flex w-full items-center gap-2 rounded-lg border border-theme px-2 py-1.5 text-left text-xs hover:bg-surface-2"
+                          onClick={() => void onStartWith(c.id)}
+                        >
+                          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--neutral)] text-[10px] font-semibold text-[var(--neutral-fg)]">
+                            {initials(c.fullName)}
+                          </span>
+                          <span className="truncate">{c.fullName}</span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               )}
             </div>
           )}
