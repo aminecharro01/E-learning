@@ -10,6 +10,7 @@ import ma.iatacademy.api.dto.stage.UfValidationResponse;
 import ma.iatacademy.api.dto.stage.UploadLearnerDocumentRequest;
 import ma.iatacademy.api.dto.stage.ValidateUfRequest;
 import ma.iatacademy.api.security.UserPrincipal;
+import ma.iatacademy.api.service.ProgressionService;
 import ma.iatacademy.api.service.StageService;
 import ma.iatacademy.api.service.StageSignoffService;
 import ma.iatacademy.api.service.UfValidationService;
@@ -30,6 +31,7 @@ public class StageController {
     private final StageService stageService;
     private final UfValidationService ufValidationService;
     private final StageSignoffService stageSignoffService;
+    private final ProgressionService progressionService;
 
     @GetMapping("/me")
     @PreAuthorize("hasRole('ETUDIANT')")
@@ -110,7 +112,9 @@ public class StageController {
             @Valid @RequestBody ValidateUfRequest request,
             @AuthenticationPrincipal UserPrincipal principal
     ) {
-        return ResponseEntity.ok(ufValidationService.validate(learnerId, request, principal));
+        UfValidationResponse response = ufValidationService.validate(learnerId, request, principal);
+        progressionService.checkAndAwardYearBadges(learnerId);
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/signoff-invites")

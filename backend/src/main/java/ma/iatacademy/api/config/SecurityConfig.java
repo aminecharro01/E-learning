@@ -63,6 +63,7 @@ public class SecurityConfig {
                 "/api/public/newsletter",
                 "/api/public/stage-signoff/**",
                 "/api/certificates/verify/**",
+                "/api/badges/verify/**",
                 "/api/assets/*/file",
                 "/api/assets/*/thumbnail",
                 // Static, non-sensitive downloadable templates (e.g. the blank Convention

@@ -45,6 +45,7 @@ public class StageSignoffService {
     private final AppPlatformProperties appPlatformProperties;
     private final NotificationService notificationService;
     private final BadgeService badgeService;
+    private final ProgressionService progressionService;
 
     @Transactional
     public MessageResponse createInvite(CreateSignoffInviteRequest request, UUID actorId) {
@@ -119,6 +120,7 @@ public class StageSignoffService {
             if ("UF 5".equals(uf.getUfCode())) {
                 badgeService.awardIfAbsent(learner, BadgeCode.STAGE_VALIDATED);
             }
+            progressionService.checkAndAwardYearBadges(learner.getId());
         }
 
         return new MessageResponse("Validation enregistrée. Merci !");

@@ -89,6 +89,7 @@ public class ProgressionService {
                     "Vous avez terminé le module \"" + lesson.getModule().getTitle() + "\".",
                     "/app");
             badgeService.awardIfAbsent(learner, BadgeCode.FIRST_MODULE);
+            checkAndAwardYearBadges(userId);
         }
 
         return new LessonProgressResponse(
@@ -276,6 +277,42 @@ public class ProgressionService {
             }
         }
         return true;
+    }
+
+    @Transactional
+    public boolean isYear2FullyDone(UUID userId, UUID formationId) {
+        return isYear2ContentDone(userId, formationId) && isYearQuizPassed(userId, 2);
+    }
+
+    @Transactional(readOnly = true)
+    public boolean isYear2ContentDone(UUID userId, UUID formationId) {
+        List<ModuleEntity> year2 = moduleRepository.findByFormationIdOrderByOrderIndexAsc(formationId)
+                .stream()
+                .filter(m -> yearOf(m) == 2)
+                .toList();
+        if (year2.isEmpty()) {
+            return false;
+        }
+        for (String uf : distinctUfOrder(year2)) {
+            if (!isUfFullyDone(userId, uf, year2)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /** Appelé après tout évènement pouvant compléter une année (contenu de module, validation
+     *  d'UF côté directeur ou tuteur externe) — idempotent via BadgeService#awardIfAbsent,
+     *  donc sûr à appeler même quand l'année n'est pas encore terminée. */
+    @Transactional
+    public void checkAndAwardYearBadges(UUID userId) {
+        User learner = userRepository.getReferenceById(userId);
+        if (isYear1FullyDone(userId, DEFAULT_FORMATION_ID)) {
+            badgeService.awardIfAbsent(learner, BadgeCode.YEAR1_VALIDATED);
+        }
+        if (isYear2FullyDone(userId, DEFAULT_FORMATION_ID)) {
+            badgeService.awardIfAbsent(learner, BadgeCode.YEAR2_VALIDATED);
+        }
     }
 
     private boolean isUfFullyDone(UUID userId, String ufCode, List<ModuleEntity> yearModules) {

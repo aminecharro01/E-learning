@@ -30,4 +30,9 @@ public class UserBadge extends AuditableEntity {
 
     @Column(name = "awarded_at", nullable = false)
     private Instant awardedAt;
+
+    /** Code public court, sur le modèle de Certificate.verificationCode — sert la page
+     *  publique de partage (/achievements/{code}) et l'image LinkedIn associée. */
+    @Column(name = "share_code", nullable = false, unique = true, length = 20)
+    private String shareCode;
 }

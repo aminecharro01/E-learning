@@ -9,6 +9,7 @@ import ma.iatacademy.api.domain.entity.Quiz;
 import ma.iatacademy.api.domain.entity.QuizAttempt;
 import ma.iatacademy.api.domain.entity.User;
 import ma.iatacademy.api.domain.enums.AttemptStatus;
+import ma.iatacademy.api.domain.enums.BadgeCode;
 import ma.iatacademy.api.domain.enums.BlockType;
 import ma.iatacademy.api.domain.enums.QuizType;
 import ma.iatacademy.api.domain.enums.Role;
@@ -39,6 +40,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -271,6 +273,40 @@ class ProgressionServiceTest {
         LessonProgressResponse response = progressionService.updateLessonProgress(userId, lessonId, 100);
 
         assertTrue(response.completed());
+    }
+
+    @Test
+    void isYear2ContentDoneFalseWhenNoYear2Modules() {
+        UUID formationId = ma.iatacademy.api.config.FormationDefaults.DEFAULT_FORMATION_ID;
+        when(moduleRepository.findByFormationIdOrderByOrderIndexAsc(formationId)).thenReturn(List.of());
+
+        assertFalse(progressionService.isYear2ContentDone(UUID.randomUUID(), formationId));
+    }
+
+    @Test
+    void checkAndAwardYearBadgesAwardsYear1OnlyWhenYear1DoneAndNoYear2Modules() {
+        UUID userId = UUID.randomUUID();
+        UUID formationId = ma.iatacademy.api.config.FormationDefaults.DEFAULT_FORMATION_ID;
+        ModuleEntity y1Module = ModuleEntity.builder().id(UUID.randomUUID()).yearNumber(1).ufCode("UF 1").orderIndex(0).build();
+        Lesson lesson = Lesson.builder().id(UUID.randomUUID()).build();
+        User learner = User.builder().id(userId).build();
+
+        when(moduleRepository.findByFormationIdOrderByOrderIndexAsc(formationId)).thenReturn(List.of(y1Module));
+        when(lessonRepository.findByModuleIdOrderByOrderIndexAsc(y1Module.getId())).thenReturn(List.of(lesson));
+        when(lessonProgressRepository.findByUserIdAndLessonId(userId, lesson.getId()))
+                .thenReturn(Optional.of(LessonProgress.builder().completed(true).build()));
+        when(quizRepository.findByModuleIdAndQuizType(y1Module.getId(), QuizType.FIN_MODULE)).thenReturn(Optional.empty());
+        when(quizRepository.findByFormationIdAndUfCodeAndQuizType(formationId, "UF 1", QuizType.FIN_UF))
+                .thenReturn(Optional.empty());
+        when(ufValidationService.isValidated(userId, "UF 1")).thenReturn(true);
+        when(quizRepository.findByFormationIdAndYearNumberAndQuizType(formationId, 1, QuizType.FIN_ANNEE))
+                .thenReturn(Optional.empty());
+        when(userRepository.getReferenceById(userId)).thenReturn(learner);
+
+        progressionService.checkAndAwardYearBadges(userId);
+
+        verify(badgeService, times(1)).awardIfAbsent(learner, BadgeCode.YEAR1_VALIDATED);
+        verify(badgeService, never()).awardIfAbsent(learner, BadgeCode.YEAR2_VALIDATED);
     }
 
     @Test

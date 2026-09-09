@@ -8,6 +8,8 @@ public record BadgeResponse(
         String description,
         String icon,
         boolean earned,
-        Instant awardedAt
+        Instant awardedAt,
+        /** Null tant que le badge n'est pas obtenu — sert /achievements/{code}. */
+        String shareCode
 ) {
 }

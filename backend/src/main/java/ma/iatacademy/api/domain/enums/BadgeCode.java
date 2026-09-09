@@ -8,7 +8,9 @@ public enum BadgeCode {
     PERFECT_QUIZ("Sans faute", "100% obtenu à un quiz.", "🏆"),
     STAGE_VALIDATED("Stage validé", "Unité de stage validée par l'académie.", "🧳"),
     PROFILE_COMPLETE("Profil complété", "Profil personnalisé avec succès.", "📇"),
-    FORUM_CONTRIBUTOR("Premier message", "Première participation à un forum de discussion.", "💬");
+    FORUM_CONTRIBUTOR("Premier message", "Première participation à un forum de discussion.", "💬"),
+    YEAR1_VALIDATED("Année 1 validée", "Toutes les UF de l'année 1 franchies.", "🛫"),
+    YEAR2_VALIDATED("Année 2 validée", "Cursus complet, avant le diplôme.", "🛬");
 
     private final String label;
     private final String description;
