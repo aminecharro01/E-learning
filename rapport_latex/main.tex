@@ -290,15 +290,7 @@ exercice académique classique.
 \appendix
 \chapter{Annexes}
 
-\section{Annexe A~: Diagramme de classes complet (vue d'ensemble)}
-
-\figimg{diagramme_classes_ensemble.png}{1.0}
-  {Diagramme de classes --- vue d'ensemble complète (annexe)}{annexeclasses}
-  {Version pleine page du diagramme présenté en section~\ref{sec:modele-donnees},
-   utile pour une lecture détaillée des paquetages et des associations
-   principales entre domaines fonctionnels.}
-
-\section{Annexe B~: Extrait d'une migration Flyway}
+\section{Annexe A~: Extrait d'une migration Flyway}
 
 Contrairement à un script SQL de création monolithique, le schéma de base
 de données est géré par des migrations Flyway versionnées et jamais
@@ -320,10 +312,11 @@ CREATE TABLE users (
 );
 \end{lstlisting}
 
-\section{Annexe C~: Répartition des 39 entités JPA par domaine fonctionnel}
+\section{Annexe B~: Répartition des 39 entités JPA par domaine fonctionnel}
 
 Le modèle de données complet, présenté sous forme de diagramme de classes
-en Annexe A, est organisé autour de neuf domaines fonctionnels. Le
+à la Figure~\ref{fig:classes-ensemble} (section~\ref{sec:modele-donnees}),
+est organisé autour de neuf domaines fonctionnels. Le
 Tableau~\ref{tab:entites-domaines} recense l'ensemble des entités JPA du
 paquetage \texttt{domain/entity} et leur domaine d'appartenance --- une
 vue complémentaire à la vue graphique, plus commode pour retrouver
@@ -351,7 +344,7 @@ rapidement à quel domaine appartient une entité donnée.
   \end{tabular}
 \end{table}
 
-\section{Annexe D~: Génération de questions par IA --- repli Gemini~$\rightarrow$~Grok}
+\section{Annexe C~: Génération de questions par IA --- repli Gemini~$\rightarrow$~Grok}
 
 L'extrait ci-dessous, tiré de \texttt{QuestionGenerationService.java},
 illustre le mécanisme de repli entre fournisseurs discuté au
@@ -393,7 +386,7 @@ délibérément déclarées \emph{package-private} plutôt que
 (\S\ref{sec:tests-backend}~: elle permet de les simuler par
 \texttt{Mockito.spy()} sans effectuer de véritable appel réseau).}
 
-\section{Annexe E~: Configuration de déploiement reproductible}
+\section{Annexe D~: Configuration de déploiement reproductible}
 
 Conformément au principe des \emph{Twelve-Factor Apps} retenu comme
 besoin non fonctionnel (Tableau~\ref{tab:bnf}), toute la configuration
@@ -441,40 +434,48 @@ Gemini/Grok pour la génération IA) est considérée comme
 \texttt{enabled} distinct --- ce qui évite un état incohérent où
 l'intégration serait activée sans être réellement utilisable.}
 
-\section{Annexe F~: Diagramme de cas d'utilisation (vue d'ensemble)}
+\section{Annexe E~: Points d'accès de l'API REST par domaine fonctionnel}
 
-\figimg{diagramme_cas_utilisation.png}{1.0}
-  {Diagramme de cas d'utilisation --- vue d'ensemble complète (annexe)}{annexecasutilisation}
-  {Version pleine page du diagramme présenté en
-   section~\ref{sec:modelisation-besoins}, regroupée ici avec les autres
-   diagrammes UML pour une consultation rapide en soutenance.}
+Le backend expose 179 points d'accès REST répartis sur 31 contrôleurs.
+Plutôt que d'énumérer chaque route individuellement --- une liste peu
+exploitable en l'état ---, le Tableau~\ref{tab:api-domaines} regroupe les
+contrôleurs par domaine fonctionnel, dans la même logique que la
+répartition des entités JPA de l'Annexe~B, avec le nombre de points
+d'accès exposé par chacun.
 
-\section{Annexe G~: Diagrammes de séquence des mécanismes clés}
+\begin{longtable}{|p{3.9cm}|p{6cm}|p{1.6cm}|}
+  \caption{Points d'accès REST regroupés par domaine fonctionnel}
+  \label{tab:api-domaines}\\
+  \hline
+  Domaine & Contrôleurs & Points \\
+  \hline
+  \endfirsthead
+  \multicolumn{3}{c}{\tablename~\thetable{} --- suite de la page précédente}\\
+  \hline
+  Domaine & Contrôleurs & Points \\
+  \hline
+  \endhead
+  \hline \multicolumn{3}{r}{\textit{Suite page suivante}} \\
+  \endfoot
+  \hline
+  \endlastfoot
+  Authentification \& compte & \texttt{AuthController}, \texttt{ThemeController} & 17 \\ \hline
+  Contenu pédagogique & \texttt{FormationController}, \texttt{ModuleController}, \texttt{LessonController}, \texttt{LessonNoteController}, \texttt{CommentController}, \texttt{AssetController}, \texttt{MediaFolderController} & 41 \\ \hline
+  Évaluation \& quiz & \texttt{QuizController}, \texttt{AssignmentController}, \texttt{GradebookController}, \texttt{LearnerGradebookController} & 33 \\ \hline
+  Progression \& certification & \texttt{ProgressController}, \texttt{CertificateController}, \texttt{BadgeController}, \texttt{PublicBadgeController} & 11 \\ \hline
+  Stage \& emploi & \texttt{StageController}, \texttt{PublicStageSignoffController}, \texttt{JobOfferController} & 17 \\ \hline
+  Communication \& engagement & \texttt{MessagingController}, \texttt{NotificationController}, \texttt{EmailCampaignController}, \texttt{PublicLeadController} & 14 \\ \hline
+  Organisation \& groupes & \texttt{GroupController}, \texttt{AgendaController}, \texttt{VirtualSessionController} & 15 \\ \hline
+  Recherche \& assistance & \texttt{SearchController}, \texttt{CourseAssistantController} & 2 \\ \hline
+  Administration & \texttt{AdminController}, \texttt{AnalyticsController} & 29 \\ \hline
+\end{longtable}
 
-Les quatre diagrammes de séquence ci-dessous détaillent, dans une vue
-pleine page plus lisible qu'en cours de texte, les mécanismes présentés
-en section~\ref{sec:points-forts} : génération de questions par IA avec
-repli entre fournisseurs, correction hybride d'un quiz, progression
-séquentielle par UF jusqu'au certificat, et contrôle d'accès à
-granularité fine sur une ressource appartenant à un apprenant.
-
-\figimg{diagramme_sequence_generation_questions_ia.png}{1.0}
-  {Génération de questions par IA avec repli Gemini vers Grok (annexe)}{annexeseqgenia}
-  {Correspond à la Figure~\ref{fig:seq-generation-ia}, section~\ref{sec:generation-ia}.}
-
-\figimg{diagramme_sequence_correction_quiz_hybride.png}{1.0}
-  {Correction hybride d'un quiz, automatique puis manuelle (annexe)}{annexeseqcorrection}
-  {Correspond au diagramme de séquence de la sous-section consacrée à la
-   correction hybride, section~\ref{sec:points-forts}.}
-
-\figimg{diagramme_sequence_progression_uf_certificat.png}{1.0}
-  {Progression séquentielle par UF jusqu'au certificat (annexe)}{annexeseqprogression}
-  {Correspond au diagramme de séquence de la sous-section consacrée à la
-   progression séquentielle, section~\ref{sec:points-forts}.}
-
-\figimg{diagramme_sequence_controle_acces_proprietaire.png}{1.0}
-  {Contrôle d'accès à granularité fine sur une ressource apprenant (annexe)}{annexeseqacces}
-  {Correspond au diagramme de séquence de la sous-section consacrée au
-   contrôle d'accès à granularité fine, section~\ref{sec:points-forts}.}
+\tabdesc{Le domaine « Contenu pédagogique » concentre le plus de points
+d'accès (édition par blocs, notes, commentaires, médias) --- cohérent
+avec le constat du chapitre~\ref{ch:realisation} selon lequel l'éditeur
+de contenu est le module le plus complexe fonctionnellement. À
+l'inverse, « Recherche \& assistance » reste volontairement minimal, ces
+deux contrôleurs exposant chacun un point d'entrée unique
+(\texttt{GET~/api/search}, \texttt{POST~/api/assistant}).}
 
 \end{document}
