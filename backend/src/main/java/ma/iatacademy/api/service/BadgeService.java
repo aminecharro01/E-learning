@@ -67,10 +67,16 @@ public class BadgeService {
                 .toList();
     }
 
+    /** Initialise le proxy User avant de renvoyer l'entité : PublicBadgeController#image
+     *  y accède après la fin de cette transaction (open-in-view désactivé, voir
+     *  application.yml), donc un accès paresseux non résolu ici y lèverait
+     *  LazyInitializationException. */
     @Transactional(readOnly = true)
     public UserBadge getByShareCode(String shareCode) {
-        return userBadgeRepository.findByShareCode(shareCode)
+        UserBadge userBadge = userBadgeRepository.findByShareCode(shareCode)
                 .orElseThrow(() -> new NotFoundException("Code de badge invalide."));
+        org.hibernate.Hibernate.initialize(userBadge.getUser());
+        return userBadge;
     }
 
     @Transactional(readOnly = true)
