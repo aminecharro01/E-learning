@@ -1,5 +1,6 @@
 package ma.iatacademy.api.dto.quiz;
 
+import ma.iatacademy.api.domain.enums.QuizQuestionMode;
 import ma.iatacademy.api.domain.enums.QuizType;
 
 import java.util.UUID;
@@ -8,6 +9,7 @@ public record QuizAdminResponse(
         UUID id,
         String title,
         QuizType quizType,
+        QuizQuestionMode questionMode,
         UUID lessonId,
         UUID moduleId,
         String ufCode,

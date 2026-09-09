@@ -146,6 +146,7 @@ public class QuizService {
         Quiz quiz = Quiz.builder()
                 .title(request.title().trim())
                 .quizType(request.quizType())
+                .questionMode(request.questionMode())
                 .lesson(scope.lesson())
                 .module(scope.module())
                 .formation(scope.formation())
@@ -189,8 +190,14 @@ public class QuizService {
         QuizScope scope = resolveScope(request);
         boolean isModuleQuiz = request.quizType() == QuizType.FIN_MODULE;
 
+        if (request.questionMode() != quiz.getQuestionMode()
+                && !questionRepository.findByQuizIdOrderByOrderIndexAsc(quizId).isEmpty()) {
+            throw new ApiException("Impossible de changer le mode d'un quiz qui contient déjà des questions.");
+        }
+
         quiz.setTitle(request.title().trim());
         quiz.setQuizType(request.quizType());
+        quiz.setQuestionMode(request.questionMode());
         quiz.setLesson(scope.lesson());
         quiz.setModule(scope.module());
         quiz.setFormation(scope.formation());
@@ -300,6 +307,7 @@ public class QuizService {
         Quiz copy = Quiz.builder()
                 .title(source.getTitle() + " (copie)")
                 .quizType(source.getQuizType())
+                .questionMode(source.getQuestionMode())
                 .lesson(source.getLesson())
                 .module(source.getModule())
                 .passingScore(source.getPassingScore())
@@ -353,6 +361,7 @@ public class QuizService {
                 quiz.getId(),
                 quiz.getTitle(),
                 quiz.getQuizType(),
+                quiz.getQuestionMode(),
                 quiz.getLesson() != null ? quiz.getLesson().getId() : null,
                 quiz.getModule() != null ? quiz.getModule().getId() : null,
                 quiz.getUfCode(),

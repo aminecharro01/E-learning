@@ -9,11 +9,14 @@ import { FormField, FormSection, fieldClass } from "./FormField";
 import { resolveAssetUrl, uploadMedia } from "@/lib/media";
 import { AssetPicker } from "@/components/admin/AssetPicker";
 import { btn } from "@/lib/ui";
+import type { QuizQuestionMode } from "@/types/domain";
 
 type Props = {
   defaultValues?: Partial<QuestionFormValues>;
   busy?: boolean;
   submitLabel?: string;
+  /** Mode fixé par le quiz — verrouille le type de question acceptable, voir QuizQuestionMode. */
+  quizQuestionMode: QuizQuestionMode;
   onSubmit: (values: QuestionFormValues) => Promise<void> | void;
 };
 
@@ -21,6 +24,7 @@ export function QuestionForm({
   defaultValues,
   busy,
   submitLabel = "Ajouter la question",
+  quizQuestionMode,
   onSubmit,
 }: Props) {
   const {
@@ -35,7 +39,7 @@ export function QuestionForm({
     mode: "onBlur",
     defaultValues: {
       prompt: "",
-      questionType: "SINGLE_CHOICE",
+      questionType: quizQuestionMode === "OPEN_ENDED" ? "ESSAY" : "SINGLE_CHOICE",
       explanation: "",
       imageAssetId: "",
       options: [
@@ -153,13 +157,24 @@ export function QuestionForm({
           )}
         </FormField>
 
-        <FormField label="Type de question" error={errors.questionType}>
-          <select className={fieldClass(!!errors.questionType)} {...register("questionType")}>
-            <option value="SINGLE_CHOICE">Choix unique</option>
-            <option value="MULTI_CHOICE">Choix multiple</option>
-            <option value="TRUE_FALSE">Vrai / Faux</option>
-            <option value="ESSAY">Réponse libre (correction manuelle)</option>
-          </select>
+        <FormField
+          label="Type de question"
+          error={errors.questionType}
+          hint={
+            quizQuestionMode === "OPEN_ENDED"
+              ? "Ce quiz est en mode « réponse libre » : toutes ses questions sont à correction manuelle."
+              : "Ce quiz est en mode « questions à choix » : jamais de réponse libre dans ce quiz."
+          }
+        >
+          {quizQuestionMode === "OPEN_ENDED" ? (
+            <p className={`${fieldClass()} bg-surface-2 text-muted`}>Réponse libre (correction manuelle)</p>
+          ) : (
+            <select className={fieldClass(!!errors.questionType)} {...register("questionType")}>
+              <option value="SINGLE_CHOICE">Choix unique</option>
+              <option value="MULTI_CHOICE">Choix multiple</option>
+              <option value="TRUE_FALSE">Vrai / Faux</option>
+            </select>
+          )}
         </FormField>
 
         <FormField label="Explication (optionnel)" error={errors.explanation} hint="Affichée après la réponse pour justifier la correction">

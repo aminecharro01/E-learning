@@ -34,6 +34,7 @@ export const quizSettingsSchema = z
   .object({
     title: z.string().trim().min(2).max(255),
     quizType: z.enum(["APPLICATIF", "FIN_MODULE", "FIN_UF", "FIN_ANNEE"]),
+    questionMode: z.enum(["AUTO_GRADED", "OPEN_ENDED"]),
     moduleId: z.string().uuid().optional().or(z.literal("")),
     lessonId: z.string().uuid().optional().or(z.literal("")),
     ufCode: z.string().trim().optional().or(z.literal("")),

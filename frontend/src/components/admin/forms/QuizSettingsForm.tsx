@@ -16,6 +16,8 @@ type Props = {
   busy?: boolean;
   submitLabel?: string;
   submittingLabel?: string;
+  /** Le quiz contient déjà des questions — le mode ne peut plus changer (verrouillé côté backend aussi). */
+  questionModeLocked?: boolean;
   onSubmit: (values: QuizSettingsValues) => Promise<void> | void;
 };
 
@@ -25,6 +27,7 @@ export function QuizSettingsForm({
   busy,
   submitLabel = "Créer le quiz",
   submittingLabel = "Création…",
+  questionModeLocked = false,
   onSubmit,
 }: Props) {
   const {
@@ -39,6 +42,7 @@ export function QuizSettingsForm({
     defaultValues: {
       title: "Évaluation finale du module",
       quizType: "FIN_MODULE",
+      questionMode: "AUTO_GRADED",
       moduleId: modules[0]?.id ?? "",
       lessonId: "",
       ufCode: "",
@@ -60,6 +64,7 @@ export function QuizSettingsForm({
   });
 
   const quizType = watch("quizType");
+  const questionMode = watch("questionMode");
   const moduleId = watch("moduleId");
   const lessonId = watch("lessonId");
   const ufCode = watch("ufCode");
@@ -174,6 +179,38 @@ export function QuizSettingsForm({
             />
           </div>
           <input type="hidden" {...register("quizType")} />
+        </FormField>
+
+        <FormField
+          label="Mode de correction"
+          error={errors.questionMode}
+          hint={
+            questionModeLocked
+              ? "Verrouillé — ce quiz contient déjà des questions."
+              : "Fixé à la création : un quiz ne mélange jamais les deux modes."
+          }
+        >
+          <div className="grid gap-2 sm:grid-cols-2">
+            <TypeCard
+              active={questionMode === "AUTO_GRADED"}
+              disabled={questionModeLocked}
+              title="Questions à choix"
+              desc="Choix unique, multiple, vrai/faux — score calculé immédiatement"
+              onClick={() =>
+                !questionModeLocked && setValue("questionMode", "AUTO_GRADED", { shouldValidate: true })
+              }
+            />
+            <TypeCard
+              active={questionMode === "OPEN_ENDED"}
+              disabled={questionModeLocked}
+              title="Réponse libre"
+              desc="Correction manuelle — score affiché une fois corrigé"
+              onClick={() =>
+                !questionModeLocked && setValue("questionMode", "OPEN_ENDED", { shouldValidate: true })
+              }
+            />
+          </div>
+          <input type="hidden" {...register("questionMode")} />
         </FormField>
 
         {(quizType === "APPLICATIF" || quizType === "FIN_MODULE") && (
@@ -350,17 +387,20 @@ function TypeCard({
   title,
   desc,
   onClick,
+  disabled,
 }: {
   active: boolean;
   title: string;
   desc: string;
   onClick: () => void;
+  disabled?: boolean;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`type-card ${active ? "type-card-active" : ""}`}
+      disabled={disabled}
+      className={`type-card ${active ? "type-card-active" : ""} ${disabled ? "cursor-not-allowed opacity-60" : ""}`}
     >
       <p className="text-sm font-semibold text-heading">{title}</p>
       <p className="mt-0.5 text-xs text-muted">{desc}</p>

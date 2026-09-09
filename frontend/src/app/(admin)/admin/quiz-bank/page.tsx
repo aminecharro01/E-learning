@@ -203,6 +203,7 @@ export default function QuizBankPage() {
     return {
       title: values.title,
       quizType: values.quizType,
+      questionMode: values.questionMode,
       moduleId: values.quizType === "FIN_MODULE" ? values.moduleId || null : null,
       lessonId: values.quizType === "APPLICATIF" ? values.lessonId || null : null,
       ufCode: values.quizType === "FIN_UF" ? values.ufCode || null : null,
@@ -386,7 +387,8 @@ export default function QuizBankPage() {
                       : selectedQuiz.quizType === "FIN_ANNEE"
                         ? `Année ${selectedQuiz.yearNumber ?? "—"}`
                         : `Module : ${moduleTitle(selectedQuiz.moduleId)}`}{" "}
-                    · Seuil {selectedQuiz.passingScore}% · {selectedQuiz.maxAttempts} tentatives
+                    · Seuil {selectedQuiz.passingScore}% · {selectedQuiz.maxAttempts} tentatives ·{" "}
+                    {selectedQuiz.questionMode === "OPEN_ENDED" ? "Réponse libre" : "Questions à choix"}
                   </p>
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -501,9 +503,11 @@ export default function QuizBankPage() {
             busy={busy}
             submitLabel="Enregistrer"
             submittingLabel="Enregistrement…"
+            questionModeLocked={(selectedQuiz.questionCount ?? 0) > 0}
             defaultValues={{
               title: selectedQuiz.title,
               quizType: selectedQuiz.quizType,
+              questionMode: selectedQuiz.questionMode,
               moduleId: selectedQuiz.moduleId || "",
               lessonId: selectedQuiz.lessonId || "",
               ufCode: selectedQuiz.ufCode || "",
@@ -542,6 +546,7 @@ export default function QuizBankPage() {
               key={editing ? editing.id : `new-${selectedQuiz.id}-${questions.length}`}
               busy={busy}
               submitLabel={editing ? "Enregistrer" : "Ajouter"}
+              quizQuestionMode={selectedQuiz.questionMode}
               defaultValues={
                 editing
                   ? {

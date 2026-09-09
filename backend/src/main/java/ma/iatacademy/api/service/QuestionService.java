@@ -5,6 +5,7 @@ import ma.iatacademy.api.domain.entity.AnswerOption;
 import ma.iatacademy.api.domain.entity.Question;
 import ma.iatacademy.api.domain.entity.Quiz;
 import ma.iatacademy.api.domain.enums.QuestionType;
+import ma.iatacademy.api.domain.enums.QuizQuestionMode;
 import ma.iatacademy.api.dto.quiz.AiGenerationRequest;
 import ma.iatacademy.api.dto.quiz.AiGenerationResponse;
 import ma.iatacademy.api.dto.quiz.CreateOptionRequest;
@@ -48,6 +49,7 @@ public class QuestionService {
         Quiz quiz = quizRepository.findById(quizId)
                 .orElseThrow(() -> new NotFoundException("Quiz introuvable."));
 
+        assertMatchesQuizMode(quiz, request.questionType());
         validateQuestionOptions(request);
 
         int nextOrder = questionRepository.findByQuizIdOrderByOrderIndexAsc(quizId).size();
@@ -109,6 +111,7 @@ public class QuestionService {
         if (!question.getQuiz().getId().equals(quizId)) {
             throw new ApiException("La question n'appartient pas à ce quiz.");
         }
+        assertMatchesQuizMode(question.getQuiz(), request.questionType());
         validateQuestionOptions(request);
 
         question.setPrompt(request.prompt().trim());
@@ -217,6 +220,19 @@ public class QuestionService {
         return request.options() != null ? request.options() : List.of();
     }
 
+    /** Verrouille le mode fixé à la création du quiz — jamais de mélange choix/réponse libre. */
+    private void assertMatchesQuizMode(Quiz quiz, QuestionType type) {
+        boolean isChoiceType = CHOICE_TYPES.contains(type);
+        if (quiz.getQuestionMode() == QuizQuestionMode.AUTO_GRADED && !isChoiceType) {
+            throw new ApiException(
+                    "Ce quiz est en mode « questions à choix » : impossible d'y ajouter une question à réponse libre.");
+        }
+        if (quiz.getQuestionMode() == QuizQuestionMode.OPEN_ENDED && isChoiceType) {
+            throw new ApiException(
+                    "Ce quiz est en mode « réponse libre » : impossible d'y ajouter une question à choix.");
+        }
+    }
+
     private void validateQuestionOptions(CreateQuestionRequest request) {
         if (!CHOICE_TYPES.contains(request.questionType())) {
             return;
@@ -258,6 +274,7 @@ public class QuestionService {
                 quiz.getId(),
                 quiz.getTitle(),
                 quiz.getQuizType(),
+                quiz.getQuestionMode(),
                 quiz.getLesson() != null ? quiz.getLesson().getId() : null,
                 quiz.getModule() != null ? quiz.getModule().getId() : null,
                 quiz.getUfCode(),

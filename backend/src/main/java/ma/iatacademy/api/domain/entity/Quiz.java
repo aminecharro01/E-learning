@@ -2,6 +2,7 @@ package ma.iatacademy.api.domain.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import ma.iatacademy.api.domain.enums.QuizQuestionMode;
 import ma.iatacademy.api.domain.enums.QuizType;
 
 import java.util.ArrayList;
@@ -27,6 +28,12 @@ public class Quiz extends AuditableEntity {
     @Enumerated(EnumType.STRING)
     @Column(name = "quiz_type", nullable = false, length = 30)
     private QuizType quizType;
+
+    /** Fixé à la création, verrouille le type de question accepté pour tout le quiz — voir QuizQuestionMode. */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "question_mode", nullable = false, length = 20)
+    @Builder.Default
+    private QuizQuestionMode questionMode = QuizQuestionMode.AUTO_GRADED;
 
     /** Optional link to a lesson (section quiz). */
     @ManyToOne(fetch = FetchType.LAZY)

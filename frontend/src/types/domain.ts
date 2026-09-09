@@ -8,6 +8,9 @@ export type BlockType = "VIDEO" | "TEXT" | "PDF" | "IMAGE";
 
 export type QuizType = "APPLICATIF" | "FIN_MODULE" | "FIN_UF" | "FIN_ANNEE";
 
+/** Fixé à la création du quiz — verrouille le type de question accepté pour tout le quiz. */
+export type QuizQuestionMode = "AUTO_GRADED" | "OPEN_ENDED";
+
 export type QuestionType = "SINGLE_CHOICE" | "MULTI_CHOICE" | "TRUE_FALSE" | "ESSAY";
 
 export type AttemptStatus =
@@ -95,6 +98,7 @@ export type Quiz = {
   id: string;
   title: string;
   quizType: QuizType;
+  questionMode: QuizQuestionMode;
   lessonId: string | null;
   moduleId: string | null;
   ufCode?: string | null;
