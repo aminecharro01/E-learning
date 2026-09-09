@@ -4,6 +4,17 @@
 
 \begin{titlepage}
 \thispagestyle{empty}
+
+% Bande decorative en marge gauche, degrade navy -> or (le meme "wing" que
+% la charte graphique de l'application), plus un petit accent carre repris
+% du gabarit de reference.
+\begin{tikzpicture}[remember picture, overlay]
+  \shade[top color=emsiblue, bottom color=emsigreen]
+    (current page.north west) rectangle ++(0.9cm,-\paperheight+2.6cm);
+  \fill[emsiblue]
+    ($(current page.south west)+(0cm,0.9cm)$) rectangle ++(0.55cm,0.55cm);
+\end{tikzpicture}
+
 \centering
 
 \begin{minipage}{0.45\textwidth}
@@ -24,8 +35,10 @@
 \rule{\linewidth}{1.2pt}
 \vspace{0.5cm}
 
-{\large\scshape Rapport de stage d'été\par}
-\vspace{0.6cm}
+{\large\scshape Rapport de stage\par}
+\vspace{0.8cm}
+{\normalsize\bfseries\color{emsigreen} Sujet~:\par}
+\vspace{0.3cm}
 {\huge\bfseries\color{emsiblue} \TitreProjet \par}
 \vspace{0.5cm}
 \rule{\linewidth}{1.2pt}
