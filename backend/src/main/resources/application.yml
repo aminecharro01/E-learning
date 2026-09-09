@@ -44,6 +44,24 @@ spring:
 server:
   port: ${SERVER_PORT:8080}
 
+# Seul /actuator/health est exposé (voir SecurityConfig, où il est déjà public pour un
+# healthcheck Docker/loadbalancer) : jamais le reste de la surface actuator, et jamais le
+# détail des composants (DB, Redis...) à un appelant non authentifié.
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
+  health:
+    # Le mail n'est pas configuré par défaut (MAIL_HOST vide, voir application.yml plus
+    # bas) et n'est jamais sur le chemin critique de l'app (best-effort partout où il est
+    # utilisé) : sans ce flag, le healthcheck resterait DOWN en permanence en local/démo.
+    mail:
+      enabled: false
+
 app:
   jwt:
     # No fallback here on purpose: JWT_SECRET must be set explicitly (dev profile

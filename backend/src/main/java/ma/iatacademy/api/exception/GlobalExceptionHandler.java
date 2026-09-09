@@ -10,6 +10,7 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.time.Instant;
 import java.util.HashMap;
@@ -103,6 +104,17 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<Map<String, Object>> handleIllegalArgument(IllegalArgumentException ex) {
         return build(HttpStatus.BAD_REQUEST, ex.getMessage());
+    }
+
+    /**
+     * Thrown by Spring MVC for any URL that resolves to neither a mapped endpoint nor a
+     * static resource (a mistyped API path, /actuator/health before the actuator starter
+     * was added...). Without this it fell through to handleGeneric() and came back as a
+     * 500 "erreur inattendue", which is misleading for what is really just a 404.
+     */
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleNoResourceFound(NoResourceFoundException ex) {
+        return build(HttpStatus.NOT_FOUND, "Ressource introuvable.");
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
