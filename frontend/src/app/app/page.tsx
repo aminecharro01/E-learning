@@ -103,6 +103,24 @@ function ModuleCard({ module, index }: { module: Module; index: number }) {
   );
 }
 
+/** Le vrai flux LinkedIn pour les certifications — crée une entrée durable dans
+ * "Licences et certifications" sur le profil, plutôt qu'un simple post dans le fil
+ * (voir linkedin.com/help/linkedin/answer/a528030). Même mécanique que Coursera. */
+function buildLinkedInAddToProfileUrl(certificate: Certificate): string {
+  const issued = new Date(certificate.issuedAt);
+  const certUrl = `${typeof window !== "undefined" ? window.location.origin : ""}/verify/${certificate.verificationCode}`;
+  const params = new URLSearchParams({
+    startTask: "CERTIFICATION_NAME",
+    name: certificate.formationTitle,
+    organizationName: "IAT Academy",
+    issueYear: String(issued.getFullYear()),
+    issueMonth: String(issued.getMonth() + 1),
+    certUrl,
+    certId: certificate.verificationCode,
+  });
+  return `https://www.linkedin.com/profile/add?${params.toString()}`;
+}
+
 export default function AppHomePage() {
   const [progress, setProgress] = useState<ProgressResponse | null>(null);
   const [certificate, setCertificate] = useState<Certificate | null>(null);
@@ -320,14 +338,12 @@ export default function AppHomePage() {
                     {certificate.physicallyDelivered ? " · déjà remis." : ""}
                   </p>
                   <a
-                    href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(
-                      `${typeof window !== "undefined" ? window.location.origin : ""}/verify/${certificate.verificationCode}`
-                    )}`}
+                    href={buildLinkedInAddToProfileUrl(certificate)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-[#0A66C2] px-3 py-1.5 text-xs font-medium text-white hover:opacity-90"
                   >
-                    Partager sur LinkedIn
+                    Ajouter au profil LinkedIn
                   </a>
                 </div>
               </div>

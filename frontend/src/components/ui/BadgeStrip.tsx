@@ -2,19 +2,21 @@
 
 import { useEffect, useState } from "react";
 import type { ComponentType } from "react";
-import { GraduationCap, IdCard, MessageCircle, Trophy } from "lucide-react";
+import { ExternalLink, GraduationCap, IdCard, MessageCircle, PlaneLanding, PlaneTakeoff, Trophy } from "lucide-react";
 import { getMyBadges, getMyLevel } from "@/lib/api";
 import type { Badge } from "@/types/domain";
 import { IconBadge, IconSuitcase } from "@/components/brand/IatIcons";
 
 /** Chaque code de badge (voir BadgeCode côté backend) a une icône dédiée — celles déjà
- * dans le thème aviation de l'académie quand elles existent (stage), lucide sinon. */
+ * dans le thème aviation de l'académie quand elles existent (stage, portes 1/2), lucide sinon. */
 const BADGE_ICONS: Record<string, ComponentType<{ size?: number }>> = {
   FIRST_MODULE: GraduationCap,
   PERFECT_QUIZ: Trophy,
   STAGE_VALIDATED: IconSuitcase,
   PROFILE_COMPLETE: IdCard,
   FORUM_CONTRIBUTOR: MessageCircle,
+  YEAR1_VALIDATED: PlaneTakeoff,
+  YEAR2_VALIDATED: PlaneLanding,
 };
 
 export function BadgeStrip() {
@@ -56,6 +58,18 @@ export function BadgeStrip() {
                 <Icon size={15} aria-hidden />
               </span>
               <span className="font-medium text-heading">{b.label}</span>
+              {b.earned && b.shareCode && (
+                <a
+                  href={`/achievements/${b.shareCode}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-muted hover:text-primary"
+                  title="Partager ce badge"
+                  aria-label="Partager ce badge"
+                >
+                  <ExternalLink size={13} aria-hidden />
+                </a>
+              )}
             </div>
           );
         })}

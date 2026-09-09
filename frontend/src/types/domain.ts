@@ -293,6 +293,8 @@ export type Badge = {
   icon: string;
   earned: boolean;
   awardedAt: string | null;
+  /** Null tant que le badge n'est pas obtenu — utilisé pour /achievements/{shareCode}. */
+  shareCode: string | null;
 };
 
 export type LessonComment = {

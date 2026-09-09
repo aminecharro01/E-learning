@@ -59,7 +59,17 @@ export default async function VerifyCertificatePage({
 }) {
   const { code } = await params;
   const [cert, url] = await Promise.all([fetchCertificate(code), pageUrl(code)]);
-  const linkedInShareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`;
+  const linkedInAddToProfileUrl = cert
+    ? `https://www.linkedin.com/profile/add?${new URLSearchParams({
+        startTask: "CERTIFICATION_NAME",
+        name: cert.formationTitle,
+        organizationName: "IAT Academy",
+        issueYear: String(new Date(cert.issuedAt).getFullYear()),
+        issueMonth: String(new Date(cert.issuedAt).getMonth() + 1),
+        certUrl: url,
+        certId: cert.verificationCode,
+      }).toString()}`
+    : "";
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-[var(--bg,#0b1220)] px-4 py-12">
@@ -87,12 +97,12 @@ export default async function VerifyCertificatePage({
             </p>
 
             <a
-              href={linkedInShareUrl}
+              href={linkedInAddToProfileUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="mt-6 inline-flex items-center gap-2 rounded-full bg-[#0A66C2] px-5 py-2.5 text-sm font-medium text-white hover:opacity-90"
             >
-              Partager sur LinkedIn
+              Ajouter au profil LinkedIn
             </a>
           </>
         )}
