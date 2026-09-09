@@ -600,7 +600,7 @@ support de soutenance.
 \section{Limites identifiées et pistes d'amélioration}
 \label{sec:limites}
 
-Deux limites concrètes, identifiées en analysant le code plutôt que
+Trois limites concrètes, identifiées en analysant le code plutôt que
 supposées, sont assumées ici plutôt que passées sous silence :
 
 \begin{itemize}
@@ -620,6 +620,18 @@ supposées, sont assumées ici plutôt que passées sous silence :
     \texttt{@Scheduled} au démarrage de l'application qui détecte les
     campagnes \texttt{SENDING} avec des destinataires \texttt{PENDING} et
     relance \texttt{sendAsync()}.
+  \item \textbf{Rôle \texttt{SUPPORT} non attribuable depuis l'interface
+    admin.} Le rôle existe pleinement au niveau du modèle de données et des
+    permissions (\S\ref{sec:messagerie-support}) --- messagerie directe,
+    consultation en lecture seule des statistiques et de la progression,
+    gestion des messages de contact et de la newsletter --- mais
+    \texttt{AdminService.changeRole()} refuse explicitement toute
+    promotion vers \texttt{SUPPORT} (\emph{« rôle non activé en MVP »}) : le
+    seul compte existant est celui pré-créé par le jeu de données de
+    démonstration. \emph{Piste d'amélioration} : ouvrir la promotion vers
+    \texttt{SUPPORT} dans \texttt{AdminService.changeRole()} une fois le
+    profil validé côté produit (aucun changement de permissions à
+    prévoir, seule la restriction actuelle est à lever).
 \end{itemize}
 
 \section*{Conclusion du chapitre}

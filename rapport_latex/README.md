@@ -177,8 +177,10 @@ ci-dessous pour être réutilisé directement comme support de soutenance.
 
 ## Limites assumées (chapitre 4, § Limites identifiées)
 
-Deux limites ont été identifiées en analysant le code (et non supposées a
+Trois limites ont été identifiées en analysant le code (et non supposées a
 priori) et sont documentées en toute transparence dans le rapport :
 l'absence de contrôle de propriété dans `AssignmentService` (contrairement
-aux autres services listés ci-dessus), et l'absence de reprise
-automatique d'une campagne email interrompue par un redémarrage serveur.
+aux autres services listés ci-dessus), l'absence de reprise
+automatique d'une campagne email interrompue par un redémarrage serveur,
+et le rôle `SUPPORT` (pleinement modélisé mais non encore attribuable
+depuis l'interface admin).
