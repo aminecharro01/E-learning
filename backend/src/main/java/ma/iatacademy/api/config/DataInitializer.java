@@ -60,7 +60,7 @@ public class DataInitializer implements ApplicationRunner {
             User learner = User.builder()
                     .email("apprenant@iat-academy.local")
                     .passwordHash(passwordEncoder.encode("Apprenant@123"))
-                    .fullName("Nora El Amrani")
+                    .fullName("Yasmine Bakkali")
                     .role(Role.ETUDIANT)
                     .enabled(true)
                     .paymentStatus(PaymentStatus.PAID)

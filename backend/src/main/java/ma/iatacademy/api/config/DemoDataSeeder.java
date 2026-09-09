@@ -202,7 +202,7 @@ public class DemoDataSeeder implements ApplicationRunner {
 
     private void ensureDemoLearners() {
         int year = Year.now().getValue();
-        upsertLearner("apprenant@iat-academy.local", "Apprenant@123", "Nora El Amrani",
+        upsertLearner("apprenant@iat-academy.local", "Apprenant@123", "Yasmine Bakkali",
                 year, true, false, "0612001100", "BE123456", LocalDate.of(2002, 4, 12));
         upsertLearner("amina.benali@demo.local", "Demo@1234", "Amina Benali",
                 year, true, false, "0612002200", "BH654321", LocalDate.of(2001, 9, 3));
@@ -282,7 +282,7 @@ public class DemoDataSeeder implements ApplicationRunner {
         User salma = requireUser("salma.naji@demo.local");
         User admin = userRepository.findByEmailIgnoreCase("admin@iat-academy.local").orElse(null);
 
-        // Nora — module 1 validé, module 2 en cours
+        // Yasmine — module 1 validé, module 2 en cours
         completeModule(apprenant, modules.get(0));
         if (modules.size() > 1) {
             List<Lesson> m2 = lessonsOf(modules.get(1));
@@ -400,7 +400,7 @@ public class DemoDataSeeder implements ApplicationRunner {
     }
 
     // ------------------------------------------------------------------
-    // Stage & Soutenance : dossier en cours (Nora) + dossier complet + certificat (Khadija).
+    // Stage & Soutenance : dossier en cours (Yasmine) + dossier complet + certificat (Khadija).
     // LearnerDocument/Certificate sont wipés à chaque redémarrage (wipeLearnerState) donc
     // pas de garde d'idempotence nécessaire ici, comme pour completeLesson/passQuiz.
     // ------------------------------------------------------------------
@@ -412,11 +412,11 @@ public class DemoDataSeeder implements ApplicationRunner {
             return;
         }
 
-        // Nora — dossier en cours : convention école déjà déposée par la direction,
+        // Yasmine — dossier en cours : convention école déjà déposée par la direction,
         // rien encore côté apprenant (elle peut illustrer le dépôt en direct pendant la démo).
-        User nora = requireUser("apprenant@iat-academy.local");
-        saveLearnerDocument(nora, LearnerDocType.CONVENTION_ECOLE,
-                ensureDemoAsset("convention-ecole-nora.pdf", "stage"), admin, "Signée par la direction.");
+        User yasmine = requireUser("apprenant@iat-academy.local");
+        saveLearnerDocument(yasmine, LearnerDocType.CONVENTION_ECOLE,
+                ensureDemoAsset("convention-ecole-yasmine.pdf", "stage"), admin, "Signée par la direction.");
 
         // Khadija — dossier complet (5 documents) + soutenance validée + certificat émis.
         User khadija = requireUser("khadija.mansouri@demo.local");
@@ -530,7 +530,7 @@ public class DemoDataSeeder implements ApplicationRunner {
         User formateur = requireUser("formateur@iat-academy.local");
         Asset submissionAsset = ensureDemoAsset("devoir-fiche-reflexe.pdf", "devoirs");
 
-        // Nora — copie déposée, pas encore corrigée (à montrer dans /admin/gradebook).
+        // Yasmine — copie déposée, pas encore corrigée (à montrer dans /admin/gradebook).
         ensureSubmission(assignment, apprenant, submissionAsset,
                 Instant.now().minusSeconds(3600L * 6), SubmissionStatus.SUBMITTED, null, null, null);
         // Amina — copie déjà corrigée (à montrer dans le bulletin apprenant).
@@ -577,17 +577,17 @@ public class DemoDataSeeder implements ApplicationRunner {
     // ------------------------------------------------------------------
 
     private void seedMessaging() {
-        User nora = requireUser("apprenant@iat-academy.local");
+        User yasmine = requireUser("apprenant@iat-academy.local");
         User formateur = requireUser("formateur@iat-academy.local");
-        UUID conversationId = messagingService.getOrCreateDirect(nora.getId(), formateur.getId());
+        UUID conversationId = messagingService.getOrCreateDirect(yasmine.getId(), formateur.getId());
         if (!messageRepository.findByConversationIdOrderByCreatedAtAsc(conversationId).isEmpty()) {
             return;
         }
         Conversation conversation = conversationRepository.findById(conversationId)
                 .orElseThrow(() -> new IllegalStateException("Conversation démo introuvable juste après création."));
-        saveMessage(conversation, nora, "Bonjour, j'ai une question sur le devoir du module 1.");
-        saveMessage(conversation, formateur, "Bonjour Nora, bien sûr — dites-moi ce qui vous bloque.");
-        saveMessage(conversation, nora, "Je ne suis pas sûre du format attendu pour la fiche réflexe.");
+        saveMessage(conversation, yasmine, "Bonjour, j'ai une question sur le devoir du module 1.");
+        saveMessage(conversation, formateur, "Bonjour Yasmine, bien sûr — dites-moi ce qui vous bloque.");
+        saveMessage(conversation, yasmine, "Je ne suis pas sûre du format attendu pour la fiche réflexe.");
     }
 
     private void saveMessage(Conversation conversation, User sender, String body) {
