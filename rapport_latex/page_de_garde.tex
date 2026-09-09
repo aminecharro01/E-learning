@@ -5,13 +5,12 @@
 \begin{titlepage}
 \thispagestyle{empty}
 
-% Bande decorative en marge gauche, degrade navy -> or (le meme "wing" que
-% la charte graphique de l'application), plus un petit accent carre repris
-% du gabarit de reference.
+% Bande decorative en marge gauche, vert vif uni + petit accent carre
+% bordeaux, repris tel quel du gabarit de reference EMSI.
 \begin{tikzpicture}[remember picture, overlay]
-  \shade[top color=emsiblue, bottom color=emsigreen]
+  \fill[bandevive]
     (current page.north west) rectangle ++(0.9cm,-\paperheight+2.6cm);
-  \fill[emsiblue]
+  \fill[bandebordeaux]
     ($(current page.south west)+(0cm,0.9cm)$) rectangle ++(0.55cm,0.55cm);
 \end{tikzpicture}
 
