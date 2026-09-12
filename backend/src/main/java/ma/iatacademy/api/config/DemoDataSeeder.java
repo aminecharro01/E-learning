@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import ma.iatacademy.api.domain.entity.*;
 import ma.iatacademy.api.domain.enums.*;
 import ma.iatacademy.api.repository.*;
+import ma.iatacademy.api.service.BadgeService;
 import ma.iatacademy.api.service.CertificateService;
 import ma.iatacademy.api.service.MessagingService;
 import org.springframework.beans.factory.annotation.Value;
@@ -24,6 +25,7 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.Year;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -40,7 +42,7 @@ public class DemoDataSeeder implements ApplicationRunner {
 
     private static final UUID FORMATION_ID = FormationDefaults.DEFAULT_FORMATION_ID;
     /** Changing this forces a one-shot catalog reseed on next boot. */
-    private static final String DEMO_MARKER = "Embarquement IAT Academy — v2";
+    private static final String DEMO_MARKER = "Embarquement IAT Academy — v3";
 
     private final ModuleRepository moduleRepository;
     private final LessonRepository lessonRepository;
@@ -66,6 +68,8 @@ public class DemoDataSeeder implements ApplicationRunner {
     private final ConversationRepository conversationRepository;
     private final MediaProperties mediaProperties;
     private final JobOfferRepository jobOfferRepository;
+    private final QuestionRepository questionRepository;
+    private final BadgeService badgeService;
 
     @Value("${app.demo.reset-progress-on-startup:true}")
     private boolean resetProgressOnStartup;
@@ -110,19 +114,21 @@ public class DemoDataSeeder implements ApplicationRunner {
 
         log.warn("""
                 Demo ready — scénarios:
-                  apprenant@iat-academy.local / Apprenant@123     → UF1 en cours (module 1 validé), dossier stage entamé
-                  amina.benali@demo.local / Demo@1234             → UF1 terminée, UF2 démarrée
+                  apprenant@iat-academy.local / Apprenant@123     → UF1 en cours (module 1 validé, badge Premier module), dossier stage entamé
+                  amina.benali@demo.local / Demo@1234             → modules 1-3 validés, module 4 EN ATTENTE DE CORRECTION (question ouverte à noter en direct)
                   youssef.idrissi@demo.local / Demo@1234          → débutant (1 section)
                   lina.cherkaoui@demo.local / Demo@1234           → zéro progression
-                  salma.naji@demo.local / Demo@1234               → année 2 ouverte
+                  salma.naji@demo.local / Demo@1234               → Année 1 validée (badge), UF5 stage validé, année 2 ouverte
                   karim.ouafi@demo.local / Demo@1234              → paiement / activation en attente
-                  khadija.mansouri@demo.local / Demo@1234         → dossier stage & soutenance complets, certificat émis (alumni, voit la bourse à l'emploi)
+                  khadija.mansouri@demo.local / Demo@1234         → cursus complet (badges Année 1 + Année 2 + Stage validé), certificat émis (alumni, voit la bourse à l'emploi)
                   admin@iat-academy.local / Admin@123             → Directeur (ADMIN)
                   superadmin@iat-academy.local / SuperAdmin@123   → Super Admin
                   formateur@iat-academy.local / Formateur@123     → Formateur
                   support@demo.local / Demo@1234                  → Support
                 Groupes : Cohorte 2026-A (avec membres + sessions live), Cohorte 2027-A (en attente, vide)
                 Devoirs : 1 devoir avec 1 copie à corriger + 1 copie déjà notée
+                Quiz : 1 tentative en PENDING_REVIEW (Amina, module 4) — à corriger en direct pendant la démo
+                Badges : Premier module (Yasmine, Amina, Salma, Khadija), Profil complété (Amina), Année 1 validée (Salma, Khadija), Année 2 validée + Stage validé (Khadija)
                 Bourse à l'emploi : 4 offres publiées, 1 brouillon, 1 expirée (réservée aux alumni — Khadija uniquement)
                 Messagerie : conversation directe apprenant ↔ formateur pré-remplie
                 """);
@@ -229,11 +235,14 @@ public class DemoDataSeeder implements ApplicationRunner {
         if (user == null) {
             user = User.builder()
                     .email(email)
-                    .passwordHash(passwordEncoder.encode(password))
                     .role(Role.ETUDIANT)
                     .build();
             log.warn("Demo learner created: {} / {}", email, password);
         }
+        // Toujours réaligner le mot de passe sur celui documenté (guide de démo, log de
+        // démarrage) — un compte créé lors d'une session antérieure du projet peut porter un
+        // hash différent si son mot de passe n'a jamais été réinitialisé depuis.
+        user.setPasswordHash(passwordEncoder.encode(password));
         user.setFullName(fullName);
         user.setEnabled(true);
         user.setPaymentStatus(PaymentStatus.PAID);
@@ -255,11 +264,12 @@ public class DemoDataSeeder implements ApplicationRunner {
         if (user == null) {
             user = User.builder()
                     .email(email)
-                    .passwordHash(passwordEncoder.encode(password))
                     .role(role)
                     .build();
             log.warn("Demo user created: {} / {} ({})", email, password, role);
         }
+        // Toujours réaligner le mot de passe sur celui documenté — voir upsertLearner.
+        user.setPasswordHash(passwordEncoder.encode(password));
         user.setFullName(fullName);
         user.setEnabled(enabled);
         user.setPaymentStatus(payment);
@@ -290,10 +300,16 @@ public class DemoDataSeeder implements ApplicationRunner {
                 completeLesson(apprenant, m2.get(i));
             }
         }
+        badgeService.awardIfAbsent(apprenant, BadgeCode.FIRST_MODULE);
 
-        // Amina — toute UF1 validée, premier module UF2 démarré
-        for (int i = 0; i < Math.min(4, modules.size()); i++) {
+        // Amina — modules 1 à 3 validés (QCM), module 4 : contenu terminé mais quiz en
+        // PENDING_REVIEW (question ouverte pas encore corrigée) — démontre en direct la
+        // correction hybride et la réconciliation d'état (voir seedPendingEssayAttempt).
+        for (int i = 0; i < Math.min(3, modules.size()); i++) {
             completeModule(amina, modules.get(i));
+        }
+        if (modules.size() > 3) {
+            seedPendingEssayAttempt(amina, modules.get(3));
         }
         if (modules.size() > 4) {
             List<Lesson> uf2first = lessonsOf(modules.get(4));
@@ -301,6 +317,8 @@ public class DemoDataSeeder implements ApplicationRunner {
                 completeLesson(amina, uf2first.get(0));
             }
         }
+        badgeService.awardIfAbsent(amina, BadgeCode.FIRST_MODULE);
+        badgeService.awardIfAbsent(amina, BadgeCode.PROFILE_COMPLETE);
 
         // Youssef — tout début
         List<Lesson> m1 = lessonsOf(modules.get(0));
@@ -322,6 +340,8 @@ public class DemoDataSeeder implements ApplicationRunner {
         }
         salma.setYear2AccessEnabled(true);
         userRepository.save(salma);
+        badgeService.awardIfAbsent(salma, BadgeCode.FIRST_MODULE);
+        badgeService.awardIfAbsent(salma, BadgeCode.YEAR1_VALIDATED);
 
         // Khadija — parcours complet + soutenance validée (voir seedStageDossiers pour le
         // dossier de stage et le certificat émis).
@@ -336,6 +356,61 @@ public class DemoDataSeeder implements ApplicationRunner {
             validateUf(khadija, "UF 5", admin, "Stage validé.");
             validateUf(khadija, "Soutenance", admin, "Soutenance validée — dossier complet.");
         }
+        badgeService.awardIfAbsent(khadija, BadgeCode.FIRST_MODULE);
+        badgeService.awardIfAbsent(khadija, BadgeCode.YEAR1_VALIDATED);
+        badgeService.awardIfAbsent(khadija, BadgeCode.YEAR2_VALIDATED);
+        badgeService.awardIfAbsent(khadija, BadgeCode.STAGE_VALIDATED);
+    }
+
+    /**
+     * Amina — module 4 : contenu terminé, quiz {@code QUIZ_ATTITUDE} soumis mais en attente
+     * de correction manuelle (question ESSAY non notée). Reproduit exactement la forme réelle
+     * de {@code QuizAttempt} attendue par {@code QuizGradingService} (questionOrder + answers +
+     * freeTextAnswers avec de vrais identifiants de question/option persistés), pour que la
+     * correction en direct pendant la démo déclenche réellement la cascade
+     * (finalizeIfFullyGraded → badge/certificat) plutôt qu'un état simulé.
+     */
+    private void seedPendingEssayAttempt(User learner, ModuleEntity module) {
+        lessonsOf(module).forEach(l -> completeLesson(learner, l));
+
+        Quiz quiz = quizRepository.findByModuleIdAndQuizType(module.getId(), QuizType.FIN_MODULE).orElse(null);
+        if (quiz == null) return;
+        boolean already = quizAttemptRepository
+                .findFirstByUserIdAndQuizIdAndStatusOrderBySubmittedAtDesc(
+                        learner.getId(), quiz.getId(), AttemptStatus.PENDING_REVIEW)
+                .isPresent();
+        if (already) return;
+
+        List<Question> questions = questionRepository.findByQuizIdOrderByOrderIndexAsc(quiz.getId());
+        List<UUID> questionOrder = questions.stream().map(Question::getId).toList();
+
+        Map<String, List<String>> answers = new HashMap<>();
+        Map<String, String> freeTextAnswers = new HashMap<>();
+        for (Question q : questions) {
+            if (q.getQuestionType() == QuestionType.ESSAY) {
+                freeTextAnswers.put(q.getId().toString(),
+                        "Je resterais calme et rappellerais que cette consigne répond à une exigence de "
+                                + "sécurité non négociable. Je reformulerais sa préoccupation pour montrer "
+                                + "que je l'ai entendue, puis proposerais une alternative si elle existe. "
+                                + "En cas de refus persistant, j'impliquerais immédiatement le chef de cabine.");
+            } else {
+                q.getOptions().stream().filter(AnswerOption::isCorrect).findFirst()
+                        .ifPresent(opt -> answers.put(q.getId().toString(), List.of(opt.getId().toString())));
+            }
+        }
+
+        quizAttemptRepository.save(QuizAttempt.builder()
+                .user(learner)
+                .quiz(quiz)
+                .startedAt(Instant.now().minusSeconds(5400))
+                .submittedAt(Instant.now().minusSeconds(3600))
+                .expiresAt(null)
+                .score(null)
+                .status(AttemptStatus.PENDING_REVIEW)
+                .questionOrder(questionOrder)
+                .answers(answers)
+                .freeTextAnswers(freeTextAnswers)
+                .build());
     }
 
     private User requireUser(String email) {
@@ -1204,6 +1279,15 @@ public class DemoDataSeeder implements ApplicationRunner {
                             new OptionSpec("Hausser le ton", false),
                             new OptionSpec("Écouter puis reformuler calmement", true),
                             new OptionSpec("Ignorer et passer au suivant", false)
-                    ))
+                    )),
+            // Question ouverte — démontre la correction hybride (voir seedPendingEssayAttempt) :
+            // ce quiz reste volontairement le seul du jeu de démo à contenir une question ESSAY.
+            new QuestionSpec(
+                    "Un passager conteste fermement une consigne de sécurité de l'équipage. "
+                            + "En 3 à 4 phrases, décrivez votre approche pour désamorcer la situation "
+                            + "sans jamais compromettre la sécurité.",
+                    QuestionType.ESSAY,
+                    null,
+                    List.of())
     );
 }
