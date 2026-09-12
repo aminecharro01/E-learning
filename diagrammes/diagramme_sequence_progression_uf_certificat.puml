@@ -10,32 +10,44 @@ participant "UfValidationService" as UfValidation
 participant "CertificateService" as CertSvc
 database "PostgreSQL" as DB
 
-Étudiant -> AttemptSvc : réussit le quiz de fin de module\n(FIN_MODULE)
-AttemptSvc -> AttemptSvc : applyPassEffects(attempt)
-AttemptSvc -> Progression : isModuleCompleted(userId, moduleId)
-Progression -> DB : toutes les leçons complétées ?\nquiz FIN_MODULE réussi ?
-Progression --> AttemptSvc : true
+== Déverrouillage séquentiel du module suivant (en amont, pas à l'émission du certificat) ==
 
-AttemptSvc -> CertSvc : tryIssueIfEligible(userId, formationId)
-CertSvc -> Progression : isModuleCompleted(...)\npour CHAQUE module de la formation
-
-note over Progression
-  Vérification en cascade, module par module :
-  isUfFullyDone = contenu complété
-               ET quiz de fin d'UF réussi (si configuré)
-               ET ufValidationService.isValidated(ufCode)
-               (gate manuel du Directeur — uniquement UF 5 / UF 11)
-end note
-
+Étudiant -> Progression : isModuleAccessible(userId, module suivant)
+Progression -> Progression : isUfFullyDone(userId, ufCode)
+Progression -> DB : contenu de l'UF complété ?\nquiz de fin d'UF réussi (si configuré) ?
 Progression -> UfValidation : isValidated(userId, "UF 5")
 UfValidation --> Progression : true / false
 
-alt un module reste incomplet (contenu, quiz ou validation manquants)
-  Progression --> CertSvc : false
+note right of Progression
+  Gate manuel du Directeur (UF 5 Stage, UF 11 Soutenance) :
+  appliqué ICI, au déverrouillage du module suivant —
+  pas au moment de l'émission du certificat (voir ci-dessous).
+end note
+
+Progression --> Étudiant : module suivant accessible (ou non)
+
+== Réussite du dernier module et émission du certificat ==
+
+Étudiant -> AttemptSvc : réussit le quiz de fin de module\n(FIN_MODULE)
+AttemptSvc -> AttemptSvc : applyPassEffects(attempt)
+AttemptSvc -> CertSvc : tryIssueIfEligible(userId, formationId)
+CertSvc -> DB : vérifier qu'aucun certificat n'existe déjà
+
+loop pour CHAQUE module de la formation
+  CertSvc -> Progression : isModuleCompleted(userId, moduleId)
+  Progression -> DB : toutes les leçons complétées ?\nquiz FIN_MODULE réussi ?
+  Progression --> CertSvc : true / false
+end
+
+note over CertSvc, Progression
+  isModuleCompleted() ne revérifie PAS UfValidationService ici :
+  si un module est marqué « complété », c'est déjà parce que son
+  déverrouillage a exigé isUfFullyDone() en amont (bloc ci-dessus).
+end note
+
+alt un module reste incomplet (contenu ou quiz manquants)
   CertSvc --> AttemptSvc : pas de certificat émis
 else tous les modules de la formation sont complets
-  Progression --> CertSvc : true
-  CertSvc -> DB : vérifier qu'aucun certificat n'existe déjà
   CertSvc -> CertSvc : générer le code de vérification\n(UUID aléatoire, 16 caractères)
   CertSvc -> CertSvc : générer le PDF (OpenPDF)
   CertSvc -> DB : persister Certificate

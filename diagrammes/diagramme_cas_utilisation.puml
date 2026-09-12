@@ -40,6 +40,7 @@ actor "Étudiant" as Etudiant
 actor "Formateur" as Formateur
 actor "Admin\n(Directeur)" as Admin
 actor "Super Admin" as SuperAdmin
+actor "Support" as Support
 
 
 ' =========================================================
@@ -50,6 +51,9 @@ Etudiant --|> User #line:orange
 Formateur --|> User #line:orange
 Admin --|> Formateur #line:orange
 SuperAdmin --|> Admin #line:orange
+Support --|> User #line:orange
+' Support hérite de User (compte + messagerie), PAS de Formateur :
+' Role.isStaff() exclut explicitement SUPPORT (ni droit pédagogique, ni administration).
 
 
 ' =========================================================
@@ -123,6 +127,8 @@ rectangle "Système IAT Academy" {
 
     usecase "Consulter la\nbourse à l'emploi" as UC_JobsView #line:purple
 
+    usecase "Assister les apprenants\n(lecture seule)" as UC_SupportAssist #line:green
+
 
     ' =====================================================
     ' ORGANISATION INTERNE DES USE CASES
@@ -141,6 +147,7 @@ rectangle "Système IAT Academy" {
     UC_Profile -[hidden]down-> UC_Message
     UC_Message -[hidden]down-> UC_JobsView
     UC_JobsView -[hidden]down-> UC_ShareAchievement
+    UC_ShareAchievement -[hidden]down-> UC_SupportAssist
 
 
     ' ----- Colonne 3 -----
@@ -243,6 +250,14 @@ Admin --> UC_AuditLog #line:red
 SuperAdmin --> UC_AppSettings #line:red
 
 
+' -------------------------
+' SUPPORT
+' -------------------------
+
+Support --> UC_Message #line:green
+Support --> UC_SupportAssist #line:green
+
+
 ' =========================================================
 ' RELATIONS ENTRE CAS
 ' =========================================================
@@ -275,6 +290,8 @@ UC_ValidateUf -[hidden]right-> Admin
 
 UC_AppSettings -[hidden]right-> SuperAdmin
 
+UC_SupportAssist -[hidden]right-> Support
+
 
 ' Héritage vertical
 
@@ -283,5 +300,7 @@ User -[hidden]down-> Etudiant
 Formateur -[hidden]down-> Admin
 
 Admin -[hidden]down-> SuperAdmin
+
+SuperAdmin -[hidden]down-> Support
 
 @enduml
