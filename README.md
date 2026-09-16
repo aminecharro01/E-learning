@@ -41,11 +41,11 @@ E-learning/
 │       ├── components/         # learner/, admin/, auth/, messaging/, stage/, ui/
 │       ├── context/ hooks/ lib/
 ├── deploy/                     # Nginx config & deployment scripts
-├── diagrammes_v2/              # UML source diagrams (PlantUML) + rendered images
-├── rapport_latex/              # LaTeX academic report (main.pdf tracked; build artifacts ignored)
 ├── docker-compose.yml
 └── .env.example
 ```
+
+> Academic/reporting material (`docs/`, `rapport_latex/`, `diagrammes/`, `diagrammes_v2/`) is kept locally and gitignored — not part of this repo.
 
 ## Getting Started
 
