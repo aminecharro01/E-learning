@@ -250,6 +250,7 @@
 **Questions potentielles du jury :**
 - *Pourquoi ne pas avoir une table `UniteFormation` à part entière ?* → Une UF est une agrégation de modules partageant un même code, jamais une entité manipulée indépendamment de ses modules — en faire une table dédiée aurait ajouté une jointure systématique sans bénéfice métier réel.
 - *Comment garantissez-vous l'intégrité référentielle ?* → Contraintes de clé étrangère PostgreSQL + migrations Flyway versionnées (45 migrations, jamais modifiées après déploiement).
+- *Le diagramme montre `JobOffer ..> Certificate : vérifie l'éligibilité`. Est-ce une convention UML ou une vraie dépendance de code ?* → Une vraie dépendance : `JobOfferService.listForLearner()` calcule `boolean isAlumni = certificateRepository.findByUserIdAndFormationId(userId, DEFAULT_FORMATION_ID).isPresent();` et lève `ForbiddenException("Réservé aux diplômés.")` si `!isAlumni`. Le Javadoc de la classe précise explicitement que le statut « alumni » n'est **pas** un champ dédié sur `User` — il est dérivé à la volée de l'existence d'un certificat, pour ne jamais dupliquer un état qui pourrait diverger de la réalité (ex. un certificat révoqué).
 
 ---
 

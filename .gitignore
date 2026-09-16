@@ -23,8 +23,8 @@ build/
 Thumbs.db
 
 # Media / data (keep folders via .gitkeep)
-data/media/**/*
-!data/media/**/.gitkeep
+backend/data/media/**/*
+!backend/data/media/**/.gitkeep
 
 # Logs
 *.log
@@ -55,3 +55,39 @@ rapport_latex/*.toc
 rapport_latex/*.lof
 rapport_latex/*.lot
 rapport_latex/*.synctex.gz
+
+# Personal study/exam materials (not part of the deliverable)
+docs/00-FICHE-REVISION-FINALE.md
+docs/presentation.pdf
+docs/presentation.pptx
+docs/presentation.pptx.pdf
+import_groupe_test.xlsx
+rapport_latex/CharroAMine.pdf
+rapport_latex/images/screenshots/Nouveau dossier/
+
+# Extra screenshots not yet referenced by the report
+rapport_latex/images/screenshots/capture_assistant_ia_chatbot.png
+rapport_latex/images/screenshots/capture_assistant_ia_chatbot_v2.png
+rapport_latex/images/screenshots/capture_badge_boarding_pass.png
+rapport_latex/images/screenshots/capture_badge_partage_v2.png
+rapport_latex/images/screenshots/capture_badges_progression_dashboard.png
+rapport_latex/images/screenshots/capture_banque_quiz_v2.png
+rapport_latex/images/screenshots/capture_bourse_emploi_v2.png
+rapport_latex/images/screenshots/capture_connexion_v2.png
+rapport_latex/images/screenshots/capture_correction_manuelle.png
+rapport_latex/images/screenshots/capture_dashboard_badges_v2.png
+rapport_latex/images/screenshots/capture_dashboard_formateur_v2.png
+rapport_latex/images/screenshots/capture_dossier_stage.png
+rapport_latex/images/screenshots/capture_lecteur_video.png
+rapport_latex/images/screenshots/capture_messagerie_apprenant_v2.png
+rapport_latex/images/screenshots/capture_messagerie_cohorte_v2.png
+rapport_latex/images/screenshots/capture_offres_emploi_admin.png
+rapport_latex/images/screenshots/capture_quiz_passation_v2.png
+rapport_latex/images/screenshots/capture_validation_stage.png
+rapport_latex/images/screenshots/capture_verification_certificat_v2.png
+
+# AI assistant tool configs / session transcripts (not app code)
+.claude/
+.cursor/
+.agents/
+docs/planning/iat_academy_e_learning_project.md

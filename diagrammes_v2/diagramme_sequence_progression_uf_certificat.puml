@@ -1,0 +1,78 @@
+@startuml diagramme_sequence_progression_uf_certificat_v2
+!theme plain
+skinparam dpi 300
+skinparam note {
+    BackgroundColor #FFF3D6
+    BorderColor #C97612
+    FontColor #23282F
+    FontSize 10
+}
+title Séquence — Progression séquentielle par UF et cascade vers le certificat — v2
+
+actor Étudiant
+participant "QuizAttemptService" as AttemptSvc
+participant "ProgressionService" as Progression
+participant "UfValidationService" as UfValidation
+participant "CertificateService" as CertSvc
+database "PostgreSQL" as DB
+
+== Déverrouillage séquentiel du module suivant (en amont, pas à l'émission du certificat) ==
+
+Étudiant -> Progression : isModuleAccessible(userId, module suivant)
+Progression -> Progression : isUfFullyDone(userId, ufCode) : vérifie l'UF précédente
+Progression -> DB : contenu de l'UF complété ?\nquiz de fin d'UF réussi (si configuré) ?
+Progression -> UfValidation : isValidated(userId, "UF 5") : gate humain
+UfValidation --> Progression : true / false
+
+note right of Progression
+  Gate manuel du Directeur (UF 5 Stage, UF 11 Soutenance) :
+  appliqué ICI, au déverrouillage du module suivant —
+  pas au moment de l'émission du certificat (voir ci-dessous).
+  Pour toute autre UF, isValidated(...) renvoie TOUJOURS true :
+  ce n'est pas un mécanisme générique, c'est une exception
+  ciblée sur deux UF précises (DIRECTOR_GATED_UFS).
+end note
+
+Progression --> Étudiant : module suivant accessible (ou non)
+
+== Réussite du dernier module et émission du certificat ==
+
+Étudiant -> AttemptSvc : réussit le quiz de fin de module\n(FIN_MODULE)
+AttemptSvc -> AttemptSvc : applyPassEffects(attempt) : déclenche la cascade
+AttemptSvc -> CertSvc : tryIssueIfEligible(userId, formationId)
+CertSvc -> DB : vérifier qu'aucun certificat n'existe déjà
+
+note right of DB
+  Filet de sécurité en base, pas seulement applicatif :
+  contrainte UNIQUE(user_id, formation_id) posée dès la
+  migration V1 sur la table certificates — même si le
+  contrôle applicatif ci-dessus avait un trou (race
+  condition), un doublon serait physiquement impossible.
+end note
+
+loop pour CHAQUE module de la formation
+  CertSvc -> Progression : isModuleCompleted(userId, moduleId) : constate le contenu
+  Progression -> DB : toutes les leçons complétées ?\nquiz FIN_MODULE réussi ?
+  Progression --> CertSvc : true / false
+end
+
+note over CertSvc, Progression
+  isModuleCompleted() ne revérifie PAS UfValidationService ici :
+  si un module est marqué « complété », c'est déjà parce que son
+  déverrouillage a exigé isUfFullyDone() en amont (bloc ci-dessus).
+  Le résultat observé ne change jamais : un apprenant ne peut de
+  toute façon pas dépasser une UF gatée tant qu'elle n'est pas
+  validée — seule la représentation du diagramme était imprécise
+  dans une version antérieure (corrigée ici).
+end note
+
+alt un module reste incomplet (contenu ou quiz manquants)
+  CertSvc --> AttemptSvc : pas de certificat émis
+else tous les modules de la formation sont complets
+  CertSvc -> CertSvc : générer le code de vérification\n(UUID aléatoire, 16 caractères)
+  CertSvc -> CertSvc : générer le PDF (OpenPDF)
+  CertSvc -> DB : persister Certificate
+  CertSvc --> AttemptSvc : certificat émis
+end
+
+@enduml
