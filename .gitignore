@@ -23,6 +23,8 @@ build/
 Thumbs.db
 
 # Media / data (keep folders via .gitkeep)
+data/media/**/*
+!data/media/**/.gitkeep
 backend/data/media/**/*
 !backend/data/media/**/.gitkeep
 
