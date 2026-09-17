@@ -1,3 +1,5 @@
+![IAT Academy preview](mockup.jpg)
+
 # IAT Academy — E-Learning Platform
 
 IAT Academy is a full-stack e-learning platform for a 2-year training program: 36 modules, interactive quizzes with timed attempts, learner progression tracking, and PDF certificate generation with verification. Monorepo with a Spring Boot API and a Next.js frontend.
